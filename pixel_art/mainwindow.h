@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 #include <QColor>
 #include <QPaintEvent>
+#include <QMessageBox>
 
 
 QT_BEGIN_NAMESPACE
@@ -27,5 +28,6 @@ private:
     Ui::MainWindow *ui;
     static const int gridSize = 32;
     QColor pixels[32][32];
+    QMessageBox::StandardButton reply;
 };
 #endif // MAINWINDOW_H

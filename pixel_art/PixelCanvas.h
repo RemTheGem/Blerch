@@ -43,7 +43,7 @@ protected:
 
 private:
     static const int gridSize = 40;
-    int pixelSize = 10;
+    int pixelSize = 20;
     QColor currentColor = Qt::black;
     bool isDrawing = false;
     bool isUndoing = false;

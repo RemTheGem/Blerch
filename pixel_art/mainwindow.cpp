@@ -80,7 +80,10 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
     connect(eraseBoard, &QAction::triggered, [=](){
+        reply = QMessageBox::warning(this, "Clear Canvas?", "All progress may be lost. Clear Canvas?", QMessageBox::Yes | QMessageBox::Cancel);
+        if(reply == QMessageBox::Yes){
         canvas->clear();
+        }
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
         canvas->saveImage();
