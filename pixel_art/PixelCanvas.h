@@ -47,6 +47,7 @@ private:
     QColor currentColor = Qt::black;
     bool isDrawing = false;
     bool isUndoing = false;
+    bool isErasing = false;
     struct CanvasState{
         QColor pixels[gridSize][gridSize];
     };

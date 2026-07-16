@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     toolGroup->addAction(eraserAction);
     toolGroup->addAction(eyeDropperAction);
     toolGroup->addAction(fillAction);
+    showMaximized();
 
     // keyboard shortcuts
     pickColor->setShortcut(QKeySequence("Ctrl+W"));
@@ -109,6 +110,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(loadProject, &QAction::triggered, [=](){
         canvas->loadProject();
     });
+
+
 
 }
 

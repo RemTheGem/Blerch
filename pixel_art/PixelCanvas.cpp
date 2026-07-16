@@ -68,6 +68,7 @@ void ColorPreviewWidget::setColor(const QColor &color){
 
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
+    if(event->button() == Qt::LeftButton){
     isDrawing = true;
     // make sure you don't overwrite on the old canvas. if you do, it leads to both actions being on the same canvas and any subsequent undos undoes both.
     if(isUndoing){
@@ -98,15 +99,38 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
 
         update();
     }
+    }
+    else if(event->button() == Qt::RightButton){
+            isDrawing = true;
+            isErasing = true;
+            // make sure you don't overwrite on the old canvas. if you do, it leads to both actions being on the same canvas and any subsequent undos undoes both.
+            if(isUndoing){
+                undoStack.push_back(currentState);
+                isUndoing = false;
+            }
+
+
+            int x = event->position().x() / pixelSize;
+            int y = event->position().y() / pixelSize;
+
+            if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
+                currentState.pixels[y][x] = Qt::white;
+            }
+
+            update();
+        }
 
 }
+
+
 void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 {
+
     if (!isDrawing) return;
 
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
-
+    if(!isErasing){
     if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
         switch(currentTool){
         case Tool::Brush:
@@ -119,10 +143,19 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 
         update();
     }
+    }
+    else{
+        if(x >= 0 && x < gridSize && y >= 0 && y < gridSize){
+            currentState.pixels[y][x] = Qt::white;
+        }
+        update();
+    }
+
 }
 void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     isDrawing = false;
+    isErasing = false;
     undoActions();
 }
 void PixelCanvas::clear()
