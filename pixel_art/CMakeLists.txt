@@ -27,8 +27,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         PixelCanvas.h
         PixelCanvas.h PixelCanvas.cpp
-        .github/workflows/build-macos.yml
-        .github/workflows/build.windows.yml
 
     )
 # Define target properties for Android with Qt 6 as:
