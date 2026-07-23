@@ -28,14 +28,14 @@ jobs:
 
     - name: Deploy Qt
       run: |
-        windeployqt build/Release/PixelArt.exe
+        windeployqt build/Release/pixel_art.exe
 
     - name: Package
       run: |
-        Compress-Archive build/Release/* PixelArt-Windows.zip
+        Compress-Archive build/Release/* pixel_art-Windows.zip
 
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: PixelArt-Windows
-        path: PixelArt-Windows.zip
+        name: pixel_art-Windows
+        path: pixel_art-Windows.zip
