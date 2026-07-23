@@ -32,15 +32,15 @@ jobs:
 
     - name: Deploy Qt libraries
       run: |
-        macdeployqt build/PixelArt.app
+        macdeployqt build/pixel_art.app
 
     - name: Package app
       run: |
         cd build
-        zip -r PixelArt-macOS.zip PixelArt.app
+        zip -r pixel_art-macOS.zip pixel_art.app
 
     - name: Upload app
       uses: actions/upload-artifact@v4
       with:
-        name: PixelArt-macOS
-        path: build/PixelArt-macOS.zip
+        name: pixel_art-macOS
+        path: build/pixel_art-macOS.zip
