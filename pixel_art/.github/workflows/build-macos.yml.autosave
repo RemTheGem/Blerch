@@ -1,0 +1,46 @@
+name: Build macOS Qt App
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: 6.10.3
+        host: mac
+        target: desktop
+        arch: clang_64
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: |
+        cmake --build build --config Release
+
+    - name: Deploy Qt libraries
+      run: |
+        macdeployqt build/PixelArt.app
+
+    - name: Package app
+      run: |
+        cd build
+        zip -r PixelArt-macOS.zip PixelArt.app
+
+    - name: Upload app
+      uses: actions/upload-artifact@v4
+      with:
+        name: PixelArt-macOS
+        path: build/PixelArt-macOS.zip
