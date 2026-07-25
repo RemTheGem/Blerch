@@ -19,7 +19,7 @@ PixelCanvas::PixelCanvas(QWidget *parent)
 {
     for (int y = 0; y < gridSize; y++) {
         for (int x = 0; x < gridSize; x++) {
-            currentState.pixels[y][x] = Qt::white;
+            currentState.pixels[y][x] = Qt::transparent;
         }
     }
     undoStack.push_back(currentState);
@@ -28,22 +28,32 @@ PixelCanvas::PixelCanvas(QWidget *parent)
 void PixelCanvas::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-
+    int checkerSize = pixelSize;
+    for (int y = 0; y < height(); y += checkerSize) {
+        for (int x = 0; x < width(); x += checkerSize) {
+            bool dark = ((x / checkerSize) + (y / checkerSize)) % 2;
+            if (dark)
+                painter.fillRect(x, y, checkerSize, checkerSize, QColor("#b0b0b0"));
+            else
+                painter.fillRect(x, y, checkerSize, checkerSize, QColor("#e0e0e0"));
+        }
+    }
     for (int y = 0; y < gridSize; y++) {
         for (int x = 0; x < gridSize; x++) {
-
             QRect rect(
                 x * pixelSize,
                 y * pixelSize,
                 pixelSize,
                 pixelSize
                 );
-
-            painter.fillRect(rect, currentState.pixels[y][x]);
+            if (currentState.pixels[y][x] != Qt::transparent) {
+                painter.fillRect(rect, currentState.pixels[y][x]);
+            }
             painter.drawRect(rect);
         }
     }
 }
+
 ColorPreviewWidget::ColorPreviewWidget(QWidget *parent){
 
 }
@@ -86,7 +96,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             currentState.pixels[y][x] = currentColor;
             break;
         case Tool::Eraser:
-            currentState.pixels[y][x] = Qt::white;
+            currentState.pixels[y][x] = Qt::transparent;
             break;
         case Tool::EyeDropper:
             currentColor = currentState.pixels[y][x];
@@ -114,7 +124,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             int y = event->position().y() / pixelSize;
 
             if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
-                currentState.pixels[y][x] = Qt::white;
+                currentState.pixels[y][x] = Qt::transparent;
             }
 
             update();
@@ -137,7 +147,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             currentState.pixels[y][x] = currentColor;
             break;
         case Tool::Eraser:
-            currentState.pixels[y][x] = Qt::white;
+            currentState.pixels[y][x] = Qt::transparent;
             break;
         }
 
@@ -146,7 +156,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     }
     else{
         if(x >= 0 && x < gridSize && y >= 0 && y < gridSize){
-            currentState.pixels[y][x] = Qt::white;
+            currentState.pixels[y][x] = Qt::transparent;
         }
         update();
     }
@@ -162,7 +172,7 @@ void PixelCanvas::clear()
 {
     for (int y = 0; y < gridSize; y++) {
         for (int x = 0; x < gridSize; x++) {
-            currentState.pixels[y][x] = Qt::white;
+            currentState.pixels[y][x] = Qt::transparent;
         }
     }
     update();
@@ -170,7 +180,7 @@ void PixelCanvas::clear()
 void PixelCanvas::saveImage()
 {
     QImage image(gridSize * pixelSize, gridSize * pixelSize, QImage::Format_ARGB32);
-    image.fill(Qt::white);
+    image.fill(Qt::transparent);
 
     QPainter painter(&image);
 
@@ -216,7 +226,7 @@ void PixelCanvas::saveProject(){
         for (int x =0; x <gridSize; x++){
             QColor color = currentState.pixels[y][x];
 
-            pixelMap.append(color.name());
+            pixelMap.append(color.name(QColor::HexArgb));
 
         }
     }
