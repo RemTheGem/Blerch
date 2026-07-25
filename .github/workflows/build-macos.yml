@@ -27,8 +27,12 @@ jobs:
       run: |
         macdeployqt build/pixel_art.app
         codesign --deep --force --sign - build/pixel_art.app
+    - name: Package app
+      run: |
+        cd build
+        ditto -c -k --sequesterRsrc --keepParent pixel_art.app pixel_art-macOS.zip
     - name: Upload app
       uses: actions/upload-artifact@v4
       with:
         name: pixel_art-macOS
-        path: build/pixel_art.app
+        path: build/pixel_art-macOS.zip
