@@ -9,7 +9,7 @@ A simple Desktop application (also under construction) built with Qt and C++ to 
 - Undo/Redo
 - More on the way!! (If i dont forget about this)
 
-<img src="images/remTheGem1.png" width="600"/>
+<img src="images/smoke 3.png" width="600"/>
 
 ## Made in Pixel Art Editor
 
