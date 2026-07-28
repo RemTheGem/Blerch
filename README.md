@@ -1,9 +1,10 @@
 # Blerch Editor
-A simple Desktop application built with Qt and C++ to make simple pixel art on a 40x40 grid.
+A simple Desktop application built with Qt and C++ to make simple pixel art on a 32x32 grid.
 
 ## Features
 - Color Picker
 - Clear Canvas
+- Resize Canvas
 - Save Drawing (PNG only for now)
 - Save Project to reload later!
 - Select tool (Brush, Eraser, Eye Dropper, Fill)
@@ -25,7 +26,7 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
 - Save Drawing in more formats (done... kinda)
 - Reload old art (done)
 - Brush sizes
-- Memory Optimization
+- Memory Optimization (done... also kinda)
 - and more! (No promises) 
 
 
