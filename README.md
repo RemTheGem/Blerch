@@ -1,5 +1,5 @@
-# Pixel Art Editor (Should have picked a better name)
-A simple Desktop application (also under construction) built with Qt and C++ to make simple pixel art on a 40x40 grid.
+# Blerch Editor
+A simple Desktop application built with Qt and C++ to make simple pixel art on a 40x40 grid.
 
 ## Features
 - Color Picker
@@ -12,7 +12,7 @@ A simple Desktop application (also under construction) built with Qt and C++ to 
 
 <img src="images/smoke 3.png" width="600"/>
 
-## Made in Pixel Art Editor
+## Made in Blerch Editor
 
 (I can't draw for the life of me lol but i hope you can!)
 
@@ -31,5 +31,5 @@ A simple Desktop application (also under construction) built with Qt and C++ to 
 
 ## Clone the Repository
 ```bash
-git clone https://github.com/RemTheGem/Pixel-Art-Editor.git
+git clone https://github.com/RemTheGem/Blerch.git
 ```
