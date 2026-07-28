@@ -19,7 +19,8 @@ public:
     void saveImage();
     void saveProject();
     void loadProject();
-
+    void updateCanvasSize();
+    void resizeCanvas(int width, int height);
     enum class Tool {
         Brush,
         Eraser,
@@ -42,21 +43,28 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
-    static const int gridSize = 40;
     int pixelSize = 20;
+    int canvasWidth = 32;
+    int canvasHeight = 32;
     QColor currentColor = Qt::black;
     bool isDrawing = false;
     bool isUndoing = false;
     bool isErasing = false;
     struct CanvasState{
-        QColor pixels[gridSize][gridSize];
+        int width;
+        int height;
+        QVector<QColor> pixels;
+
+        QColor& at(int x, int y){
+            return pixels[y * width + x];
+        }
     };
     Tool currentTool = Tool::Brush;
     CanvasState currentState;
     CanvasState undoState;
     std::deque<CanvasState> undoStack;
     std::deque<CanvasState> redoStack;
-    int maxUndo = 5;
+    int maxUndo = 1;
 signals:
     void colorChanged(QColor color);
 };

@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QActionGroup>
+#include <QInputDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,7 +20,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto canvas = new PixelCanvas(this);
     auto colorPreview = new ColorPreviewWidget(this);
-    canvas->setFixedSize(800, 800);
     QWidget *container = new QWidget(this);
     QHBoxLayout *layout = new QHBoxLayout(container);
     QApplication::setApplicationName("Blerch");
@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *undo = toolbar->addAction("Undo");
     QAction *redo = toolbar->addAction("Redo");
     QAction *eraseBoard = toolbar->addAction("Clear Canvas");
+    QAction *resizeCanvas = toolbar->addAction("Resize Canvas");
     toolbar->addSeparator();
     QAction *saveDrawing = toolbar->addAction("Save Drawing");
     QAction *saveProject = toolbar->addAction("Save Project");
@@ -86,6 +87,19 @@ MainWindow::MainWindow(QWidget *parent)
         if(reply == QMessageBox::Yes){
         canvas->clear();
         }
+    });
+    connect(resizeCanvas, &QAction::triggered, [=](){
+
+        bool okWidth;
+        bool okHeight;
+        int width = QInputDialog::getInt(
+            this, "Canvas Width", "Width:", 32, 1, 256, 1, &okWidth);
+        if(!okWidth)
+            return;
+        int height = QInputDialog::getInt(this, "Canvas Height", "Height:", 32, 1, 256, 1, &okHeight);
+        if(!okHeight)
+            return;
+        canvas->resizeCanvas(width, height);
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
         canvas->saveImage();

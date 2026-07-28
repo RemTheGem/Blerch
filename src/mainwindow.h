@@ -3,8 +3,6 @@
 
 #include <QMainWindow>
 #include <QMouseEvent>
-#include <QColor>
-#include <QPaintEvent>
 #include <QMessageBox>
 
 
@@ -26,8 +24,6 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    static const int gridSize = 20;
-    QColor pixels[32][32];
     QMessageBox::StandardButton reply;
 };
 #endif // MAINWINDOW_H
