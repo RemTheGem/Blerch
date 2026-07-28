@@ -5,11 +5,12 @@ A simple Desktop application (also under construction) built with Qt and C++ to 
 - Color Picker
 - Clear Canvas
 - Save Drawing (PNG only for now)
+- Save Project to reload later!
 - Select tool (Brush, Eraser, Eye Dropper, Fill)
 - Undo/Redo
 - More on the way!! (If i dont forget about this)
 
-<img src="images/remTheGem1.png" width="600"/>
+<img src="images/smoke 3.png" width="600"/>
 
 ## Made in Pixel Art Editor
 
@@ -21,8 +22,8 @@ A simple Desktop application (also under construction) built with Qt and C++ to 
 
 ## Coming Soon
 - Undo/Redo (done)
-- Save Drawing in more formats
-- Reload old art
+- Save Drawing in more formats (done... kinda)
+- Reload old art (done)
 - Brush sizes
 - Memory Optimization
 - and more! (No promises) 
