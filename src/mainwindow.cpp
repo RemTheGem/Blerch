@@ -12,6 +12,7 @@
 #include <QActionGroup>
 #include <QInputDialog>
 #include <QScrollArea>
+#include <QIcon>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -25,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("Blerch");
     QWidget *container = new QWidget(this);
     QHBoxLayout *layout = new QHBoxLayout(container);
-
+    setWindowIcon(QIcon(":/Blerch icon v2.png"));
     QScrollArea *scroll = new QScrollArea(this);
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);

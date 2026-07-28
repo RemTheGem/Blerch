@@ -305,15 +305,28 @@ void PixelCanvas::loadProject(){
     QByteArray data = file.readAll();
     QJsonDocument doc = QJsonDocument::fromJson(data);
     QJsonObject root = doc.object();
+    int fileWidth;
+    int fileHeight;
     if (root.contains("gridSize")){
-        currentState.height = root["gridSize"].toInt();
-        currentState.width = root["gridSize"].toInt();
+        fileWidth = root["gridSize"].toInt();
+        fileHeight = fileWidth;
     }
     else {
-        currentState.width = root["Width"].toInt();
-        currentState.height = root["Height"].toInt();
+        fileWidth = root["Width"].toInt();
+        fileHeight = root["Height"].toInt();
     }
+    if(fileWidth > currentState.width || fileHeight > currentState.height){
+    currentState.width = fileWidth;
+    currentState.height = fileHeight;
     currentState.pixels.resize(currentState.width * currentState.height);
+    updateCanvasSize();
+    }
+    // this can be done better i know it lol
+    else{
+        currentState.width = fileWidth;
+        currentState.height = fileHeight;
+        currentState.pixels.resize(currentState.width * currentState.height);
+    }
     QJsonArray pixelMap = root["pixels"].toArray();
 
     int index = 0;
