@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QActionGroup>
 #include <QInputDialog>
+#include <QScrollArea>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -20,14 +21,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto canvas = new PixelCanvas(this);
     auto colorPreview = new ColorPreviewWidget(this);
-    QWidget *container = new QWidget(this);
-    QHBoxLayout *layout = new QHBoxLayout(container);
     QApplication::setApplicationName("Blerch");
     setWindowTitle("Blerch");
+    QWidget *container = new QWidget(this);
+    QHBoxLayout *layout = new QHBoxLayout(container);
 
-    layout->addStretch();
-    layout->addWidget(canvas);
-    layout->addStretch();
+    QScrollArea *scroll = new QScrollArea(this);
+    scroll->setWidget(canvas);
+    scroll->setWidgetResizable(false);
+    scroll->setAlignment(Qt::AlignCenter);
+    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    layout->setContentsMargins(0,0,0,0);
+    layout->addWidget(scroll);
 
     setCentralWidget(container);
     // Toolbar
@@ -49,6 +55,8 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveDrawing = toolbar->addAction("Save Drawing");
     QAction *saveProject = toolbar->addAction("Save Project");
     QAction *loadProject = toolbar->addAction("Load Project");
+    QAction *zoomIn = toolbar->addAction("+");
+    QAction *zoomOut = toolbar->addAction("-");
     // UI
     brushAction->setChecked(true);
     brushAction->setCheckable(true);
@@ -129,7 +137,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(loadProject, &QAction::triggered, [=](){
         canvas->loadProject();
     });
-
+    connect(zoomIn, &QAction::triggered, [=](){
+        canvas->setZoom(canvas->getZoom() + 2);
+    });
+    connect(zoomOut, &QAction::triggered, [=](){
+        canvas->setZoom(canvas->getZoom() - 2);
+    });
 
 
 }

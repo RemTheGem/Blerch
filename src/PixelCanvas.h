@@ -21,6 +21,7 @@ public:
     void saveProject();
     void loadProject();
     void updateCanvasSize();
+    void setZoom(int zoom);
     void resizeCanvas(int width, int height);
     enum class Tool {
         Brush,
@@ -36,6 +37,7 @@ public:
     // helper methods
     void undoActions();
     QColor getColor();
+    int getZoom();
 
 protected:
     void paintEvent(QPaintEvent *event) override;

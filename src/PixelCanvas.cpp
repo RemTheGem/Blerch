@@ -219,6 +219,14 @@ void PixelCanvas::clear()
     }
     update();
 }
+void PixelCanvas::setZoom(int zoom){
+    pixelSize = zoom;
+    updateCanvasSize();
+    update();
+}
+int PixelCanvas::getZoom(){
+    return pixelSize;
+}
 void PixelCanvas::saveImage()
 {
     QImage image(currentState.width * pixelSize, currentState.height * pixelSize, QImage::Format_ARGB32);
