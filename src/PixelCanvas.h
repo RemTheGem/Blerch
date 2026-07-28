@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <deque>
+#include <vector>
 
 class PixelCanvas : public QWidget
 {
@@ -59,12 +60,20 @@ private:
             return pixels[y * width + x];
         }
     };
+    struct PixelChange{
+        int x;
+        int y;
+        QColor oldColor;
+        QColor newColor;
+    };
+
     Tool currentTool = Tool::Brush;
     CanvasState currentState;
     CanvasState undoState;
-    std::deque<CanvasState> undoStack;
-    std::deque<CanvasState> redoStack;
-    int maxUndo = 1;
+    std::deque<std::vector<PixelChange>> undoStack;
+    std::deque<std::vector<PixelChange>> redoStack;
+    std::vector<PixelChange> currentAction;
+    int maxUndo = 5;
 signals:
     void colorChanged(QColor color);
 };

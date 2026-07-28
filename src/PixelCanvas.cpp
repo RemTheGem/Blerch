@@ -25,7 +25,7 @@ PixelCanvas::PixelCanvas(QWidget *parent)
             currentState.at(x,y) = Qt::transparent;
         }
     }
-    undoStack.push_back(currentState);
+    undoStack.push_back(currentAction);
     updateCanvasSize();
     setMouseTracking(true);
 }
@@ -101,11 +101,12 @@ void ColorPreviewWidget::setColor(const QColor &color){
 
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
+    currentAction.clear();
     if(event->button() == Qt::LeftButton){
     isDrawing = true;
     // make sure you don't overwrite on the old canvas. if you do, it leads to both actions being on the same canvas and any subsequent undos undoes both.
     if(isUndoing){
-        undoStack.push_back(currentState);
+        undoStack.push_back(currentAction);
         isUndoing = false;
     }
 
@@ -116,9 +117,11 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
         switch(currentTool){
         case Tool::Brush:
+            currentAction.push_back({x, y, currentState.at(x,y), currentColor});
             currentState.at(x, y) = currentColor;
             break;
         case Tool::Eraser:
+            currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
             currentState.at(x, y) = Qt::transparent;
             break;
         case Tool::EyeDropper:
@@ -138,7 +141,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             isErasing = true;
             // make sure you don't overwrite on the old canvas. if you do, it leads to both actions being on the same canvas and any subsequent undos undoes both.
             if(isUndoing){
-                undoStack.push_back(currentState);
+                undoStack.push_back(currentAction);
                 isUndoing = false;
             }
 
@@ -147,6 +150,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             int y = event->position().y() / pixelSize;
 
             if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
+                currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
                 currentState.at(x, y) = Qt::transparent;
             }
 
@@ -163,33 +167,48 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
+    bool changed = false;
     if(!isErasing){
     if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
         switch(currentTool){
         case Tool::Brush:
-            currentState.at(x, y) = currentColor;
+            if(currentState.at(x, y) != currentColor)
+            {
+                currentAction.push_back({x, y, currentState.at(x,y), currentColor});
+                currentState.at(x, y) = currentColor;
+                changed = true;
+            }
             break;
         case Tool::Eraser:
-            currentState.at(x, y) = Qt::transparent;
+            if(currentState.at(x, y) != Qt::transparent)
+            {
+                currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
+                currentState.at(x, y) = Qt::transparent;
+                changed = true;
+            }
             break;
-        }
-
-        update();
+        }  
     }
     }
     else{
         if(x >= 0 && x < currentState.width && y >= 0 && y < currentState.height){
-            currentState.at(x, y) = Qt::transparent;
+            if (currentState.at(x, y) != Qt::transparent){
+                currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
+                currentState.at(x, y) = Qt::transparent;
+                changed = true;
+            }
         }
-        update();
     }
-
+    if (changed) update();
 }
 void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     isDrawing = false;
     isErasing = false;
-    undoActions();
+    if(!currentAction.empty()){
+        undoStack.push_back(currentAction);
+        redoStack.clear();
+    }
 }
 void PixelCanvas::clear()
 {
@@ -319,20 +338,27 @@ void PixelCanvas::floodFill(int startX, int startY){
     }
 }
 void PixelCanvas::undo(){
-    if(undoStack.size() > 1){
-        isUndoing = true;
-    redoStack.push_back(currentState);
+    if(undoStack.empty()) return;
+
+    auto action = undoStack.back();
     undoStack.pop_back();
-    currentState = undoStack.back();
+
+    for(auto &change : action){
+        currentState.at(change.x, change.y) = change.oldColor;
     }
+    redoStack.push_back(action);
     update();
 }
 void PixelCanvas::redo(){
-    if(!redoStack.empty()){
-        currentState = redoStack.back();
-        undoStack.push_back(currentState);
-        redoStack.pop_back();
+    if(redoStack.empty()) return;
+
+    auto action = redoStack.back();
+    redoStack.pop_back();
+
+    for (auto &change : action){
+        currentState.at(change.x, change.y) = change.newColor;
     }
+    undoStack.push_back(action);
     update();
 }
 void PixelCanvas::undoActions(){
@@ -340,10 +366,10 @@ void PixelCanvas::undoActions(){
     redoStack.clear();
     if(undoStack.size() >= maxUndo){
         undoStack.pop_front();
-        undoStack.push_back(currentState);
+        undoStack.push_back(currentAction);
     }
     else{
-        undoStack.push_back(currentState);
+        undoStack.push_back(currentAction);
     }
 }
 QColor PixelCanvas::getColor(){
