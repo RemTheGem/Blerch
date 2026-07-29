@@ -18,6 +18,7 @@
 #include <QVBoxLayout>
 #include <QDebug>
 #include <QMenuBar>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -40,8 +41,11 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     // Layer
     QWidget *layerPanel = new QWidget(this);
+    QWidget *spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layerPanel->setFixedWidth(200);
     QVBoxLayout *layerLayout = new QVBoxLayout(layerPanel);
+    QHBoxLayout *layerButtons = new QHBoxLayout();
     layerList = new QListWidget(this);
     layerList->addItems(canvas->getLayerNames());
     layerList->setCurrentRow(0);
@@ -54,14 +58,17 @@ MainWindow::MainWindow(QWidget *parent)
     opacitySlider->setRange(0, 100);
     opacitySlider->setValue(100);
     QMenu *fileMenu = menuBar()->addMenu("File");
-
+    QMenu *helpMenu = menuBar()->addMenu("Help");
+    QLabel * opacityLabel = new QLabel("Opacity");
+    layerLayout->addWidget(opacityLabel);
     layerLayout->addWidget(opacitySlider);
     layerLayout->addWidget(renameLayerButton);
-    layerLayout->addWidget(moveUpButton);
-    layerLayout->addWidget(moveDownButton);
     layerLayout->addWidget(layerList);
-    layerLayout->addWidget(addLayerButton);
-    layerLayout->addWidget(removeLayerButton);
+    layerButtons->addWidget(moveUpButton);
+    layerButtons->addWidget(moveDownButton);
+    layerButtons->addWidget(addLayerButton);
+    layerButtons->addWidget(removeLayerButton);
+    layerLayout->addLayout(layerButtons);
     mainLayout->addWidget(scroll, 1);
     mainLayout->addWidget(layerPanel, 0);
     setCentralWidget(container);
@@ -78,6 +85,7 @@ MainWindow::MainWindow(QWidget *parent)
     toolbar->addSeparator();
     QAction *undo = toolbar->addAction("Undo");
     QAction *redo = toolbar->addAction("Redo");
+    toolbar->addWidget(spacer);
     QAction *eraseBoard = toolbar->addAction("Clear Canvas");
     QAction *resizeCanvas = toolbar->addAction("Resize Canvas");
     toolbar->addSeparator();
@@ -85,6 +93,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveProject = fileMenu->addAction("Save Project");
     QAction *loadProject = fileMenu->addAction("Open Project");
     QAction *loadPicture = fileMenu->addAction("Open Picture");
+    QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     // UI
@@ -236,6 +245,38 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(opacitySlider, &QSlider::valueChanged, [=](int value){
         canvas->setLayerOpacity(layerList->currentRow(), value / 100.0f);
+    });
+    connect(shortcutsAction, &QAction::triggered, [=](){
+
+        QMessageBox::information(this,
+                                 "Keyboard Shortcuts",
+
+                                 "Tools:\n"
+                                 "B  - Brush\n"
+                                 "E  - Eraser\n"
+                                 "F  - Fill\n\n"
+                                 "I  - switch to Eyedropper\n"
+                                 "Middle mouse button   - Use Eyedropper on current pixel\n"
+                                 "Ctrl + W  - Color Picker\n\n"
+
+                                 "Layers:\n"
+                                 "Ctrl + L  - Add Layer\n"
+                                 "Ctrl + U  - Move Layer Up\n"
+                                 "Ctrl + D  - Move Layer Down\n\n"
+
+                                 "Editing:\n"
+                                 "Ctrl + Z  - Undo\n"
+                                 "Ctrl + Y  - Redo\n"
+                                 "Ctrl + P  - Load Picture\n"
+                                 "Ctrl + S  - Save Picture\n"
+                                 "Ctrl + O  - Load Project\n"
+                                 "Ctrl + Shift + S  - Save Project\n\n"
+
+                                 "View:\n"
+                                 "Ctrl + Mouse Wheel  - Canvas Zoom\n"
+                                 "Shift + Mouse Wheel   - Reference Image Zoom"
+                                 );
+
     });
 }
 
