@@ -27,12 +27,12 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *container = new QWidget(this);
     QHBoxLayout *layout = new QHBoxLayout(container);
     setWindowIcon(QIcon(":/Blerch icon v2.png"));
+    // scroll
     QScrollArea *scroll = new QScrollArea(this);
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignCenter);
     scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
     layout->setContentsMargins(0,0,0,0);
     layout->addWidget(scroll);
 

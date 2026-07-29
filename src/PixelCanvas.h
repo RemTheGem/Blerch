@@ -7,6 +7,7 @@
 #include <QPaintEvent>
 #include <deque>
 #include <vector>
+#include <QWheelEvent>
 
 class PixelCanvas : public QWidget
 {
@@ -44,6 +45,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 private:
     int pixelSize = 20;

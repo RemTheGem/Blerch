@@ -12,6 +12,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QScrollArea>
+#include <QScrollBar>
 
 
 PixelCanvas::PixelCanvas(QWidget *parent)
@@ -156,10 +158,30 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
 
             update();
         }
+           else if(event->button() == Qt::MiddleButton){
+            int x = event->position().x() / pixelSize;
+            int y = event->position().y() / pixelSize;
+            if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
+                currentColor = currentState.at(x, y);
+                emit colorChanged(currentColor);
+            }
+            }
 
 }
 
-
+void PixelCanvas::wheelEvent(QWheelEvent *event)
+{
+    if(event->modifiers() & Qt::ControlModifier)
+    {
+        if(event->angleDelta().y() > 0)
+            setZoom(pixelSize + 2);
+        else
+            setZoom(std::max(2, pixelSize - 2));
+        event->accept();
+        return;
+    }
+    QWidget::wheelEvent(event);
+}
 void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 {
 
