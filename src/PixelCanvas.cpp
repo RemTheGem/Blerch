@@ -256,7 +256,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
                 changed = true;
             }
             break;
-        }  
+        }
     }
     }
     else{

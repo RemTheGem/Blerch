@@ -17,6 +17,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QDebug>
+#include <QMenuBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -52,6 +53,7 @@ MainWindow::MainWindow(QWidget *parent)
     QSlider *opacitySlider = new QSlider(Qt::Horizontal);
     opacitySlider->setRange(0, 100);
     opacitySlider->setValue(100);
+    QMenu *fileMenu = menuBar()->addMenu("File");
 
     layerLayout->addWidget(opacitySlider);
     layerLayout->addWidget(renameLayerButton);
@@ -79,10 +81,10 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *eraseBoard = toolbar->addAction("Clear Canvas");
     QAction *resizeCanvas = toolbar->addAction("Resize Canvas");
     toolbar->addSeparator();
-    QAction *saveDrawing = toolbar->addAction("Save Drawing");
-    QAction *saveProject = toolbar->addAction("Save Project");
-    QAction *loadProject = toolbar->addAction("Load Project");
-    QAction *loadPicture = toolbar->addAction("Load Picture");
+    QAction *saveDrawing = fileMenu->addAction("Export PNG");
+    QAction *saveProject = fileMenu->addAction("Save Project");
+    QAction *loadProject = fileMenu->addAction("Open Project");
+    QAction *loadPicture = fileMenu->addAction("Open Picture");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     // UI
@@ -112,6 +114,9 @@ MainWindow::MainWindow(QWidget *parent)
     moveUpButton->setShortcut(QKeySequence("Ctrl+U"));
     moveDownButton->setShortcut(QKeySequence("Ctrl+D"));
     addLayerButton->setShortcut(QKeySequence("Ctrl+L"));
+    saveProject->setShortcut(QKeySequence("Ctrl+Shift+S"));
+    loadProject->setShortcut(QKeySequence("Ctrl+O"));
+    loadPicture->setShortcut(QKeySequence("Ctrl+P"));
     //Toolbar actions
     connect(pickColor, &QAction::triggered, [=]() {
         QColor color = QColorDialog::getColor(Qt::white, this);
