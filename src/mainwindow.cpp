@@ -13,6 +13,9 @@
 #include <QInputDialog>
 #include <QScrollArea>
 #include <QIcon>
+#include <QListWidget>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -24,18 +27,29 @@ MainWindow::MainWindow(QWidget *parent)
     auto colorPreview = new ColorPreviewWidget(this);
     QApplication::setApplicationName("Blerch");
     setWindowTitle("Blerch");
-    QWidget *container = new QWidget(this);
-    QHBoxLayout *layout = new QHBoxLayout(container);
     setWindowIcon(QIcon(":/Blerch icon v2.png"));
-    // scroll
+    QWidget *container = new QWidget(this);
+    QHBoxLayout *mainLayout = new QHBoxLayout(container);
+    mainLayout->setContentsMargins(0,0,0,0);
     QScrollArea *scroll = new QScrollArea(this);
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignCenter);
     scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    layout->setContentsMargins(0,0,0,0);
-    layout->addWidget(scroll);
-
+    // Layer
+    QWidget *layerPanel = new QWidget(this);
+    layerPanel->setFixedWidth(200);
+    QVBoxLayout *layerLayout = new QVBoxLayout(layerPanel);
+    layerList = new QListWidget(this);
+    layerList->addItems(canvas->getLayerNames());
+    layerList->setCurrentRow(0);
+    addLayerButton = new QPushButton("+", this);
+    removeLayerButton = new QPushButton("-", this);
+    layerLayout->addWidget(layerList);
+    layerLayout->addWidget(addLayerButton);
+    layerLayout->addWidget(removeLayerButton);
+    mainLayout->addWidget(scroll, 1);
+    mainLayout->addWidget(layerPanel, 0);
     setCentralWidget(container);
     // Toolbar
     QToolBar *toolbar = addToolBar("Palette");
@@ -144,7 +158,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(zoomOut, &QAction::triggered, [=](){
         canvas->setZoom(canvas->getZoom() - 2);
     });
-
+    connect(addLayerButton,&QPushButton::clicked,[=](){
+        canvas->addLayer();
+        layerList->addItem("Layer " + QString::number(layerList->count()+1));
+    });
+    connect(removeLayerButton,&QPushButton::clicked,[=](){
+        int row = layerList->currentRow();
+        if(row >= 0){
+            canvas->removeLayer(row);
+            delete layerList->takeItem(row);
+        }
+    });
+    connect(layerList,&QListWidget::currentRowChanged,[=](int row){
+        if(row >= 0)
+            canvas->setActiveLayer(row);
+    });
 
 }
 

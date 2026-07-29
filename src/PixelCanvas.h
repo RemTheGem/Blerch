@@ -34,6 +34,12 @@ public:
     void floodFill(int x, int y);
     void undo();
     void redo();
+    // layer methods
+    void addLayer();
+    void removeLayer(int index);
+    QStringList getLayerNames();
+    int getLayerCount();
+    void setActiveLayer(int index);
 
     // helper methods
     void undoActions();
@@ -55,14 +61,18 @@ private:
     bool isDrawing = false;
     bool isUndoing = false;
     bool isErasing = false;
-    struct CanvasState{
+    struct Layer{
+        QString name;
         int width;
         int height;
         QVector<QColor> pixels;
-
         QColor& at(int x, int y){
             return pixels[y * width + x];
         }
+        const QColor& at(int x, int y) const{
+            return pixels[y * width +x];
+        }
+        bool visible = true;
     };
     struct PixelChange{
         int x;
@@ -71,9 +81,12 @@ private:
         QColor newColor;
     };
 
+    std::vector<Layer> layers;
+    int activeLayer = 0;
+    int layerCount = 1;
     Tool currentTool = Tool::Brush;
-    CanvasState currentState;
-    CanvasState undoState;
+    Layer currentState;
+    Layer undoState;
     std::deque<std::vector<PixelChange>> undoStack;
     std::deque<std::vector<PixelChange>> redoStack;
     std::vector<PixelChange> currentAction;

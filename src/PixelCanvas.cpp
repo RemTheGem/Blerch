@@ -19,15 +19,19 @@
 PixelCanvas::PixelCanvas(QWidget *parent)
     : QWidget(parent)
 {
-    currentState.width = canvasWidth;
-    currentState.height = canvasHeight;
-    currentState.pixels.resize(canvasWidth * canvasHeight);
-    for (int y = 0; y < currentState.height; y++) {
-        for (int x = 0; x < currentState.width; x++) {
-            currentState.at(x,y) = Qt::transparent;
+    Layer layer;
+
+    layer.name = "Layer 1";
+    layer.width = canvasWidth;
+    layer.height = canvasHeight;
+    layer.pixels.resize(canvasWidth * canvasHeight);
+    for (int y = 0; y < layer.height; y++) {
+        for (int x = 0; x < layer.width; x++) {
+            layer.at(x,y) = Qt::transparent;
         }
     }
     undoStack.push_back(currentAction);
+    layers.push_back(layer);
     updateCanvasSize();
     setMouseTracking(true);
 }
@@ -44,29 +48,40 @@ void PixelCanvas::paintEvent(QPaintEvent *)
                 painter.fillRect(x, y, checkerSize, checkerSize, QColor(176, 176, 176));
         }
     }
-    for (int y = 0; y < currentState.height; y++) {
-        for (int x = 0; x < currentState.width; x++) {
-            QRect rect(
-                x * pixelSize,
-                y * pixelSize,
-                pixelSize,
-                pixelSize
-                );
-            if (currentState.at(x,y) != Qt::transparent) {
-                painter.fillRect(rect, currentState.at(x,y));
+    for (const auto &layer : layers)
+    {
+        if(!layer.visible)
+            continue;
+        for (int y = 0; y < layer.height; y++)
+        {
+            for (int x = 0; x < layer.width; x++)
+            {
+                QRect rect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                QColor color = layer.at(x, y);
+                if(color != Qt::transparent)
+                {
+                    painter.fillRect(rect, color);
+                }
             }
-            painter.drawRect(rect);
         }
+    }
+    for(int y = 0; y < height(); y += pixelSize)
+    {
+        painter.drawLine(0, y, width(), y);
+    }
+    for(int x = 0; x < width(); x += pixelSize)
+    {
+        painter.drawLine(x, 0, x, height());
     }
 }
 void PixelCanvas::updateCanvasSize()
 {
-    setFixedSize(currentState.width *pixelSize, currentState.height *pixelSize);
+    setFixedSize(layers[activeLayer].width *pixelSize, layers[activeLayer].height *pixelSize);
     update();
 }
 void PixelCanvas::resizeCanvas(int width, int height)
 {
-    CanvasState newState;
+    Layer newState;
     newState.width = width;
     newState.height = height;
     newState.pixels.resize(width * height);
@@ -74,7 +89,7 @@ void PixelCanvas::resizeCanvas(int width, int height)
     for(auto &pixel : newState.pixels)
         pixel = Qt::transparent;
 
-    currentState = newState;
+    layers[activeLayer] = newState;
 
     updateCanvasSize();
     update();
@@ -116,18 +131,18 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
 
-    if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
+    if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
         switch(currentTool){
         case Tool::Brush:
-            currentAction.push_back({x, y, currentState.at(x,y), currentColor});
-            currentState.at(x, y) = currentColor;
+            currentAction.push_back({x, y, layers[activeLayer].at(x,y), currentColor});
+            layers[activeLayer].at(x, y) = currentColor;
             break;
         case Tool::Eraser:
-            currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
-            currentState.at(x, y) = Qt::transparent;
+            currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+            layers[activeLayer].at(x, y) = Qt::transparent;
             break;
         case Tool::EyeDropper:
-            currentColor = currentState.at(x, y);
+            currentColor = layers[activeLayer].at(x, y);
             emit colorChanged(currentColor);
             break;
         case Tool::Fill:
@@ -151,9 +166,9 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             int x = event->position().x() / pixelSize;
             int y = event->position().y() / pixelSize;
 
-            if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
-                currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
-                currentState.at(x, y) = Qt::transparent;
+            if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
+                currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+                layers[activeLayer].at(x, y) = Qt::transparent;
             }
 
             update();
@@ -161,8 +176,8 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
            else if(event->button() == Qt::MiddleButton){
             int x = event->position().x() / pixelSize;
             int y = event->position().y() / pixelSize;
-            if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
-                currentColor = currentState.at(x, y);
+            if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
+                currentColor = layers[activeLayer].at(x, y);
                 emit colorChanged(currentColor);
             }
             }
@@ -191,21 +206,21 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     int y = event->position().y() / pixelSize;
     bool changed = false;
     if(!isErasing){
-    if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height) {
+    if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
         switch(currentTool){
         case Tool::Brush:
-            if(currentState.at(x, y) != currentColor)
+            if(layers[activeLayer].at(x, y) != currentColor)
             {
-                currentAction.push_back({x, y, currentState.at(x,y), currentColor});
-                currentState.at(x, y) = currentColor;
+                currentAction.push_back({x, y, layers[activeLayer].at(x,y), currentColor});
+                layers[activeLayer].at(x, y) = currentColor;
                 changed = true;
             }
             break;
         case Tool::Eraser:
-            if(currentState.at(x, y) != Qt::transparent)
+            if(layers[activeLayer].at(x, y) != Qt::transparent)
             {
-                currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
-                currentState.at(x, y) = Qt::transparent;
+                currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+                layers[activeLayer].at(x, y) = Qt::transparent;
                 changed = true;
             }
             break;
@@ -213,10 +228,10 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     }
     }
     else{
-        if(x >= 0 && x < currentState.width && y >= 0 && y < currentState.height){
-            if (currentState.at(x, y) != Qt::transparent){
-                currentAction.push_back({x, y, currentState.at(x,y), Qt::transparent});
-                currentState.at(x, y) = Qt::transparent;
+        if(x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
+            if (layers[activeLayer].at(x, y) != Qt::transparent){
+                currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+                layers[activeLayer].at(x, y) = Qt::transparent;
                 changed = true;
             }
         }
@@ -234,9 +249,9 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 }
 void PixelCanvas::clear()
 {
-    for (int y = 0; y < currentState.height; y++) {
-        for (int x = 0; x < currentState.width; x++) {
-            currentState.at(x, y) = Qt::transparent;
+    for (int y = 0; y < layers[activeLayer].height; y++) {
+        for (int x = 0; x < layers[activeLayer].width; x++) {
+            layers[activeLayer].at(x, y) = Qt::transparent;
         }
     }
     update();
@@ -249,21 +264,55 @@ void PixelCanvas::setZoom(int zoom){
 int PixelCanvas::getZoom(){
     return pixelSize;
 }
+void PixelCanvas::addLayer(){
+    Layer layer;
+    layer.name = "Layer " + QString::number(layers.size()+1);
+    layer.width = canvasWidth;
+    layer.height = canvasHeight;
+    layer.visible = true;
+    layer.pixels.resize(layer.width * layer.height);
+    for(auto &pixel : layer.pixels) pixel = Qt::transparent;
+    layers.push_back(layer);
+    activeLayer = layers.size()-1;
+    layerCount += 1;
+    update();
+}
+void PixelCanvas::removeLayer(int index){
+    if(layers.size() <= 1) return;
+    layers.erase(layers.begin()+index);
+    activeLayer = std::clamp(activeLayer,0,(int)layers.size()-1);
+    layerCount -=1;
+    update();
+}
+void PixelCanvas::setActiveLayer(int index){
+    if(index >= 0 && index < layers.size()){
+        activeLayer = index;
+        update();
+    }
+}
+QStringList PixelCanvas::getLayerNames(){
+    QStringList names;
+    for(const auto &layer : layers) names.append(layer.name);
+    return names;
+}
+int PixelCanvas::getLayerCount(){
+    return layerCount;
+}
 void PixelCanvas::saveImage()
 {
-    QImage image(currentState.width * pixelSize, currentState.height * pixelSize, QImage::Format_ARGB32);
+    QImage image(layers[activeLayer].width * pixelSize, layers[activeLayer].height * pixelSize, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
 
     QPainter painter(&image);
 
-    for (int y = 0; y<currentState.height; y++){
-        for (int x = 0; x<currentState.width; x++){
+    for (int y = 0; y<layers[activeLayer].height; y++){
+        for (int x = 0; x<layers[activeLayer].width; x++){
             QRect rect(
                 x * pixelSize,
                 y * pixelSize,
                 pixelSize,
                 pixelSize);
-            painter.fillRect(rect, currentState.at(x, y));
+            painter.fillRect(rect, layers[activeLayer].at(x, y));
         }
     }
     QString fileName = QFileDialog::getSaveFileName(
@@ -294,16 +343,16 @@ void PixelCanvas::saveProject(){
     QJsonObject root;
     QJsonArray pixelMap;
 
-    for(int y =0; y <currentState.height; y++){
-        for (int x =0; x <currentState.width; x++){
-            QColor color = currentState.at(x, y);
+    for(int y =0; y <layers[activeLayer].height; y++){
+        for (int x =0; x <layers[activeLayer].width; x++){
+            QColor color = layers[activeLayer].at(x, y);
 
             pixelMap.append(color.name(QColor::HexArgb));
 
         }
     }
-    root["Height"] = currentState.height;
-    root["Width"] = currentState.width;
+    root["Height"] = layers[activeLayer].height;
+    root["Width"] = layers[activeLayer].width;
     root["pixels"] = pixelMap;
 
     QJsonDocument doc(root);
@@ -337,10 +386,10 @@ void PixelCanvas::loadProject(){
         fileWidth = root["Width"].toInt();
         fileHeight = root["Height"].toInt();
     }
-    if(fileWidth > currentState.width || fileHeight > currentState.height){
-    currentState.width = fileWidth;
-    currentState.height = fileHeight;
-    currentState.pixels.resize(currentState.width * currentState.height);
+    if(fileWidth > layers[activeLayer].width || fileHeight > layers[activeLayer].height){
+    layers[activeLayer].width = fileWidth;
+    layers[activeLayer].height = fileHeight;
+    layers[activeLayer].pixels.resize(layers[activeLayer].width * layers[activeLayer].height);
     updateCanvasSize();
     }
     // this can be done better i know it lol
@@ -350,7 +399,7 @@ void PixelCanvas::loadProject(){
     for(int y =0; y<fileHeight; y++){
         for(int x=0; x<fileWidth; x++){
             QString colorString = pixelMap[index].toString();
-            currentState.at(x, y) = QColor(colorString);
+            layers[activeLayer].at(x, y) = QColor(colorString);
             index++;
         }
     }
@@ -361,7 +410,7 @@ void PixelCanvas::setTool(Tool tool){
     currentTool = tool;
 }
 void PixelCanvas::floodFill(int startX, int startY){
-    QColor target = currentState.at(startX, startY);
+    QColor target = layers[activeLayer].at(startX, startY);
     QColor fill = currentColor;
     if(target == fill) return;
     std::queue<QPoint> q;
@@ -372,9 +421,9 @@ void PixelCanvas::floodFill(int startX, int startY){
 
         int x = p.x();
         int y = p.y();
-        if (x >= 0 && x < currentState.width && y >= 0 && y < currentState.height){
-            if(currentState.at(x, y) == target){
-                currentState.at(x, y) = currentColor;
+        if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
+            if(layers[activeLayer].at(x, y) == target){
+                layers[activeLayer].at(x, y) = currentColor;
                 q.push(QPoint(x+1, y));
                 q.push(QPoint(x-1, y));
                 q.push(QPoint(x, y+1));
@@ -392,7 +441,7 @@ void PixelCanvas::undo(){
     undoStack.pop_back();
 
     for(auto &change : action){
-        currentState.at(change.x, change.y) = change.oldColor;
+        layers[activeLayer].at(change.x, change.y) = change.oldColor;
     }
     redoStack.push_back(action);
     update();
@@ -404,7 +453,7 @@ void PixelCanvas::redo(){
     redoStack.pop_back();
 
     for (auto &change : action){
-        currentState.at(change.x, change.y) = change.newColor;
+        layers[activeLayer].at(change.x, change.y) = change.newColor;
     }
     undoStack.push_back(action);
     update();
