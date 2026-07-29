@@ -18,7 +18,7 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
 (I can't draw for the life of me lol but i hope you can!)
 
 <p float="left">
-<img src="images/clown.png" width="45%" height="620"/><img src="images/tree.png" width="45%" height="620"/>
+<img src="images/clown.png" width="45%" height="620"/><img src="images/rat pfp.png" width="45%" height="620"/>
 </p>
 
 ## Coming Soon
