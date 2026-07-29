@@ -38,8 +38,9 @@ public:
     void addLayer();
     void removeLayer(int index);
     QStringList getLayerNames();
-    int getLayerCount();
     void setActiveLayer(int index);
+    void moveLayerUp(int index);
+    void moveLayerDown(int index);
 
     // helper methods
     void undoActions();
@@ -75,6 +76,7 @@ private:
         bool visible = true;
     };
     struct PixelChange{
+        int layer;
         int x;
         int y;
         QColor oldColor;
@@ -83,7 +85,6 @@ private:
 
     std::vector<Layer> layers;
     int activeLayer = 0;
-    int layerCount = 1;
     Tool currentTool = Tool::Brush;
     Layer currentState;
     Layer undoState;

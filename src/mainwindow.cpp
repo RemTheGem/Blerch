@@ -16,6 +16,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -45,6 +46,10 @@ MainWindow::MainWindow(QWidget *parent)
     layerList->setCurrentRow(0);
     addLayerButton = new QPushButton("+", this);
     removeLayerButton = new QPushButton("-", this);
+    QPushButton *moveUpButton = new QPushButton("↑", this);
+    QPushButton *moveDownButton = new QPushButton("↓", this);
+    layerLayout->addWidget(moveUpButton);
+    layerLayout->addWidget(moveDownButton);
     layerLayout->addWidget(layerList);
     layerLayout->addWidget(addLayerButton);
     layerLayout->addWidget(removeLayerButton);
@@ -151,6 +156,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(loadProject, &QAction::triggered, [=](){
         canvas->loadProject();
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+        layerList->setCurrentRow(0);
     });
     connect(zoomIn, &QAction::triggered, [=](){
         canvas->setZoom(canvas->getZoom() + 2);
@@ -161,6 +169,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(addLayerButton,&QPushButton::clicked,[=](){
         canvas->addLayer();
         layerList->addItem("Layer " + QString::number(layerList->count()+1));
+        layerList->setCurrentRow(layerList->count()-1);
     });
     connect(removeLayerButton,&QPushButton::clicked,[=](){
         int row = layerList->currentRow();
@@ -169,11 +178,22 @@ MainWindow::MainWindow(QWidget *parent)
             delete layerList->takeItem(row);
         }
     });
-    connect(layerList,&QListWidget::currentRowChanged,[=](int row){
-        if(row >= 0)
-            canvas->setActiveLayer(row);
+    connect(layerList,&QListWidget::currentRowChanged, canvas, &PixelCanvas::setActiveLayer);
+    connect(moveUpButton, &QPushButton::clicked, [=](){
+        int index = layerList->currentRow();
+        canvas->moveLayerUp(index);
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+        qDebug() << canvas-> getLayerNames() << " layers";
+        layerList->setCurrentRow(index + 1);
     });
-
+    connect(moveDownButton, &QPushButton::clicked, [=](){
+        int index = layerList->currentRow();
+        canvas->moveLayerDown(index);
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+        layerList->setCurrentRow(index - 1);
+    });
 }
 
 MainWindow::~MainWindow()

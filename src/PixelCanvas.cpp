@@ -134,11 +134,11 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
         switch(currentTool){
         case Tool::Brush:
-            currentAction.push_back({x, y, layers[activeLayer].at(x,y), currentColor});
+            currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), currentColor});
             layers[activeLayer].at(x, y) = currentColor;
             break;
         case Tool::Eraser:
-            currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+            currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
             layers[activeLayer].at(x, y) = Qt::transparent;
             break;
         case Tool::EyeDropper:
@@ -167,7 +167,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             int y = event->position().y() / pixelSize;
 
             if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
-                currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
                 layers[activeLayer].at(x, y) = Qt::transparent;
             }
 
@@ -211,7 +211,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         case Tool::Brush:
             if(layers[activeLayer].at(x, y) != currentColor)
             {
-                currentAction.push_back({x, y, layers[activeLayer].at(x,y), currentColor});
+                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), currentColor});
                 layers[activeLayer].at(x, y) = currentColor;
                 changed = true;
             }
@@ -219,7 +219,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         case Tool::Eraser:
             if(layers[activeLayer].at(x, y) != Qt::transparent)
             {
-                currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
                 layers[activeLayer].at(x, y) = Qt::transparent;
                 changed = true;
             }
@@ -230,7 +230,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     else{
         if(x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
             if (layers[activeLayer].at(x, y) != Qt::transparent){
-                currentAction.push_back({x, y, layers[activeLayer].at(x,y), Qt::transparent});
+                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
                 layers[activeLayer].at(x, y) = Qt::transparent;
                 changed = true;
             }
@@ -274,14 +274,12 @@ void PixelCanvas::addLayer(){
     for(auto &pixel : layer.pixels) pixel = Qt::transparent;
     layers.push_back(layer);
     activeLayer = layers.size()-1;
-    layerCount += 1;
     update();
 }
 void PixelCanvas::removeLayer(int index){
     if(layers.size() <= 1) return;
     layers.erase(layers.begin()+index);
     activeLayer = std::clamp(activeLayer,0,(int)layers.size()-1);
-    layerCount -=1;
     update();
 }
 void PixelCanvas::setActiveLayer(int index){
@@ -295,114 +293,158 @@ QStringList PixelCanvas::getLayerNames(){
     for(const auto &layer : layers) names.append(layer.name);
     return names;
 }
-int PixelCanvas::getLayerCount(){
-    return layerCount;
+void PixelCanvas::moveLayerUp(int index)
+{
+    if(index < 0 || index >= layers.size()-1)
+        return;
+    std::swap(layers[index], layers[index+1]);
+    if(activeLayer == index)
+        activeLayer++;
+    else if(activeLayer == index+1)
+        activeLayer--;
+    update();
+}
+void PixelCanvas::moveLayerDown(int index)
+{
+    if(index <= 0 || index >= layers.size()) return;
+    std::swap(layers[index], layers[index-1]);
+    if(activeLayer == index)
+        activeLayer--;
+    else if(activeLayer == index-1)
+        activeLayer++;
+    update();
 }
 void PixelCanvas::saveImage()
 {
-    QImage image(layers[activeLayer].width * pixelSize, layers[activeLayer].height * pixelSize, QImage::Format_ARGB32);
+    QImage image(layers[0].width * pixelSize, layers[0].height * pixelSize, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
-
     QPainter painter(&image);
 
-    for (int y = 0; y<layers[activeLayer].height; y++){
-        for (int x = 0; x<layers[activeLayer].width; x++){
-            QRect rect(
-                x * pixelSize,
-                y * pixelSize,
-                pixelSize,
-                pixelSize);
-            painter.fillRect(rect, layers[activeLayer].at(x, y));
+    for(const auto &layer : layers)
+    {
+        if(!layer.visible) continue;
+        for(int y = 0; y < layer.height; y++)
+        {
+            for(int x = 0; x < layer.width; x++)
+            {
+                QColor color = layer.at(x,y);
+                if(color != Qt::transparent)
+                {
+                    QRect rect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    painter.fillRect(rect, color);
+                }
+            }
         }
     }
-    QString fileName = QFileDialog::getSaveFileName(
-        this,
-        "Save Image",
-        "",
-        "PNG Files (*.png)");
-    if(!fileName.isEmpty()){
-        if(!fileName.endsWith(".png")){
+
+    QString fileName = QFileDialog::getSaveFileName(this,"Save Image","","PNG Files (*.png)");
+    if(!fileName.isEmpty())
+    {
+        if(!fileName.endsWith(".png"))
             fileName += ".png";
-        }
         image.save(fileName);
     }
 }
-void PixelCanvas::saveProject(){
-    QString fileName = QFileDialog::getSaveFileName(
-        this,
-        "Save Project",
-        "",
-        "Pixel Project (*.json)");
-    if(!fileName.isEmpty()){
-        if(!fileName.endsWith(".json")){
-            fileName += ".json";
-        }
-    }
-    else return;
-
+void PixelCanvas::saveProject()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, "Save Project", "", "Pixel Project (*.json)");
+    if(fileName.isEmpty()) return;
+    if(!fileName.endsWith(".json")) fileName += ".json";
     QJsonObject root;
-    QJsonArray pixelMap;
+    root["Width"] = layers[0].width;
+    root["Height"] = layers[0].height;
+    QJsonArray layerArray;
 
-    for(int y =0; y <layers[activeLayer].height; y++){
-        for (int x =0; x <layers[activeLayer].width; x++){
-            QColor color = layers[activeLayer].at(x, y);
+    for(const auto &layer : layers){
+        QJsonObject layerObject;
+        layerObject["name"] = layer.name;
+        layerObject["visible"] = layer.visible;
+        QJsonArray pixelMap;
 
-            pixelMap.append(color.name(QColor::HexArgb));
-
+        for(int y = 0; y < layer.height; y++){
+            for(int x = 0; x < layer.width; x++){
+                pixelMap.append(layer.at(x,y).name(QColor::HexArgb));
+            }
         }
+        layerObject["pixels"] = pixelMap;
+        layerArray.append(layerObject);
     }
-    root["Height"] = layers[activeLayer].height;
-    root["Width"] = layers[activeLayer].width;
-    root["pixels"] = pixelMap;
-
+    root["layers"] = layerArray;
     QJsonDocument doc(root);
     QFile file(fileName);
-    if(file.open(QIODevice::WriteOnly)){
+    if(file.open(QIODevice::WriteOnly))
+    {
         file.write(doc.toJson());
         file.close();
     }
 }
-void PixelCanvas::loadProject(){
-    QString fileName = QFileDialog::getOpenFileName(
-        this,
-        "Load Project",
-        "",
-        "Pixel Project (*.json)");
+void PixelCanvas::loadProject()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, "Load Project", "", "Pixel Project (*.json)");
     if(fileName.isEmpty()) return;
-
     QFile file(fileName);
     if(!file.open(QIODevice::ReadOnly)) return;
-
-    QByteArray data = file.readAll();
-    QJsonDocument doc = QJsonDocument::fromJson(data);
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     QJsonObject root = doc.object();
-    int fileWidth;
-    int fileHeight;
-    if (root.contains("gridSize")){
-        fileWidth = root["gridSize"].toInt();
-        fileHeight = fileWidth;
-    }
-    else {
-        fileWidth = root["Width"].toInt();
-        fileHeight = root["Height"].toInt();
-    }
-    if(fileWidth > layers[activeLayer].width || fileHeight > layers[activeLayer].height){
-    layers[activeLayer].width = fileWidth;
-    layers[activeLayer].height = fileHeight;
-    layers[activeLayer].pixels.resize(layers[activeLayer].width * layers[activeLayer].height);
-    updateCanvasSize();
-    }
-    // this can be done better i know it lol
-    QJsonArray pixelMap = root["pixels"].toArray();
 
-    int index = 0;
-    for(int y =0; y<fileHeight; y++){
-        for(int x=0; x<fileWidth; x++){
-            QString colorString = pixelMap[index].toString();
-            layers[activeLayer].at(x, y) = QColor(colorString);
-            index++;
+    int width = root["Width"].toInt();
+    int height = root["Height"].toInt();
+
+    if (root.contains("layers")){
+        layers.clear();
+        QJsonArray layerArray = root["layers"].toArray();
+
+        for(auto layerValue : layerArray){
+            QJsonObject layerObject = layerValue.toObject();
+            Layer layer;
+            layer.name = layerObject["name"].toString();
+            layer.visible = layerObject["visible"].toBool();
+            layer.width = width;
+            layer.height = height;
+            layer.pixels.resize(width * height);
+
+            QJsonArray pixels = layerObject["pixels"].toArray();
+            int index = 0;
+            for(int y = 0; y < height; y++){
+                for(int x = 0; x < width; x++){
+                    layer.at(x,y) = QColor(pixels[index].toString());
+                    index++;
+                }
+            }
+            layers.push_back(layer);
         }
     }
+    else{
+        layers.clear();
+        if (root.contains("gridSize")){
+            width = root["gridSize"].toInt();
+            height = width;
+        }
+        else {
+            width = root["Width"].toInt();
+            height = root["Height"].toInt();
+        }
+        if(layers.empty()){
+            addLayer();
+        }
+        if(width > layers[activeLayer].width || height > layers[activeLayer].height){
+            layers[activeLayer].width = width;
+            layers[activeLayer].height = height;
+            layers[activeLayer].pixels.resize(layers[activeLayer].width * layers[activeLayer].height);
+            updateCanvasSize();
+        }
+        // this can be done better i know it lol
+        QJsonArray pixelMap = root["pixels"].toArray();
+        int index = 0;
+        for(int y =0; y<height; y++){
+            for(int x=0; x<width; x++){
+                QString colorString = pixelMap[index].toString();
+                layers[activeLayer].at(x, y) = QColor(colorString);
+                index++;
+            }
+        }
+    }
+    activeLayer = 0;
     updateCanvasSize();
     update();
 }
@@ -418,11 +460,11 @@ void PixelCanvas::floodFill(int startX, int startY){
     while (!q.empty()){
         QPoint p = q.front();
         q.pop();
-
         int x = p.x();
         int y = p.y();
         if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
             if(layers[activeLayer].at(x, y) == target){
+                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), currentColor});
                 layers[activeLayer].at(x, y) = currentColor;
                 q.push(QPoint(x+1, y));
                 q.push(QPoint(x-1, y));
@@ -441,7 +483,7 @@ void PixelCanvas::undo(){
     undoStack.pop_back();
 
     for(auto &change : action){
-        layers[activeLayer].at(change.x, change.y) = change.oldColor;
+        layers[change.layer].at(change.x, change.y) = change.oldColor;
     }
     redoStack.push_back(action);
     update();
@@ -453,7 +495,7 @@ void PixelCanvas::redo(){
     redoStack.pop_back();
 
     for (auto &change : action){
-        layers[activeLayer].at(change.x, change.y) = change.newColor;
+        layers[change.layer].at(change.x, change.y) = change.newColor;
     }
     undoStack.push_back(action);
     update();
