@@ -81,15 +81,11 @@ void PixelCanvas::updateCanvasSize()
 }
 void PixelCanvas::resizeCanvas(int width, int height)
 {
-    Layer newState;
-    newState.width = width;
-    newState.height = height;
-    newState.pixels.resize(width * height);
+    layers[activeLayer].width = width;
+    layers[activeLayer].height = height;
+    layers[activeLayer].pixels.resize(width * height);
 
-    for(auto &pixel : newState.pixels)
-        pixel = Qt::transparent;
-
-    layers[activeLayer] = newState;
+    for(auto &pixel : layers[activeLayer].pixels) pixel = Qt::transparent;
 
     updateCanvasSize();
     update();
@@ -292,6 +288,10 @@ QStringList PixelCanvas::getLayerNames(){
     QStringList names;
     for(const auto &layer : layers) names.append(layer.name);
     return names;
+}
+void PixelCanvas::renameLayer(int index, const QString &name){
+    if(index <0 || index >= layers.size()) return;
+    layers[index].name = name;
 }
 void PixelCanvas::moveLayerUp(int index)
 {

@@ -41,6 +41,7 @@ public:
     void setActiveLayer(int index);
     void moveLayerUp(int index);
     void moveLayerDown(int index);
+    void renameLayer(int index, const QString &name);
 
     // helper methods
     void undoActions();

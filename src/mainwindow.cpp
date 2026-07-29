@@ -48,6 +48,8 @@ MainWindow::MainWindow(QWidget *parent)
     removeLayerButton = new QPushButton("-", this);
     QPushButton *moveUpButton = new QPushButton("↑", this);
     QPushButton *moveDownButton = new QPushButton("↓", this);
+    QPushButton *renameLayerButton = new QPushButton("Rename", this);
+    layerLayout->addWidget(renameLayerButton);
     layerLayout->addWidget(moveUpButton);
     layerLayout->addWidget(moveDownButton);
     layerLayout->addWidget(layerList);
@@ -181,6 +183,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(layerList,&QListWidget::currentRowChanged, canvas, &PixelCanvas::setActiveLayer);
     connect(moveUpButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
+        if(index <0 || index >= layerList->count()-1) return;
         canvas->moveLayerUp(index);
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
@@ -189,10 +192,23 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(moveDownButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
+        if(index <=0 || index > layerList->count()-1) return;
         canvas->moveLayerDown(index);
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(index - 1);
+    });
+    connect(renameLayerButton, &QPushButton::clicked, [=](){
+        int index = layerList->currentRow();
+        if(index < 0) return;
+        bool ok;
+        QString name = QInputDialog::getText(this, "Rename Layer", "Layer name:",
+                                            QLineEdit::Normal, layerList->currentItem()->text(),&ok);
+        if(ok && !name.isEmpty())
+        {
+            canvas->renameLayer(index, name);
+            layerList->item(index)->setText(name);
+        }
     });
 }
 
