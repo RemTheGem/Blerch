@@ -322,21 +322,17 @@ void PixelCanvas::loadProject(){
     updateCanvasSize();
     }
     // this can be done better i know it lol
-    else{
-        currentState.width = fileWidth;
-        currentState.height = fileHeight;
-        currentState.pixels.resize(currentState.width * currentState.height);
-    }
     QJsonArray pixelMap = root["pixels"].toArray();
 
     int index = 0;
-    for(int y =0; y<currentState.height; y++){
-        for(int x=0; x<currentState.width; x++){
+    for(int y =0; y<fileHeight; y++){
+        for(int x=0; x<fileWidth; x++){
             QString colorString = pixelMap[index].toString();
             currentState.at(x, y) = QColor(colorString);
             index++;
         }
     }
+    updateCanvasSize();
     update();
 }
 void PixelCanvas::setTool(Tool tool){
