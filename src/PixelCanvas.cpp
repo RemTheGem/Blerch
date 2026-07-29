@@ -53,6 +53,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         if(!layer.visible) continue;
         painter.save();
         painter.setOpacity(layer.opacity);
+        if(layer.type == LayerType::Pixel){
         for (int y = 0; y < layer.height; y++)
         {
             for (int x = 0; x < layer.width; x++)
@@ -65,6 +66,18 @@ void PixelCanvas::paintEvent(QPaintEvent *)
                 }
             }
         }
+        }
+        else {
+            QRect target(
+                layer.position.x() * pixelSize,
+                layer.position.y() * pixelSize,
+                layer.image.width() * layer.scale * pixelSize,
+                layer.image.height() * layer.scale * pixelSize
+                );
+
+            painter.drawImage(target, layer.image);
+        }
+
         painter.restore();
     }
     for(int y = 0; y < height(); y += pixelSize)
@@ -116,6 +129,14 @@ void ColorPreviewWidget::setColor(const QColor &color){
 
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
+    if(layers[activeLayer].type == LayerType::Reference){
+        if(event->button() == Qt::LeftButton){
+            QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
+            movingPicture = true;
+            moveOffset = mousePosCanvas - layers[activeLayer].position;
+        }
+    }
+    else{
     currentAction.clear();
     if(event->button() == Qt::LeftButton){
     isDrawing = true;
@@ -179,25 +200,38 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
                 emit colorChanged(currentColor);
             }
             }
-
+    }
 }
 
 void PixelCanvas::wheelEvent(QWheelEvent *event)
 {
-    if(event->modifiers() & Qt::ControlModifier)
-    {
+    if(event->modifiers() & Qt::ShiftModifier){
+        if(layers[activeLayer].type == LayerType::Reference){
+            if(event->angleDelta().y() > 0){
+                layers[activeLayer].scale *= 1.1f;
+            }
+            else layers[activeLayer].scale *= 0.9f;
+            layers[activeLayer].scale = std::clamp(layers[activeLayer].scale, 0.001f, 10.0f);
+            update();
+        }
+        return;
+    }
+    if(event->modifiers() & Qt::ControlModifier){
         if(event->angleDelta().y() > 0)
             setZoom(pixelSize + 2);
         else
             setZoom(std::max(2, pixelSize - 2));
-        event->accept();
         return;
     }
     QWidget::wheelEvent(event);
 }
 void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 {
-
+    if(movingPicture){
+        QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
+        layers[activeLayer].position = (mousePosCanvas - moveOffset) / pixelSize;
+        update();
+    }
     if (!isDrawing) return;
 
     int x = event->position().x() / pixelSize;
@@ -240,6 +274,12 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     isDrawing = false;
     isErasing = false;
+    movingPicture = false;
+    if(movingPicture){
+        QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
+        layers[activeLayer].position = (mousePosCanvas - moveOffset) / pixelSize;
+        update();
+    }
     if(!currentAction.empty()){
         undoStack.push_back(currentAction);
         redoStack.clear();
@@ -388,6 +428,20 @@ void PixelCanvas::saveProject()
         file.write(doc.toJson());
         file.close();
     }
+}
+void PixelCanvas::loadPicture()
+{
+    QString file = QFileDialog::getOpenFileName(this, "Import Reference", "", "Images (*.png *.jpg *.jpeg *.bmp)");
+    if(file.isEmpty()) return;
+    Layer layer;
+    layer.type = LayerType::Reference;
+    layer.name = QFileInfo(file).baseName();
+    layer.image.load(file);
+    layer.width = layers[0].width;
+    layer.height = layers[0].height;
+    layers.push_back(layer);
+    activeLayer = layers.size()-1;
+    update();
 }
 void PixelCanvas::loadProject()
 {

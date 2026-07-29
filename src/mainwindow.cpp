@@ -82,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveDrawing = toolbar->addAction("Save Drawing");
     QAction *saveProject = toolbar->addAction("Save Project");
     QAction *loadProject = toolbar->addAction("Load Project");
+    QAction *loadPicture = toolbar->addAction("Load Picture");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     // UI
@@ -169,6 +170,12 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(0);
+    });
+    connect(loadPicture, &QAction::triggered, [=](){
+        canvas->loadPicture();
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+        layerList->setCurrentRow(layerList->count() - 1);
     });
     connect(zoomIn, &QAction::triggered, [=](){
         canvas->setZoom(canvas->getZoom() + 2);

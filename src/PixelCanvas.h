@@ -21,6 +21,7 @@ public:
     void saveImage();
     void saveProject();
     void loadProject();
+    void loadPicture();
     void updateCanvasSize();
     void setZoom(int zoom);
     void resizeCanvas(int width, int height);
@@ -61,23 +62,34 @@ private:
     int pixelSize = 20;
     int canvasWidth = 32;
     int canvasHeight = 32;
+    bool movingPicture;
+    QPoint moveOffset;
     QColor currentColor = Qt::black;
     bool isDrawing = false;
     bool isUndoing = false;
     bool isErasing = false;
+    enum class LayerType{
+        Pixel, Reference
+    };
     struct Layer{
+        LayerType type = LayerType::Pixel;
         QString name;
         int width;
         int height;
         QVector<QColor> pixels;
+        bool visible = true;
+        float opacity = 1.0f;
+        QImage image;
+        QPoint position = {0,0};
+        float scale = 1.0f;
+        // implement lock!!!
+        bool locked = false;
         QColor& at(int x, int y){
             return pixels[y * width + x];
         }
         const QColor& at(int x, int y) const{
             return pixels[y * width +x];
         }
-        bool visible = true;
-        float opacity = 1.0f;
     };
     struct PixelChange{
         int layer;
