@@ -49,6 +49,11 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *moveUpButton = new QPushButton("↑", this);
     QPushButton *moveDownButton = new QPushButton("↓", this);
     QPushButton *renameLayerButton = new QPushButton("Rename", this);
+    QSlider *opacitySlider = new QSlider(Qt::Horizontal);
+    opacitySlider->setRange(0, 100);
+    opacitySlider->setValue(100);
+
+    layerLayout->addWidget(opacitySlider);
     layerLayout->addWidget(renameLayerButton);
     layerLayout->addWidget(moveUpButton);
     layerLayout->addWidget(moveDownButton);
@@ -209,6 +214,13 @@ MainWindow::MainWindow(QWidget *parent)
             canvas->renameLayer(index, name);
             layerList->item(index)->setText(name);
         }
+    });
+    connect(layerList, &QListWidget::currentRowChanged, [=](int row){
+        canvas->setActiveLayer(row);
+        opacitySlider->setValue(canvas->getLayerOpacity(row)*100);
+    });
+    connect(opacitySlider, &QSlider::valueChanged, [=](int value){
+        canvas->setLayerOpacity(layerList->currentRow(), value / 100.0f);
     });
 }
 

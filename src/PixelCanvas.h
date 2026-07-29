@@ -42,6 +42,8 @@ public:
     void moveLayerUp(int index);
     void moveLayerDown(int index);
     void renameLayer(int index, const QString &name);
+    void setLayerOpacity(int index, float opacity);
+    float getLayerOpacity(int index)const;
 
     // helper methods
     void undoActions();
@@ -75,6 +77,7 @@ private:
             return pixels[y * width +x];
         }
         bool visible = true;
+        float opacity = 1.0f;
     };
     struct PixelChange{
         int layer;

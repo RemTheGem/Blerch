@@ -50,8 +50,9 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     }
     for (const auto &layer : layers)
     {
-        if(!layer.visible)
-            continue;
+        if(!layer.visible) continue;
+        painter.save();
+        painter.setOpacity(layer.opacity);
         for (int y = 0; y < layer.height; y++)
         {
             for (int x = 0; x < layer.width; x++)
@@ -64,6 +65,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
                 }
             }
         }
+        painter.restore();
     }
     for(int y = 0; y < height(); y += pixelSize)
     {
@@ -314,6 +316,14 @@ void PixelCanvas::moveLayerDown(int index)
         activeLayer++;
     update();
 }
+void PixelCanvas::setLayerOpacity(int index, float opacity){
+    if (index < 0 || index >= layers.size()) return;
+    layers[index].opacity = opacity;
+    update();
+}
+float PixelCanvas::getLayerOpacity(int index) const{
+    return layers[index].opacity;
+}
 void PixelCanvas::saveImage()
 {
     QImage image(layers[0].width * pixelSize, layers[0].height * pixelSize, QImage::Format_ARGB32);
@@ -359,6 +369,7 @@ void PixelCanvas::saveProject()
         QJsonObject layerObject;
         layerObject["name"] = layer.name;
         layerObject["visible"] = layer.visible;
+        layerObject["opacity"] = layer.opacity;
         QJsonArray pixelMap;
 
         for(int y = 0; y < layer.height; y++){
@@ -399,6 +410,7 @@ void PixelCanvas::loadProject()
             Layer layer;
             layer.name = layerObject["name"].toString();
             layer.visible = layerObject["visible"].toBool();
+            layer.opacity = layerObject["opacity"].toDouble(1.0);
             layer.width = width;
             layer.height = height;
             layer.pixels.resize(width * height);
