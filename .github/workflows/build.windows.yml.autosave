@@ -1,0 +1,41 @@
+name: Build Windows Qt App
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: 6.10.3
+        arch: win64_msvc2022_64
+
+    - name: Configure CMake
+      run: cmake -B build -S Blerch -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Deploy Qt
+      run: |
+        windeployqt build/Release/Blerch.exe
+
+    - name: Package
+      run: |
+        Compress-Archive build/Release/* Blerch-Windows.zip
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: Blerch-Windows
+        path: Blerch-Windows.zip
