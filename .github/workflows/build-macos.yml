@@ -19,20 +19,20 @@ jobs:
         arch: clang_64
     - name: Configure CMake
       run: |
-        cmake -B build -S pixel_art -DCMAKE_BUILD_TYPE=Release
+        cmake -B build -S Blerch -DCMAKE_BUILD_TYPE=Release
     - name: Build
       run: |
         cmake --build build --config Release
     - name: Deploy Qt libraries
       run: |
-        macdeployqt build/pixel_art.app
-        codesign --deep --force --sign - build/pixel_art.app
+        macdeployqt build/Blerch.app
+        codesign --deep --force --sign - build/Blerch.app
     - name: Package app
       run: |
         cd build
-        ditto -c -k --sequesterRsrc --keepParent pixel_art.app pixel_art-macOS.zip
+        ditto -c -k --sequesterRsrc --keepParent Blerch.app Blerch-macOS.zip
     - name: Upload app
       uses: actions/upload-artifact@v4
       with:
-        name: pixel_art-macOS
-        path: build/pixel_art-macOS.zip
+        name: Blerch-macOS
+        path: build/Blerch-macOS.zip

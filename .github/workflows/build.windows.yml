@@ -21,21 +21,21 @@ jobs:
         arch: win64_msvc2022_64
 
     - name: Configure CMake
-      run: cmake -B build -S pixel_art -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -S Blerch -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
       run: cmake --build build --config Release
 
     - name: Deploy Qt
       run: |
-        windeployqt build/Release/pixel_art.exe
+        windeployqt build/Release/Blerch.exe
 
     - name: Package
       run: |
-        Compress-Archive build/Release/* pixel_art-Windows.zip
+        Compress-Archive build/Release/* Blerch-Windows.zip
 
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: pixel_art-Windows
-        path: pixel_art-Windows.zip
+        name: Blerch-Windows
+        path: Blerch-Windows.zip
