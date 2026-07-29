@@ -108,6 +108,9 @@ MainWindow::MainWindow(QWidget *parent)
     eraserAction->setShortcut(QKeySequence("E"));
     eyeDropperAction->setShortcut(QKeySequence("I"));
     fillAction->setShortcut(QKeySequence("F"));
+    moveUpButton->setShortcut(QKeySequence("Ctrl+U"));
+    moveDownButton->setShortcut(QKeySequence("Ctrl+D"));
+    addLayerButton->setShortcut(QKeySequence("Ctrl+L"));
     //Toolbar actions
     connect(pickColor, &QAction::triggered, [=]() {
         QColor color = QColorDialog::getColor(Qt::white, this);
