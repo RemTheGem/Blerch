@@ -98,6 +98,8 @@ void PixelCanvas::resizeCanvas(int width, int height)
 {
     layers[activeLayer].width = width;
     layers[activeLayer].height = height;
+    canvasHeight = height;
+    canvasWidth = width;
     layers[activeLayer].pixels.resize(width * height);
 
     for(auto &pixel : layers[activeLayer].pixels) pixel = Qt::transparent;
