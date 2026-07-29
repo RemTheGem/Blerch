@@ -133,7 +133,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         if(event->button() == Qt::LeftButton){
             QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
             movingPicture = true;
-            moveOffset = mousePosCanvas - layers[activeLayer].position;
+            moveOffset = event->pos() - layers[activeLayer].position;
         }
     }
     else{
@@ -229,7 +229,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     if(movingPicture){
         QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
-        layers[activeLayer].position = (mousePosCanvas - moveOffset) / pixelSize;
+        layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
     if (!isDrawing) return;
@@ -277,7 +277,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     movingPicture = false;
     if(movingPicture){
         QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
-        layers[activeLayer].position = (mousePosCanvas - moveOffset) / pixelSize;
+        layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
     if(!currentAction.empty()){
@@ -287,6 +287,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 }
 void PixelCanvas::clear()
 {
+    if (layers[activeLayer].type == LayerType::Reference) return;
     for (int y = 0; y < layers[activeLayer].height; y++) {
         for (int x = 0; x < layers[activeLayer].width; x++) {
             layers[activeLayer].at(x, y) = Qt::transparent;
