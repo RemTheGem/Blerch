@@ -20,7 +20,6 @@ PixelCanvas::PixelCanvas(QWidget *parent)
     : QWidget(parent)
 {
     Layer layer;
-
     layer.name = "Layer 1";
     layer.width = canvasWidth;
     layer.height = canvasHeight;
@@ -88,6 +87,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     {
         painter.drawLine(x, 0, x, height());
     }
+    buildPalette();
 }
 void PixelCanvas::updateCanvasSize()
 {
@@ -124,7 +124,7 @@ void ColorPreviewWidget::paintEvent(QPaintEvent *)
     painter.drawRect(rect);
 
 }
-void ColorPreviewWidget::setColor(const QColor &color){
+void ColorPreviewWidget::setPreviewColor(const QColor &color){
     selectedColor = color;
     update();
 }
@@ -295,6 +295,7 @@ void PixelCanvas::clear()
             layers[activeLayer].at(x, y) = Qt::transparent;
         }
     }
+    buildPalette();
     update();
 }
 void PixelCanvas::setZoom(int zoom){
@@ -315,6 +316,7 @@ void PixelCanvas::addLayer(){
     for(auto &pixel : layer.pixels) pixel = Qt::transparent;
     layers.push_back(layer);
     activeLayer = layers.size()-1;
+    buildPalette();
     update();
 }
 void PixelCanvas::removeLayer(int index){
@@ -515,6 +517,7 @@ void PixelCanvas::loadProject()
     }
     activeLayer = 0;
     updateCanvasSize();
+    buildPalette();
     update();
 }
 void PixelCanvas::setTool(Tool tool){
@@ -545,6 +548,40 @@ void PixelCanvas::floodFill(int startX, int startY){
 
     }
 }
+void PixelCanvas::buildPalette(){
+    colorFrequency.clear();
+    for (const auto &layer : layers){
+        if (layer.type != LayerType::Pixel) continue;
+        for (const QColor &color : layer.pixels){
+            if (color == Qt::transparent) continue;
+                colorFrequency[color.rgba()]++;
+        }
+    }
+    emit paletteUpdated(sortColors(colorFrequency));
+}
+/*
+ * for (auto it = colorFrequency.begin(); it != colorFrequency.end(); ++it){
+    QColor color(it.key());
+    int frequency = it.value();
+    qDebug() << color << frequency;
+}
+
+Sort
+*/
+QList<QColor> PixelCanvas::sortColors(QHash<QRgb, int> colorFrequency){
+    QList<QPair<QRgb,int>> pairs;
+    for(auto it = colorFrequency.begin(); it != colorFrequency.end(); ++it){
+        pairs.append({it.key(), it.value()});
+    }
+    std::sort(pairs.begin(), pairs.end(), [](auto a, auto b){
+        return a.second > b.second;});
+    QList<QColor> result;
+        for(const auto &pair :pairs){
+            result.append(pair.first);
+        }
+        return result;
+}
+
 void PixelCanvas::undo(){
     if(undoStack.empty()) return;
 

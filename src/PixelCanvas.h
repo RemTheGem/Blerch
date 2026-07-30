@@ -16,13 +16,15 @@ class PixelCanvas : public QWidget
 
 public:
     explicit PixelCanvas(QWidget *parent = nullptr);
-    void setColor(const QColor &c) {currentColor = c;}
+    void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);}
     void clear();
     void saveImage();
     void saveProject();
     void loadProject();
     void loadPicture();
     void updateCanvasSize();
+    void buildPalette();
+    QList<QColor> sortColors(QHash<QRgb, int> colorFrequency);
     void setZoom(int zoom);
     void resizeCanvas(int width, int height);
     enum class Tool {
@@ -101,6 +103,7 @@ private:
 
     std::vector<Layer> layers;
     int activeLayer = 0;
+    QHash<QRgb, int> colorFrequency;
     Tool currentTool = Tool::Brush;
     Layer currentState;
     Layer undoState;
@@ -110,6 +113,7 @@ private:
     int maxUndo = 5;
 signals:
     void colorChanged(QColor color);
+    void paletteUpdated(QList<QColor> colors);
 };
 
 
@@ -125,9 +129,7 @@ class ColorPreviewWidget : public QWidget{
   public:
     explicit ColorPreviewWidget(QWidget *parent = nullptr);
     QColor selectedColor = Qt::black;
-    void setColor(const QColor &color);
-
-
+    void setPreviewColor(const QColor &color);
 };
 
 #endif // PIXELCANVAS_H

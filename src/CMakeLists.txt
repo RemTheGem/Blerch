@@ -29,6 +29,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         PixelCanvas.h
         PixelCanvas.cpp
         resources.qrc
+        palettewidget.h palettewidget.cpp
+
 
     )
 # Define target properties for Android with Qt 6 as:

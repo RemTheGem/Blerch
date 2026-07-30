@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "PixelCanvas.h"
+#include "palettewidget.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QToolBar>
@@ -19,6 +20,7 @@
 #include <QDebug>
 #include <QMenuBar>
 #include <QLabel>
+#include <QSplitter>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -38,12 +40,21 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignCenter);
-    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     // Layer
     QWidget *layerPanel = new QWidget(this);
     QWidget *spacer = new QWidget();
+    QWidget *paletteContainer = new QWidget(this);
+    QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
+    paletteWidget *palette = new paletteWidget;
+    paletteLayout->addWidget(palette);
+    paletteLayout->addStretch();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    layerPanel->setFixedWidth(200);
+    palette->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    layerPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    layerPanel->setMinimumWidth(100);
+    //palette->adjustSize();
+    paletteContainer->setFixedWidth(190);
     QVBoxLayout *layerLayout = new QVBoxLayout(layerPanel);
     QHBoxLayout *layerButtons = new QHBoxLayout();
     layerList = new QListWidget(this);
@@ -69,8 +80,15 @@ MainWindow::MainWindow(QWidget *parent)
     layerButtons->addWidget(addLayerButton);
     layerButtons->addWidget(removeLayerButton);
     layerLayout->addLayout(layerButtons);
-    mainLayout->addWidget(scroll, 1);
-    mainLayout->addWidget(layerPanel, 0);
+    QSplitter *splitter = new QSplitter(Qt::Horizontal);
+    splitter->addWidget(paletteContainer);
+    splitter->addWidget(scroll);
+    splitter->addWidget(layerPanel);
+    splitter->setSizes({190, 1100, 200});
+    splitter->setStretchFactor(0, 0);
+    splitter->setStretchFactor(1, 1);
+    splitter->setStretchFactor(2, 0);
+    mainLayout->addWidget(splitter);
     setCentralWidget(container);
     // Toolbar
     QToolBar *toolbar = addToolBar("Palette");
@@ -126,6 +144,7 @@ MainWindow::MainWindow(QWidget *parent)
     saveProject->setShortcut(QKeySequence("Ctrl+Shift+S"));
     loadProject->setShortcut(QKeySequence("Ctrl+O"));
     loadPicture->setShortcut(QKeySequence("Ctrl+P"));
+    qDebug() << palette->width();
     //Toolbar actions
     connect(pickColor, &QAction::triggered, [=]() {
         QColor color = QColorDialog::getColor(Qt::white, this);
@@ -175,7 +194,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(redo, &QAction::triggered, [=](){
         canvas->redo();
     });
-    connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setColor);
+    connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setPreviewColor);
     connect(saveProject, &QAction::triggered, [=](){
         canvas->saveProject();
     });
@@ -274,10 +293,14 @@ MainWindow::MainWindow(QWidget *parent)
 
                                  "View:\n"
                                  "Ctrl + Mouse Wheel  - Canvas Zoom\n"
-                                 "Shift + Mouse Wheel   - Reference Image Zoom"
+                                 "Shift + Mouse Wheel   - Reference Image Zoom\n"
+                                 "Mouse Wheel  - Scroll vertically\n"
+                                 "Alt + Mouse Wheel  - Scroll Horizontally"
                                  );
 
     });
+    connect(palette, &paletteWidget::colorSelected, canvas, &PixelCanvas::setColor);
+    connect(canvas, &PixelCanvas::paletteUpdated, palette, &paletteWidget::setColors);
 }
 
 MainWindow::~MainWindow()
