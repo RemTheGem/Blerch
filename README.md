@@ -20,6 +20,12 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
 
 <img src="images/smoke 3.png" width="600"/>
 
+## Preview of Blerch Editor 
+
+An inside look as of version 1.2.3 (I did NOT know how semantic versioning worked when I started naming releases lol)
+
+<img src="images/Blerch_Preview.png" width="600"/>
+
 ## Made in Blerch Editor
 
 (I can't draw for the life of me lol but i hope you can!)
