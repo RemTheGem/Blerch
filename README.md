@@ -2,13 +2,20 @@
 A simple Desktop application built with Qt and C++ to make simple pixel art on a 32x32 grid.
 
 ## Features
-- Color Picker
-- Clear Canvas
-- Resize Canvas
-- Save Drawing (PNG only for now)
-- Save Project to reload later!
-- Select tool (Brush, Eraser, Eye Dropper, Fill)
-- Undo/Redo
+- Brush, Eraser, Fill and eyedropper tools
+- Custom color picker
+- undo and redo support
+- Clear and resize canvas
+- adjustable canvas zoom
+- Frequency based color palette
+- import images for referencing with scaling and movement support
+- Layers which includes
+  - Add, delete and reorder layers
+  - Adjust layer opacity
+- Save and reload projects
+- Export art as PNG with transparency support
+- Keyboard and mouse shortcuts for most features mentioned
+- Built in help menu showing all shortcut
 - More on the way!! (If i dont forget about this)
 
 <img src="images/smoke 3.png" width="600"/>
