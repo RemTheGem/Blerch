@@ -128,7 +128,36 @@ void ColorPreviewWidget::setPreviewColor(const QColor &color){
     selectedColor = color;
     update();
 }
+void PixelCanvas::paintColor(int x, int y, const QColor &color)
+{
+    auto draw = [&](int px, int py){
+        if (px >= 0 && px < layers[activeLayer].width &&
+            py >= 0 && py < layers[activeLayer].height && layers[activeLayer].at(px, py) != color){
 
+            currentAction.push_back({activeLayer, px, py, layers[activeLayer].at(px, py), color});
+            layers[activeLayer].at(px, py) = color;
+        }
+    };
+    int mirrorX = layers[activeLayer].width  - 1 - x;
+    int mirrorY = layers[activeLayer].height - 1 - y;
+    draw(x, y);
+    if (horizontalSymmetry)
+        draw(mirrorX, y);
+
+    if (verticalSymmetry)
+        draw(x, mirrorY);
+
+    if (horizontalSymmetry && verticalSymmetry)
+        draw(mirrorX, mirrorY);
+}
+void PixelCanvas::setHorizontalSymmetry(bool enabled){
+    horizontalSymmetry = enabled;
+    update();
+}
+void PixelCanvas::setVerticalSymmetry(bool enabled){
+    verticalSymmetry = enabled;
+    update();
+}
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
     if(layers[activeLayer].type == LayerType::Reference){
@@ -155,12 +184,10 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
         switch(currentTool){
         case Tool::Brush:
-            currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), currentColor});
-            layers[activeLayer].at(x, y) = currentColor;
+            paintColor(x, y, currentColor);
             break;
         case Tool::Eraser:
-            currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
-            layers[activeLayer].at(x, y) = Qt::transparent;
+            paintColor(x, y, Qt::transparent);
             break;
         case Tool::EyeDropper:
             currentColor = layers[activeLayer].at(x, y);
@@ -188,8 +215,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             int y = event->position().y() / pixelSize;
 
             if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
-                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
-                layers[activeLayer].at(x, y) = Qt::transparent;
+                paintColor(x, y, Qt::transparent);
             }
 
             update();
@@ -245,16 +271,14 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         case Tool::Brush:
             if(layers[activeLayer].at(x, y) != currentColor)
             {
-                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), currentColor});
-                layers[activeLayer].at(x, y) = currentColor;
+                paintColor(x, y, currentColor);
                 changed = true;
             }
             break;
         case Tool::Eraser:
             if(layers[activeLayer].at(x, y) != Qt::transparent)
             {
-                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
-                layers[activeLayer].at(x, y) = Qt::transparent;
+                paintColor(x, y, Qt::transparent);
                 changed = true;
             }
             break;
@@ -264,8 +288,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     else{
         if(x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
             if (layers[activeLayer].at(x, y) != Qt::transparent){
-                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), Qt::transparent});
-                layers[activeLayer].at(x, y) = Qt::transparent;
+                paintColor(x, y, Qt::transparent);
                 changed = true;
             }
         }
@@ -292,7 +315,7 @@ void PixelCanvas::clear()
     if (layers[activeLayer].type == LayerType::Reference) return;
     for (int y = 0; y < layers[activeLayer].height; y++) {
         for (int x = 0; x < layers[activeLayer].width; x++) {
-            layers[activeLayer].at(x, y) = Qt::transparent;
+            paintColor(x, y, Qt::transparent);
         }
     }
     buildPalette();
@@ -510,7 +533,7 @@ void PixelCanvas::loadProject()
         for(int y =0; y<height; y++){
             for(int x=0; x<width; x++){
                 QString colorString = pixelMap[index].toString();
-                layers[activeLayer].at(x, y) = QColor(colorString);
+                paintColor(x, y, QColor(colorString));
                 index++;
             }
         }
@@ -536,8 +559,7 @@ void PixelCanvas::floodFill(int startX, int startY){
         int y = p.y();
         if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
             if(layers[activeLayer].at(x, y) == target){
-                currentAction.push_back({activeLayer, x, y, layers[activeLayer].at(x,y), currentColor});
-                layers[activeLayer].at(x, y) = currentColor;
+                paintColor(x, y, currentColor);
                 q.push(QPoint(x+1, y));
                 q.push(QPoint(x-1, y));
                 q.push(QPoint(x, y+1));

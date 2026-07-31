@@ -46,6 +46,10 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *paletteContainer = new QWidget(this);
     QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
     paletteWidget *palette = new paletteWidget;
+    QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
+    QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
+    paletteLayout->addWidget(horizontalSymmetryButton);
+    paletteLayout->addWidget(verticalSymmetryButton);
     paletteLayout->addWidget(palette);
     paletteLayout->addStretch();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -68,6 +72,8 @@ MainWindow::MainWindow(QWidget *parent)
     QSlider *opacitySlider = new QSlider(Qt::Horizontal);
     opacitySlider->setRange(0, 100);
     opacitySlider->setValue(100);
+    horizontalSymmetryButton->setCheckable(true);
+    verticalSymmetryButton->setCheckable(true);
     QMenu *fileMenu = menuBar()->addMenu("File");
     QMenu *helpMenu = menuBar()->addMenu("Help");
     QLabel * opacityLabel = new QLabel("Opacity");
@@ -301,6 +307,8 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(palette, &paletteWidget::colorSelected, canvas, &PixelCanvas::setColor);
     connect(canvas, &PixelCanvas::paletteUpdated, palette, &paletteWidget::setColors);
+    connect(horizontalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setHorizontalSymmetry);
+    connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
 }
 
 MainWindow::~MainWindow()

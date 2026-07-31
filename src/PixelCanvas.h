@@ -24,6 +24,7 @@ public:
     void loadPicture();
     void updateCanvasSize();
     void buildPalette();
+
     QList<QColor> sortColors(QHash<QRgb, int> colorFrequency);
     void setZoom(int zoom);
     void resizeCanvas(int width, int height);
@@ -46,9 +47,12 @@ public:
     void moveLayerDown(int index);
     void renameLayer(int index, const QString &name);
     void setLayerOpacity(int index, float opacity);
+    void setHorizontalSymmetry(bool enabled);
+    void setVerticalSymmetry(bool enabled);
     float getLayerOpacity(int index)const;
 
     // helper methods
+    void paintColor(int x, int y, const QColor &color);
     void undoActions();
     QColor getColor();
     int getZoom();
@@ -65,6 +69,8 @@ private:
     int canvasWidth = 32;
     int canvasHeight = 32;
     bool movingPicture;
+    bool horizontalSymmetry = true;
+    bool verticalSymmetry = false;
     QPoint moveOffset;
     QColor currentColor = Qt::black;
     bool isDrawing = false;
