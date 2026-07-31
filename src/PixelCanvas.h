@@ -16,47 +16,51 @@ class PixelCanvas : public QWidget
 
 public:
     explicit PixelCanvas(QWidget *parent = nullptr);
-    void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);}
-    void clear();
-    void saveImage();
-    void saveProject();
-    void loadProject();
-    void loadPicture();
-    void updateCanvasSize();
-    void buildPalette();
+    // main functions
+    void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);} // set the current color
+    void clear(); // clear the canvas on the current layer
+    void saveImage(); // save image as png
+    void saveProject(); // save the project as a json file
+    void loadProject(); // load project from a json file
+    void loadPicture(); // load a picture on a separate layer for reference
+    void updateCanvasSize(); // update the current canvas size
+    void buildPalette(); // get colors and their corresponding frequencies from the canvas and add them to a hash table
+    void resizeCanvas(int width, int height); // set the canvas size
+    void floodFill(int x, int y); // method for flood fill tool
+    void undo(); // undo method
+    void redo(); // redo method
 
-    QList<QColor> sortColors(QHash<QRgb, int> colorFrequency);
-    void setZoom(int zoom);
-    void resizeCanvas(int width, int height);
+    // enum class for available tools
     enum class Tool {
         Brush,
         Eraser,
         EyeDropper,
         Fill
     };
-    void setTool(Tool tool);
-    void floodFill(int x, int y);
-    void undo();
-    void redo();
+
     // layer methods
-    void addLayer();
-    void removeLayer(int index);
-    QStringList getLayerNames();
-    void setActiveLayer(int index);
-    void moveLayerUp(int index);
-    void moveLayerDown(int index);
-    void renameLayer(int index, const QString &name);
-    void setLayerOpacity(int index, float opacity);
-    void setHorizontalSymmetry(bool enabled);
-    void setVerticalSymmetry(bool enabled);
-    float getLayerOpacity(int index)const;
+    void addLayer(); // add a new layer
+    void removeLayer(int index); // remove selected layer
+    void setActiveLayer(int index); // change selected layer
+    void moveLayerUp(int index); // move selected layer up
+    void moveLayerDown(int index); // move selected layer down
+    void renameLayer(int index, const QString &name); // rename selected layer
+    void setLayerOpacity(int index, float opacity); // change selected layer's opacity
+    float getLayerOpacity(int index)const; // get selected layer's opacity
+    QStringList getLayerNames(); // return the list of layer names
 
     // helper methods
-    void paintColor(int x, int y, const QColor &color);
-    void undoActions();
-    QColor getColor();
-    int getZoom();
+    void paintColor(int x, int y, const QColor &color); // paint color into the corresponding square
+    QList<QColor> sortColors(QHash<QRgb, int> colorFrequency); // sort a list of colors based on frequency
+    void undoActions(); // helper method for undo
+    QColor getColor(); // return the current color
+    int getZoom(); // get the current zoom
+    void setZoom(int zoom); // set the zoom amount
+    void setHorizontalSymmetry(bool enabled); // set horizontal symmetry drawing
+    void setVerticalSymmetry(bool enabled); // set vertical symmetry drawing
+    void setTool(Tool tool); // set the current tool
 
+    // Events
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -65,33 +69,36 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    int pixelSize = 20;
+    int pixelSize = 20; // pixel/zoom size
     int canvasWidth = 32;
     int canvasHeight = 32;
-    bool movingPicture;
-    bool horizontalSymmetry = true;
-    bool verticalSymmetry = false;
-    QPoint moveOffset;
-    QColor currentColor = Qt::black;
-    bool isDrawing = false;
-    bool isUndoing = false;
-    bool isErasing = false;
+    bool movingPicture; // boolean to check if an imported picture is being moved
+    bool horizontalSymmetry = false; // bool for horizontal symmetry
+    bool verticalSymmetry = false; // bool for vertical symmetry
+    QPoint moveOffset; // point on the canvas for moving picture
+    QColor currentColor = Qt::black; // selected color
+    bool isDrawing = false; // bool to check if user is drawing
+    bool isUndoing = false; // bool to check if user is undoing
+    bool isErasing = false; // bool to check if user is erasing
+    // enum class for different layer types
+    // Pixel is for drawing, Reference is for pictures that have been imported
     enum class LayerType{
         Pixel, Reference
     };
+    // struct for layers and their attributes
     struct Layer{
-        LayerType type = LayerType::Pixel;
-        QString name;
-        int width;
-        int height;
-        QVector<QColor> pixels;
-        bool visible = true;
-        float opacity = 1.0f;
-        QImage image;
-        QPoint position = {0,0};
-        float scale = 1.0f;
-        // implement lock!!!
-        bool locked = false;
+        int width; // layer width
+        int height; // layer height
+        float opacity = 1.0f; // layer opacity
+        float scale = 1.0f; // layer scale (for zoom)
+        bool visible = true; // layer visibility (not really used)
+        bool locked = false; // layer lock (not used)
+        LayerType type = LayerType::Pixel; // default layer type is pixel (for drawing)
+        QString name; // layer name
+        QVector<QColor> pixels; // colors in current layer
+        QImage image; // image imported for current layer
+        QPoint position = {0,0}; // position of the current layer
+        // methods to get color at a specific pixel
         QColor& at(int x, int y){
             return pixels[y * width + x];
         }
@@ -99,6 +106,7 @@ private:
             return pixels[y * width +x];
         }
     };
+    // struct for storing any changes in pixel color
     struct PixelChange{
         int layer;
         int x;
@@ -106,36 +114,33 @@ private:
         QColor oldColor;
         QColor newColor;
     };
-
-    std::vector<Layer> layers;
-    int activeLayer = 0;
-    QHash<QRgb, int> colorFrequency;
-    Tool currentTool = Tool::Brush;
-    Layer currentState;
-    Layer undoState;
-    std::deque<std::vector<PixelChange>> undoStack;
-    std::deque<std::vector<PixelChange>> redoStack;
-    std::vector<PixelChange> currentAction;
-    int maxUndo = 5;
+    // others
+    std::vector<Layer> layers; // vector storing layers
+    int activeLayer = 0; // selected layer
+    QHash<QRgb, int> colorFrequency; // number of times color has appeared on current canvas
+    Tool currentTool = Tool::Brush; // default tool
+    Layer currentState; // store current state for undo and redo
+    Layer undoState; // last state for undo and redo
+    std::deque<std::vector<PixelChange>> undoStack; // stack to store undos
+    std::deque<std::vector<PixelChange>> redoStack; // stack to store redos
+    std::vector<PixelChange> currentAction; // vector to store current action
+    int maxUndo = 5; // max number of undos (probably redundant atp. cbf to check)
 signals:
-    void colorChanged(QColor color);
-    void paletteUpdated(QList<QColor> colors);
+    void colorChanged(QColor color); // signal to change the selected color
+    void paletteUpdated(QList<QColor> colors); // signal to change the palette
 };
 
 
-
+// class for previewing selected color
 class ColorPreviewWidget : public QWidget{
   Q_OBJECT
-
-
-  int previewSize = 20;
-  protected:
-
-  void paintEvent(QPaintEvent *event) override;
-  public:
+    int previewSize = 20; // size of the preview pixel
+protected:
+    void paintEvent(QPaintEvent *event) override;
+public:
     explicit ColorPreviewWidget(QWidget *parent = nullptr);
-    QColor selectedColor = Qt::black;
-    void setPreviewColor(const QColor &color);
+    QColor selectedColor = Qt::black; // default selected color
+    void setPreviewColor(const QColor &color); // method for changing the selected color
 };
 
 #endif // PIXELCANVAS_H

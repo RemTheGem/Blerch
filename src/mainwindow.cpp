@@ -27,7 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
+    // sorry for the mess here. moving stuff around changes how they look in the UI. idk any better way lol
+    // main setup
     auto canvas = new PixelCanvas(this);
     auto colorPreview = new ColorPreviewWidget(this);
     QApplication::setApplicationName("Blerch");
@@ -40,25 +41,9 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignCenter);
-    // Layer
+    // Layer setup
     QWidget *layerPanel = new QWidget(this);
     QWidget *spacer = new QWidget();
-    QWidget *paletteContainer = new QWidget(this);
-    QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
-    paletteWidget *palette = new paletteWidget;
-    QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
-    QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
-    paletteLayout->addWidget(horizontalSymmetryButton);
-    paletteLayout->addWidget(verticalSymmetryButton);
-    paletteLayout->addWidget(palette);
-    paletteLayout->addStretch();
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    palette->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    layerPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    layerPanel->setMinimumWidth(100);
-    //palette->adjustSize();
-    paletteContainer->setFixedWidth(190);
     QVBoxLayout *layerLayout = new QVBoxLayout(layerPanel);
     QHBoxLayout *layerButtons = new QHBoxLayout();
     layerList = new QListWidget(this);
@@ -70,13 +55,9 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *moveDownButton = new QPushButton("↓", this);
     QPushButton *renameLayerButton = new QPushButton("Rename", this);
     QSlider *opacitySlider = new QSlider(Qt::Horizontal);
+    QLabel * opacityLabel = new QLabel("Opacity");
     opacitySlider->setRange(0, 100);
     opacitySlider->setValue(100);
-    horizontalSymmetryButton->setCheckable(true);
-    verticalSymmetryButton->setCheckable(true);
-    QMenu *fileMenu = menuBar()->addMenu("File");
-    QMenu *helpMenu = menuBar()->addMenu("Help");
-    QLabel * opacityLabel = new QLabel("Opacity");
     layerLayout->addWidget(opacityLabel);
     layerLayout->addWidget(opacitySlider);
     layerLayout->addWidget(renameLayerButton);
@@ -86,6 +67,30 @@ MainWindow::MainWindow(QWidget *parent)
     layerButtons->addWidget(addLayerButton);
     layerButtons->addWidget(removeLayerButton);
     layerLayout->addLayout(layerButtons);
+    // palette and symmetry buttons setup
+    QWidget *paletteContainer = new QWidget(this);
+    QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
+    paletteWidget *palette = new paletteWidget;
+    QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
+    QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
+    paletteLayout->addWidget(horizontalSymmetryButton);
+    paletteLayout->addWidget(verticalSymmetryButton);
+    horizontalSymmetryButton->setCheckable(true);
+    verticalSymmetryButton->setCheckable(true);
+    paletteLayout->addWidget(palette);
+    paletteLayout->addStretch();
+    // size policies
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    palette->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    layerPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    layerPanel->setMinimumWidth(100);
+    paletteContainer->setFixedWidth(190);
+    // menus
+    QMenu *fileMenu = menuBar()->addMenu("File");
+    QMenu *helpMenu = menuBar()->addMenu("Help");
+
+    // organization
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(paletteContainer);
     splitter->addWidget(scroll);
@@ -102,7 +107,6 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *eraserAction = toolbar->addAction("Eraser");
     QAction *eyeDropperAction = toolbar->addAction("Eye Dropper");
     QAction *fillAction = toolbar->addAction("Fill");
-
     QAction *pickColor = toolbar->addAction("Pick Color");
     colorPreview->setFixedSize(20,20);
     toolbar->addWidget(colorPreview);
@@ -120,15 +124,14 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
-    // UI
-    brushAction->setChecked(true);
+    brushAction->setChecked(true); // default tool as brush
     brushAction->setCheckable(true);
     eraserAction->setCheckable(true);
     eyeDropperAction->setCheckable(true);
     fillAction->setCheckable(true);
     canvas->setTool(PixelCanvas::Tool::Brush);
-    QActionGroup *toolGroup = new QActionGroup(this);
-    toolGroup->setExclusive(true);
+    QActionGroup *toolGroup = new QActionGroup(this); // group tools together
+    toolGroup->setExclusive(true); // make sure one can be selected at a time
     toolGroup->addAction(brushAction);
     toolGroup->addAction(eraserAction);
     toolGroup->addAction(eyeDropperAction);
@@ -151,7 +154,8 @@ MainWindow::MainWindow(QWidget *parent)
     loadProject->setShortcut(QKeySequence("Ctrl+O"));
     loadPicture->setShortcut(QKeySequence("Ctrl+P"));
     qDebug() << palette->width();
-    //Toolbar actions
+
+    // Connections (needs organizing -_-#)
     connect(pickColor, &QAction::triggered, [=]() {
         QColor color = QColorDialog::getColor(Qt::white, this);
         if (color.isValid()) {
