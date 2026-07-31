@@ -8,6 +8,7 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
 - Clear and resize canvas
 - adjustable canvas zoom
 - Frequency based color palette
+- Symmetry Drawing
 - import images for referencing with scaling and movement support
 - Layers which includes
   - Add, delete and reorder layers
@@ -35,12 +36,7 @@ An inside look as of version 1.2.3 (I did NOT know how semantic versioning worke
 </p>
 
 ## Coming Soon
-- Undo/Redo (done)
-- Save Drawing in more formats (done... kinda)
-- Reload old art (done)
-- Brush sizes
-- Memory Optimization (done... also kinda)
-- and more! (No promises) 
+- Any feature suggestions are welcome!
 
 
 ## Clone the Repository
