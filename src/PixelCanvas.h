@@ -59,6 +59,7 @@ public:
     void setHorizontalSymmetry(bool enabled); // set horizontal symmetry drawing
     void setVerticalSymmetry(bool enabled); // set vertical symmetry drawing
     void setTool(Tool tool); // set the current tool
+    void setBrushSize(int newSize);
 
     // Events
 protected:
@@ -70,6 +71,7 @@ protected:
 
 private:
     int pixelSize = 20; // pixel/zoom size
+    int brushSize = 1;
     int canvasWidth = 32;
     int canvasHeight = 32;
     bool movingPicture; // boolean to check if an imported picture is being moved

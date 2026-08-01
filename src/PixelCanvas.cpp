@@ -79,6 +79,8 @@ void PixelCanvas::paintEvent(QPaintEvent *)
 
         painter.restore();
     }
+    /*
+     * draw grid
     for(int y = 0; y < height(); y += pixelSize)
     {
         painter.drawLine(0, y, width(), y);
@@ -87,6 +89,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     {
         painter.drawLine(x, 0, x, height());
     }
+    */
     buildPalette();
 }
 void PixelCanvas::updateCanvasSize()
@@ -96,14 +99,18 @@ void PixelCanvas::updateCanvasSize()
 }
 void PixelCanvas::resizeCanvas(int width, int height)
 {
-    layers[activeLayer].width = width;
-    layers[activeLayer].height = height;
-    canvasHeight = height;
-    canvasWidth = width;
-    layers[activeLayer].pixels.resize(width * height);
-
-    for(auto &pixel : layers[activeLayer].pixels) pixel = Qt::transparent;
-
+    Layer &layer = layers[activeLayer];
+    QVector<QColor> oldPixels = layer.pixels;
+    int oldWidth = layer.width;
+    int oldHeight = layer.height;
+    layer.width = width;
+    layer.height = height;
+    layer.pixels.assign(width * height, Qt::transparent);
+    for(int y = 0; y < std::min(oldHeight, height); y++){
+        for(int x = 0; x < std::min(oldWidth, width); x++){
+            layer.pixels[y * width + x] = oldPixels[y * oldWidth + x];
+        }
+    }
     updateCanvasSize();
     update();
 }
@@ -138,17 +145,28 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color)
             layers[activeLayer].at(px, py) = color;
         }
     };
-    int mirrorX = layers[activeLayer].width  - 1 - x;
-    int mirrorY = layers[activeLayer].height - 1 - y;
-    draw(x, y);
-    if (horizontalSymmetry)
-        draw(mirrorX, y);
+    int radius = brushSize / 2;
+    for (int offsetY = -radius; offsetY <= radius; offsetY++){
+        for (int offsetX = -radius; offsetX <= radius; offsetX++){
 
-    if (verticalSymmetry)
-        draw(x, mirrorY);
+            // for a circular brush
+            // if(offsetX*offsetX + offsetY*offsetY > radius*radius)
+            //     continue;
+            int pixelX = x + offsetX;
+            int pixelY = y + offsetY;
+            int mirrorX = layers[activeLayer].width  - 1 - x;
+            int mirrorY = layers[activeLayer].height - 1 - y;
+            draw(pixelX, pixelY);
+            if (horizontalSymmetry)
+                draw(mirrorX, pixelY);
 
-    if (horizontalSymmetry && verticalSymmetry)
-        draw(mirrorX, mirrorY);
+            if (verticalSymmetry)
+                draw(pixelX, mirrorY);
+
+            if (horizontalSymmetry && verticalSymmetry)
+                draw(mirrorX, mirrorY);
+        }
+    }
 }
 void PixelCanvas::setHorizontalSymmetry(bool enabled){
     horizontalSymmetry = enabled;
@@ -569,6 +587,9 @@ void PixelCanvas::floodFill(int startX, int startY){
 
 
     }
+}
+void PixelCanvas::setBrushSize(int newSize){
+    brushSize = newSize;
 }
 void PixelCanvas::buildPalette(){
     colorFrequency.clear();

@@ -71,8 +71,14 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *paletteContainer = new QWidget(this);
     QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
     paletteWidget *palette = new paletteWidget;
+    QSlider *brushSizeSlider = new QSlider(Qt::Horizontal);
+    QLabel *brushSizeLabel = new QLabel("Brush Size");
+    brushSizeSlider->setRange(1,16);
+    brushSizeSlider->setValue(1);
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
     QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
+    paletteLayout->addWidget(brushSizeLabel);
+    paletteLayout->addWidget(brushSizeSlider);
     paletteLayout->addWidget(horizontalSymmetryButton);
     paletteLayout->addWidget(verticalSymmetryButton);
     horizontalSymmetryButton->setCheckable(true);
@@ -313,6 +319,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(canvas, &PixelCanvas::paletteUpdated, palette, &paletteWidget::setColors);
     connect(horizontalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setHorizontalSymmetry);
     connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
+    connect(brushSizeSlider, &QSlider::valueChanged, [=](int value){
+        canvas->setBrushSize(value);
+    });
 }
 
 MainWindow::~MainWindow()
