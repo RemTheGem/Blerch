@@ -100,9 +100,13 @@ void PixelCanvas::updateCanvasSize()
 void PixelCanvas::resizeCanvas(int width, int height)
 {
     Layer &layer = layers[activeLayer];
+    // old width and height to redraw the previous canvas
     QVector<QColor> oldPixels = layer.pixels;
     int oldWidth = layer.width;
     int oldHeight = layer.height;
+    // these ones so that when we add new layers they knew what size to be
+    canvasHeight = height;
+    canvasWidth = width;
     layer.width = width;
     layer.height = height;
     layer.pixels.assign(width * height, Qt::transparent);
