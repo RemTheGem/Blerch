@@ -4,6 +4,7 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
 ## Features
 - Brush, Eraser, Fill and eyedropper tools
 - Custom color picker
+- Custom Brush sizes
 - undo and redo support
 - Clear and resize canvas
 - adjustable canvas zoom
