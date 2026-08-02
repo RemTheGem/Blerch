@@ -1,6 +1,6 @@
 #ifndef PIXELCANVAS_H
 #define PIXELCANVAS_H
-
+#include "mediancut.h"
 #include <QWidget>
 #include <QColor>
 #include <QMouseEvent>
@@ -29,6 +29,7 @@ public:
     void floodFill(int x, int y); // method for flood fill tool
     void undo(); // undo method
     void redo(); // redo method
+    void pictureToPixel(); // turn imported picture into pixel art
 
     // enum class for available tools
     enum class Tool {
@@ -60,6 +61,7 @@ public:
     void setVerticalSymmetry(bool enabled); // set vertical symmetry drawing
     void setTool(Tool tool); // set the current tool
     void setBrushSize(int newSize);
+    void medianCut();
 
     // Events
 protected:

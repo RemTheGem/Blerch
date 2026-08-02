@@ -1,4 +1,5 @@
 #include "PixelCanvas.h"
+#include "mediancut.h"
 #include <QPainter>
 #include <QMouseEvent>
 #include <QPaintEvent>
@@ -564,6 +565,34 @@ void PixelCanvas::loadProject()
     updateCanvasSize();
     buildPalette();
     update();
+}
+void PixelCanvas::pictureToPixel(){
+    QString file = QFileDialog::getOpenFileName(this, "Import Picture", "", "Images (*.png *.jpg *.jpeg *.bmp)");
+    if(file.isEmpty()) return;
+    Layer layer;
+    layer.type = LayerType::Pixel;
+    layer.name = QFileInfo(file).baseName();
+    MedianCut cutter;
+    QImage image(file);
+    image = image.scaled(256, 256, Qt::KeepAspectRatio, Qt::FastTransformation);
+    layer.width = image.width();
+    layer.height = image.height();
+    canvasWidth = image.width();
+    canvasHeight = image.height();
+    resizeCanvas(canvasWidth, canvasHeight);
+    updateCanvasSize();
+    auto palette = cutter.medianCut(image, 16);
+    layer.pixels.resize(canvasWidth * canvasHeight);
+    for (int y = 0; y < canvasHeight; y++) {
+        for (int x = 0; x < canvasWidth; x++) {
+            QColor mapped = cutter.nearestColor(image.pixelColor(x, y), palette);
+            paintColor(x, y, mapped);
+        }
+    }
+    update();
+}
+void PixelCanvas::medianCut(){
+
 }
 void PixelCanvas::setTool(Tool tool){
     currentTool = tool;

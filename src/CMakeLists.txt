@@ -30,6 +30,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         PixelCanvas.cpp
         resources.qrc
         palettewidget.h palettewidget.cpp
+        mediancut.h mediancut.cpp
 
 
     )

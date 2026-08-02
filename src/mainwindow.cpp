@@ -95,6 +95,7 @@ MainWindow::MainWindow(QWidget *parent)
     // menus
     QMenu *fileMenu = menuBar()->addMenu("File");
     QMenu *helpMenu = menuBar()->addMenu("Help");
+    QMenu *picToPixMenu = menuBar()->addMenu("Picture to Pixel");
 
     // organization
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
@@ -128,6 +129,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *loadProject = fileMenu->addAction("Open Project");
     QAction *loadPicture = fileMenu->addAction("Open Picture");
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
+    QAction *openPicture = picToPixMenu->addAction("Open Picture");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     brushAction->setChecked(true); // default tool as brush
@@ -222,6 +224,12 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(loadPicture, &QAction::triggered, [=](){
         canvas->loadPicture();
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+        layerList->setCurrentRow(layerList->count() - 1);
+    });
+    connect(openPicture, &QAction::triggered, [=](){
+        canvas->pictureToPixel();
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(layerList->count() - 1);
