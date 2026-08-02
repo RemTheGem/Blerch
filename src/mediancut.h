@@ -8,12 +8,14 @@
 
 
 struct Color {
-    int r, g, b;
+    int r, g, b, count;
 };
 
 struct ColorBox {
     std::vector<Color> colors;
 };
+
+
 class MedianCut
 {
 

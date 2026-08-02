@@ -1,5 +1,5 @@
 #include "mediancut.h"
-
+#include <map>
 // Color quantization for turning pictures into pixel art
 MedianCut::MedianCut() {}
 
@@ -30,6 +30,9 @@ int MedianCut::colorRange(const ColorBox& box, int channel)
 // method to split our boxes into two
 std::pair<ColorBox, ColorBox> MedianCut::splitBox(ColorBox box)
 {
+    if(box.colors.size() <= 1){
+        return {box, ColorBox{}};
+    }
     int rRange = colorRange(box, 0);
     int gRange = colorRange(box, 1);
     int bRange = colorRange(box, 2);
@@ -45,41 +48,66 @@ std::pair<ColorBox, ColorBox> MedianCut::splitBox(ColorBox box)
         if (channel == 1) return a.g < b.g;
             return a.b < b.b;
     });
-    // split into two
-    size_t middle = box.colors.size() / 2;
+    int total = 0;
+    // total no. of colors
+    for(auto& c : box.colors)
+        total += c.count;
+    int half = total/2;
+    int accumulated = 0;
+    int splitIndex = 0;
+    // find the actual middle based on count of each color
+    for(int i= 0; i<box.colors.size(); i++){
+        accumulated+= box.colors[i].count;
+        if(accumulated >= half){
+            // middle found
+            splitIndex = i;
+            break;
+        }
+    }
     ColorBox left;
     ColorBox right;
-    left.colors.assign(box.colors.begin(), box.colors.begin() + middle);
-    right.colors.assign(box.colors.begin() + middle, box.colors.end());
+    // split into two
+    left.colors.assign(box.colors.begin(), box.colors.begin() + splitIndex);
+    right.colors.assign(box.colors.begin() + splitIndex, box.colors.end());
     // return the two sorted boxes
     return {left, right};
 }
 // get the average color of a box
 QColor MedianCut::averageColor(const ColorBox& box)
 {
+    if(box.colors.empty())
+        return QColor(0,0,0);
     long r = 0;
     long g = 0;
     long b = 0;
+    long total = 0;
     // go through the colors in a box and add their RGB values
     for (const auto& c : box.colors){
-        r += c.r;
-        g += c.g;
-        b += c.b;
+        r += c.r * c.count;
+        g += c.g * c.count;
+        b += c.b * c.count;
+        total += c.count;
     }
-    int count = static_cast<int>(box.colors.size());
     // return the average value
-    return QColor(r / count, g / count, b / count);
+    return QColor(r / total, g / total, b / total);
 }
 // main median cut method
 std::vector<QColor> MedianCut::medianCut(const QImage& image, int paletteSize)
 {
-    // put all colors into a box
-    ColorBox first;
+    // count the rgb values in the image and add them to a map
+    std::map<std::tuple<int,int,int>,int> colorFrequency;
     for (int y = 0; y < image.height(); y++){
         for (int x = 0; x < image.width(); x++){
             QColor c = image.pixelColor(x, y);
-            first.colors.push_back({c.red(), c.green(), c.blue()});
+            auto key = std::make_tuple(c.red(), c.green(), c.blue());
+            colorFrequency[key]++;
         }
+    }
+    // put all colors into a box
+    ColorBox first;
+    for(auto& pair : colorFrequency){
+        auto [r, g, b] = pair.first;
+        first.colors.push_back({r,g,b,pair.second});
     }
     std::vector<ColorBox> boxes;
     boxes.push_back(first);

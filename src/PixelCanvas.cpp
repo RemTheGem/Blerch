@@ -572,7 +572,7 @@ void PixelCanvas::pictureToPixel(){
     Layer layer;
     layer.type = LayerType::Pixel;
     layer.name = QFileInfo(file).baseName();
-    MedianCut cutter;
+    MedianCut medianCut;
     QImage image(file);
     image = image.scaled(256, 256, Qt::KeepAspectRatio, Qt::FastTransformation);
     layer.width = image.width();
@@ -581,11 +581,11 @@ void PixelCanvas::pictureToPixel(){
     canvasHeight = image.height();
     resizeCanvas(canvasWidth, canvasHeight);
     updateCanvasSize();
-    auto palette = cutter.medianCut(image, 16);
+    auto palette = medianCut.medianCut(image, 64);
     layer.pixels.resize(canvasWidth * canvasHeight);
     for (int y = 0; y < canvasHeight; y++) {
         for (int x = 0; x < canvasWidth; x++) {
-            QColor mapped = cutter.nearestColor(image.pixelColor(x, y), palette);
+            QColor mapped = medianCut.nearestColor(image.pixelColor(x, y), palette);
             paintColor(x, y, mapped);
         }
     }
