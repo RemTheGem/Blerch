@@ -1,5 +1,6 @@
 #include "PixelCanvas.h"
-#include "mediancut.h"
+#include "tools/mediancut.h"
+#include "dialogs/pictureimportdialog.h"
 #include <QPainter>
 #include <QMouseEvent>
 #include <QPaintEvent>
@@ -573,15 +574,26 @@ void PixelCanvas::pictureToPixel(){
     layer.type = LayerType::Pixel;
     layer.name = QFileInfo(file).baseName();
     MedianCut medianCut;
+    PictureImportDialog dialog(this);
+    if(dialog.exec() != QDialog::Accepted)
+        return;
+    int targetWidth = dialog.width();
+    int targetHeight = dialog.height();
+    int paletteSize = dialog.colors();
     QImage image(file);
-    image = image.scaled(256, 256, Qt::KeepAspectRatio, Qt::FastTransformation);
+    if(dialog.keepAspect()){
+        image = image.scaled(targetWidth, targetHeight, Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    else {
+        image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    }
     layer.width = image.width();
     layer.height = image.height();
     canvasWidth = image.width();
     canvasHeight = image.height();
     resizeCanvas(canvasWidth, canvasHeight);
     updateCanvasSize();
-    auto palette = medianCut.medianCut(image, 64);
+    auto palette = medianCut.medianCut(image, paletteSize);
     layer.pixels.resize(canvasWidth * canvasHeight);
     for (int y = 0; y < canvasHeight; y++) {
         for (int x = 0; x < canvasWidth; x++) {

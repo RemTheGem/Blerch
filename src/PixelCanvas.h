@@ -1,6 +1,6 @@
 #ifndef PIXELCANVAS_H
 #define PIXELCANVAS_H
-#include "mediancut.h"
+#include "tools/mediancut.h"
 #include <QWidget>
 #include <QColor>
 #include <QMouseEvent>

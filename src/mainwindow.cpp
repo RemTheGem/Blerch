@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "PixelCanvas.h"
-#include "palettewidget.h"
+#include "tools/palettewidget.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QToolBar>

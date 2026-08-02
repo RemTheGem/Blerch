@@ -1,5 +1,5 @@
 #include "palettewidget.h"
-#include "mainWindow.h"
+#include "../mainWindow.h"
 
 
 paletteWidget::paletteWidget(QWidget *parent)

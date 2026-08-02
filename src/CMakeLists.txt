@@ -29,8 +29,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         PixelCanvas.h
         PixelCanvas.cpp
         resources.qrc
-        palettewidget.h palettewidget.cpp
-        mediancut.h mediancut.cpp
+        tools/palettewidget.h tools/palettewidget.cpp
+        tools/mediancut.h tools/mediancut.cpp
+        dialogs/pictureimportdialog.h dialogs/pictureimportdialog.cpp
+
 
 
     )
