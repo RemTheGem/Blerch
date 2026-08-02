@@ -94,8 +94,8 @@ MainWindow::MainWindow(QWidget *parent)
     paletteContainer->setFixedWidth(190);
     // menus
     QMenu *fileMenu = menuBar()->addMenu("File");
-    QMenu *helpMenu = menuBar()->addMenu("Help");
     QMenu *picToPixMenu = menuBar()->addMenu("Picture to Pixel");
+    QMenu *helpMenu = menuBar()->addMenu("Help");
 
     // organization
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
