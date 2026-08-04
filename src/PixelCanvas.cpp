@@ -309,7 +309,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
-    if (!isDrawing || !selection.dragging) return;
+    if (!isDrawing) return;
 
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
