@@ -114,6 +114,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *eraserAction = toolbar->addAction("Eraser");
     QAction *eyeDropperAction = toolbar->addAction("Eye Dropper");
     QAction *fillAction = toolbar->addAction("Fill");
+    QAction *selectAction = toolbar->addAction("Select");
     QAction *moveAction = toolbar->addAction("Move");
     QAction *pickColor = toolbar->addAction("Pick Color");
     colorPreview->setFixedSize(20,20);
@@ -139,6 +140,7 @@ MainWindow::MainWindow(QWidget *parent)
     eyeDropperAction->setCheckable(true);
     fillAction->setCheckable(true);
     moveAction->setCheckable(true);
+    selectAction->setCheckable(true);
     canvas->setTool(PixelCanvas::Tool::Brush);
     QActionGroup *toolGroup = new QActionGroup(this); // group tools together
     toolGroup->setExclusive(true); // make sure one can be selected at a time
@@ -147,6 +149,7 @@ MainWindow::MainWindow(QWidget *parent)
     toolGroup->addAction(eyeDropperAction);
     toolGroup->addAction(fillAction);
     toolGroup->addAction(moveAction);
+    toolGroup->addAction(selectAction);
     showMaximized();
 
     // keyboard shortcuts
@@ -211,6 +214,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(moveAction, &QAction::triggered, [=](){
         canvas->setTool(PixelCanvas::Tool::Move);
+    });
+    connect(selectAction, &QAction::triggered, [=](){
+        canvas->setTool(PixelCanvas::Tool::Select);
     });
     connect(undo, &QAction::triggered, [=](){
         canvas->undo();

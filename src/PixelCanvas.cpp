@@ -186,7 +186,6 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
     if(layers[activeLayer].type == LayerType::Reference){
         if(event->button() == Qt::LeftButton){
-            QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
             movingPicture = true;
             moveOffset = event->pos() - layers[activeLayer].position;
         }
@@ -220,9 +219,23 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         case Tool::Fill:
             floodFill(x, y);
             break;
+        case Tool::Select:
+        {
+            selection = Selection();
+            selection.dragStart = QPoint(x, y);
+            break;
+        }
         case Tool::Move:
+            /*
             moveColor = layers[activeLayer].at(x, y);
             layers[activeLayer].at(x, y) = Qt::transparent;
+            selection.selectionOffset = event->pos() - selection.position;
+            for (int mx = 0; mx < selection.width; mx++){
+                for(int my = 0; my < selection.height; my++){
+                    selection.colors.at(mx * selection.width +my) = layers[activeLayer].at(mx + selection.selectionOffset.x(), my + selection.selectionOffset.y());
+                }
+            }
+            */
             break;
 
         }
@@ -285,7 +298,6 @@ void PixelCanvas::wheelEvent(QWheelEvent *event)
 void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     if(movingPicture){
-        QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
@@ -330,14 +342,39 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     isErasing = false;
     movingPicture = false;
     if(movingPicture){
-        QPoint mousePosCanvas(event->position().x() / pixelSize, event-> position().y() / pixelSize);
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
     switch(currentTool){
+    case Tool::Select:
+    {
+        selection.dragEnd = QPoint(event->position().x()/ pixelSize, event->position().y()/pixelSize);
+        selection.width = selection.dragEnd.x() - selection.dragStart.x();
+        selection.height = selection.dragEnd.y() - selection.dragStart.y();
+        qDebug() << "Drag Start: " << selection.dragStart.x() << selection.dragStart.y()
+                 << "\nDrag End: " << selection.dragEnd.x() << selection.dragEnd.y()
+                 << "\n selection width: " << selection.width
+                 << "\n selection height: " << selection.height;
+        for(int sx = selection.dragStart.x(); sx<=selection.width+selection.dragStart.x(); sx++){
+            for(int sy = selection.dragStart.y(); sy<=selection.height+selection.dragStart.y(); sy++){
+                // qDebug() << "REached loop" << "sx: " << sx << " sy: " << sy;
+                paintColor(sx,sy, Qt::black);
+            }
+        }
+    }
     case Tool::Move:
+        /*
         QPoint currentPixel = QPoint(event->position().x() / pixelSize, event-> position().y() / pixelSize);
         layers[activeLayer].at(currentPixel.x(), currentPixel.y()) = moveColor;
+        selection.position = (event->pos() - selection.selectionOffset) / pixelSize;
+
+        for (int mx = 0; mx < selection.width; mx++){
+            for(int my = 0; my < selection.height; my++){
+                qDebug() << "mx: " << mx << " my: " << my << "height: " << selection.height;
+                layers[activeLayer].at(mx + selection.selectionOffset.x(), my + selection.selectionOffset.y()) = selection.colors.at(mx * selection.width +my);
+            }
+        }
+        */
         update();
         break;
     }

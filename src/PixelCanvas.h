@@ -16,6 +16,17 @@ class PixelCanvas : public QWidget
 
 public:
     explicit PixelCanvas(QWidget *parent = nullptr);
+    struct Selection{
+        int width;
+        int height;
+        QPoint dragStart;
+        QPoint dragEnd;
+        QPoint selectionOffset;
+        QPoint position;
+        std::vector<QColor> colors;
+
+    };
+
     // main functions
     void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);} // set the current color
     void clear(); // clear the canvas on the current layer
@@ -37,6 +48,7 @@ public:
         Eraser,
         EyeDropper,
         Fill,
+        Select,
         Move
     };
 
@@ -125,6 +137,7 @@ private:
     int activeLayer = 0; // selected layer
     QHash<QRgb, int> colorFrequency; // number of times color has appeared on current canvas
     Tool currentTool = Tool::Move; // default tool
+    Selection selection;
     Layer currentState; // store current state for undo and redo
     Layer undoState; // last state for undo and redo
     std::deque<std::vector<PixelChange>> undoStack; // stack to store undos
