@@ -92,6 +92,15 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         painter.drawLine(x, 0, x, height());
     }
     */
+    if(currentTool == Tool::Move || currentTool == Tool::Select){
+    QPen pen;
+    pen.setWidth(3);
+    pen.setStyle(Qt::DashLine);
+    painter.setPen(pen);
+
+    QRect selectionRect(selection.dragStart.x()*pixelSize, selection.dragStart.y()*pixelSize, (selection.width+1)*pixelSize, (selection.height+1)*pixelSize);
+    painter.drawRect(selectionRect);
+    }
     buildPalette();
 }
 void PixelCanvas::updateCanvasSize()
@@ -359,6 +368,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 
             }
         }
+        showMoveBoundary();
         update();
         break;
     }
@@ -403,6 +413,10 @@ void PixelCanvas::clear()
     }
     buildPalette();
     update();
+}
+void PixelCanvas::showMoveBoundary(){
+    QPainter painter(this);
+
 }
 void PixelCanvas::setZoom(int zoom){
     pixelSize = zoom;

@@ -45,6 +45,7 @@ public:
     void undo(); // undo method
     void redo(); // redo method
     void pictureToPixel(); // turn imported picture into pixel art
+    void showMoveBoundary(); // show a boundary when something is selected
 
     // enum class for available tools
     enum class Tool {
