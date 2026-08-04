@@ -58,7 +58,19 @@ public:
         EyeDropper,
         Fill,
         Select,
-        Move
+        Move,
+        Shape
+    };
+    enum class ShapeType{
+        Rectangle,
+        Circle,
+        Line
+    };
+    struct Shape{
+        QPoint start;
+        QPoint end;
+        int width;
+        int height;
     };
 
     // layer methods
@@ -82,6 +94,11 @@ public:
     void setHorizontalSymmetry(bool enabled); // set horizontal symmetry drawing
     void setVerticalSymmetry(bool enabled); // set vertical symmetry drawing
     void setTool(Tool tool); // set the current tool
+    void setShape(ShapeType shape); // set shape
+    void drawRectangle(QPoint topLeft, QPoint bottomRight);
+    void drawCircle(QPoint topLeft, QPoint bottomRight);
+    void makeTempLayer();
+    void removeTempLayer();
     void setBrushSize(int newSize);
     void medianCut();
 
@@ -145,8 +162,10 @@ private:
     std::vector<Layer> layers; // vector storing layers
     int activeLayer = 0; // selected layer
     QHash<QRgb, int> colorFrequency; // number of times color has appeared on current canvas
-    Tool currentTool = Tool::Move; // default tool
+    Tool currentTool = Tool::Brush; // default tool
+    ShapeType currentShape = ShapeType::Rectangle;
     Selection selection;
+    Shape shape;
     Layer currentState; // store current state for undo and redo
     Layer undoState; // last state for undo and redo
     std::deque<std::vector<PixelChange>> undoStack; // stack to store undos

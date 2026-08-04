@@ -238,11 +238,14 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             if(selection.isEmpty(selection)) return;
             selection.dragOffset = event->pos();
             selection.dragging = true;
-            addLayer();
-            setActiveLayer(layers.size()-1);
-            layers[activeLayer].opacity = 0.5f;
+            makeTempLayer();
             break;
-
+        case Tool::Shape:{
+            shape = Shape();
+            shape.start = QPoint(x, y);
+            makeTempLayer();
+            break;
+        }
         }
 
         update();
@@ -346,6 +349,22 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             update();
             break;
         }
+        case Tool::Shape:{
+            clear();
+            shape.end = event->pos()/pixelSize;
+            QPoint topLeft(std::min(shape.start.x(), shape.end.x()), std::min(shape.start.y(), shape.end.y()));
+            QPoint bottomRight(std::max(shape.start.x(), shape.end.x()), std::max(shape.start.y(),shape.end.y()));
+            shape.width = shape.end.x() - shape.start.x();
+            shape.height = shape.end.y() - shape.start.y();
+            if(currentShape == ShapeType::Rectangle){
+                drawRectangle(topLeft,bottomRight);
+            }
+            else if(currentShape == ShapeType::Circle){
+                drawCircle(topLeft, bottomRight);
+            }
+            update();
+            break;
+        }
         }
     }
     }
@@ -378,14 +397,8 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         selection.dragEnd = bottomRight;
         selection.width = selection.dragEnd.x() - selection.dragStart.x();
         selection.height = selection.dragEnd.y() - selection.dragStart.y();
-        /* qDebug() << "Drag Start: " << selection.dragStart.x() << selection.dragStart.y()
-                 << "\nDrag End: " << selection.dragEnd.x() << selection.dragEnd.y()
-                 << "\n selection width: " << selection.width
-                 << "\n selection height: " << selection.height;
-        */
         for(int sy = selection.dragStart.y(); sy<=selection.height+selection.dragStart.y(); sy++){
             for(int sx = selection.dragStart.x(); sx<=selection.width+selection.dragStart.x(); sx++){
-                // qDebug() <<"sx: " << sx << " sy: " << sy;
                 selection.colors.push_back(layers[activeLayer].at(sx,sy));
 
             }
@@ -395,22 +408,13 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         break;
     }
     case Tool::Move:
-        /*
-        QPoint currentPixel = QPoint(event->position().x() / pixelSize, event-> position().y() / pixelSize);
-        layers[activeLayer].at(currentPixel.x(), currentPixel.y()) = moveColor;
-        selection.position = (event->pos() - selection.selectionOffset) / pixelSize;
-
-        */
-        removeLayer(layers.size()-1);
+        removeTempLayer();
         selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
         for (int my = 0; my < selection.height+1; my++){
             for (int mx = 0; mx < selection.width+1; mx++){
                 int canvasX = selection.selectionOffset.x() + mx;
                 int canvasY = selection.selectionOffset.y() + my;
                 int index = (selection.width+1) * my + mx;
-                /* qDebug() << "Canvasx: " << canvasX << "CanvasY:" << canvasY
-                         << "drop point:" << QPoint(event->pos().x()/pixelSize, event->pos().y()/pixelSize);
-                */
                 if (index >= selection.colors.size()) continue;
                 if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
                 if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
@@ -422,11 +426,62 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         selection.setValues(selection);
         update();
         break;
+    case Tool::Shape:
+    {
+        removeTempLayer();
+        shape.end = event->pos()/pixelSize;
+        QPoint topLeft(std::min(shape.start.x(), shape.end.x()), std::min(shape.start.y(), shape.end.y()));
+        QPoint bottomRight(std::max(shape.start.x(), shape.end.x()), std::max(shape.start.y(),shape.end.y()));
+        shape.width = shape.end.x() - shape.start.x();
+        shape.height = shape.end.y() - shape.start.y();
+        if(currentShape == ShapeType::Rectangle){
+            drawRectangle(topLeft, bottomRight);
+        }
+
+        else if(currentShape == ShapeType::Circle){
+            drawCircle(topLeft, bottomRight);
+        }
+        update();
+        break;
+
+    }
     }
 
     if(!currentAction.empty()){
         undoStack.push_back(currentAction);
         redoStack.clear();
+    }
+}
+void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight){
+    for(int sx = topLeft.x(); sx <= bottomRight.x(); sx++){
+        for(int sy = topLeft.y(); sy <= bottomRight.y(); sy++){
+            if(sx < 0 || sx >= layers[activeLayer].width) continue;
+            if(sy < 0 || sy >= layers[activeLayer].height) continue;
+            if(sx == topLeft.x() || sx == bottomRight.x() || sy == topLeft.y() || sy == bottomRight.y()){
+                currentAction.push_back({activeLayer, sx, sy, layers[activeLayer].at(sx, sy), currentColor});
+                layers[activeLayer].at(sx,sy) = currentColor;
+            }
+        }
+    }
+}
+void PixelCanvas::drawCircle(QPoint topLeft, QPoint bottomRight){
+    // midpoint circle algorithm stolen from the internet
+    int centerX = (topLeft.x() + bottomRight.x())/2;
+    int centerY = (topLeft.y() + bottomRight.y())/2;
+    int radiusX = (bottomRight.x()-topLeft.x())/2;
+    int radiusY = (bottomRight.y()-topLeft.y())/2;
+    for(int cx = -radiusX; cx <=radiusX;cx++){
+        for(int cy = -radiusY; cy <= radiusY;cy++){
+            if((cx*cx*radiusY*radiusY) + (cy*cy*radiusX*radiusX) <= (radiusX*radiusX*radiusY*radiusY)){
+                int px = centerX + cx;
+                int py = centerY + cy;
+                if(px < 0 || px >= layers[activeLayer].width) continue;
+                if(py < 0 || py >= layers[activeLayer].height) continue;
+                currentAction.push_back({activeLayer, px, py, layers[activeLayer].at(px, py), currentColor});
+                layers[activeLayer].at(px,py) = currentColor;
+
+            }
+        }
     }
 }
 void PixelCanvas::clear()
@@ -451,6 +506,14 @@ void PixelCanvas::setZoom(int zoom){
 }
 int PixelCanvas::getZoom(){
     return pixelSize;
+}
+void PixelCanvas::makeTempLayer(){
+    addLayer();
+    setActiveLayer(layers.size()-1);
+    layers[activeLayer].opacity = 0.5f;
+}
+void PixelCanvas::removeTempLayer(){
+    removeLayer(layers.size()-1);
 }
 void PixelCanvas::addLayer(){
     Layer layer;
@@ -707,6 +770,9 @@ void PixelCanvas::medianCut(){
 }
 void PixelCanvas::setTool(Tool tool){
     currentTool = tool;
+}
+void PixelCanvas::setShape(ShapeType shape){
+    currentShape = shape;
 }
 void PixelCanvas::floodFill(int startX, int startY){
     QColor target = layers[activeLayer].at(startX, startY);

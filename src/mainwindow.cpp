@@ -21,6 +21,7 @@
 #include <QMenuBar>
 #include <QLabel>
 #include <QSplitter>
+#include <QToolButton>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -31,6 +32,9 @@ MainWindow::MainWindow(QWidget *parent)
     // main setup
     auto canvas = new PixelCanvas(this);
     auto colorPreview = new ColorPreviewWidget(this);
+    QToolButton *shapeButton = new QToolButton(this);
+    shapeButton->setText("Shape");
+    QMenu *shapeMenu = new QMenu(shapeButton);
     QApplication::setApplicationName("Blerch");
     setWindowTitle("Blerch");
     setWindowIcon(QIcon(":/Blerch icon v2.png"));
@@ -41,6 +45,19 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignCenter);
+    // shape menu setup
+    shapeMenu->addAction("Rectangle", [=]{
+        canvas->setTool(PixelCanvas::Tool::Shape);
+        canvas->setShape(PixelCanvas::ShapeType::Rectangle);
+    });
+    shapeMenu->addAction("Circle", [=]{
+        canvas->setTool(PixelCanvas::Tool::Shape);
+        canvas->setShape(PixelCanvas::ShapeType::Circle);
+    });
+    shapeMenu->addAction("Line", [=]{
+        canvas->setTool(PixelCanvas::Tool::Shape);
+        canvas->setShape(PixelCanvas::ShapeType::Line);
+    });
     // Layer setup
     QWidget *layerPanel = new QWidget(this);
     QWidget *spacer = new QWidget();
@@ -96,7 +113,6 @@ MainWindow::MainWindow(QWidget *parent)
     QMenu *fileMenu = menuBar()->addMenu("File");
     QMenu *picToPixMenu = menuBar()->addMenu("Picture to Pixel");
     QMenu *helpMenu = menuBar()->addMenu("Help");
-
     // organization
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(paletteContainer);
@@ -114,6 +130,11 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *eraserAction = toolbar->addAction("Eraser");
     QAction *eyeDropperAction = toolbar->addAction("Eye Dropper");
     QAction *fillAction = toolbar->addAction("Fill");
+    QAction *shapeAction = new QAction("Shape", this);
+    shapeButton->setDefaultAction(shapeAction);
+    shapeButton->setMenu(shapeMenu);
+    shapeButton->setPopupMode(QToolButton::MenuButtonPopup);
+    toolbar->addWidget(shapeButton);
     QAction *selectAction = toolbar->addAction("Select");
     QAction *moveAction = toolbar->addAction("Move");
     QAction *pickColor = toolbar->addAction("Pick Color");
@@ -141,6 +162,7 @@ MainWindow::MainWindow(QWidget *parent)
     fillAction->setCheckable(true);
     moveAction->setCheckable(true);
     selectAction->setCheckable(true);
+    shapeAction->setCheckable(true);
     canvas->setTool(PixelCanvas::Tool::Brush);
     QActionGroup *toolGroup = new QActionGroup(this); // group tools together
     toolGroup->setExclusive(true); // make sure one can be selected at a time
@@ -150,6 +172,7 @@ MainWindow::MainWindow(QWidget *parent)
     toolGroup->addAction(fillAction);
     toolGroup->addAction(moveAction);
     toolGroup->addAction(selectAction);
+    toolGroup->addAction(shapeAction);
     showMaximized();
 
     // keyboard shortcuts
