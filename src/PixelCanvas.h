@@ -28,6 +28,9 @@ public:
         bool isEmpty(const Selection& s){
             return s.width == 0;
         }
+        void setValues(Selection s){
+            dragStart = s.selectionOffset;
+        }
 
     };
 

@@ -390,10 +390,11 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
                 if (index >= selection.colors.size()) continue;
                 if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
                 if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+                layers[activeLayer].at(selection.dragStart.x()+mx, selection.dragStart.y()+my) = Qt::transparent;
                 layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
             }
         }
-        selection = Selection();
+        selection.setValues(selection);
         update();
         break;
     }
