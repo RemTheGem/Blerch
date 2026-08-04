@@ -19,6 +19,7 @@ public:
     struct Selection{
         int width;
         int height;
+        bool dragging;
         QPoint dragStart;
         QPoint dragEnd;
         QPoint dragOffset;

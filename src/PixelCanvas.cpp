@@ -237,7 +237,10 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         case Tool::Move:
             if(selection.isEmpty(selection)) return;
             selection.dragOffset = event->pos();
-
+            selection.dragging = true;
+            addLayer();
+            setActiveLayer(layers.size()-1);
+            layers[activeLayer].opacity = 0.5f;
             break;
 
         }
@@ -303,7 +306,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
-    if (!isDrawing) return;
+    if (!isDrawing || !selection.dragging) return;
 
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
@@ -325,6 +328,24 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
                 changed = true;
             }
             break;
+        case Tool::Move:
+        {
+            clear();
+            selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
+            for (int my = 0; my < selection.height+1; my++){
+                for (int mx = 0; mx < selection.width+1; mx++){
+                    int canvasX = selection.selectionOffset.x() + mx;
+                    int canvasY = selection.selectionOffset.y() + my;
+                    int index = (selection.width+1) * my + mx;
+                    if (index >= selection.colors.size()) continue;
+                    if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
+                    if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+                    layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
+                }
+            }
+            update();
+            break;
+        }
         }
     }
     }
@@ -357,10 +378,11 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         selection.dragEnd = bottomRight;
         selection.width = selection.dragEnd.x() - selection.dragStart.x();
         selection.height = selection.dragEnd.y() - selection.dragStart.y();
-        qDebug() << "Drag Start: " << selection.dragStart.x() << selection.dragStart.y()
+        /* qDebug() << "Drag Start: " << selection.dragStart.x() << selection.dragStart.y()
                  << "\nDrag End: " << selection.dragEnd.x() << selection.dragEnd.y()
                  << "\n selection width: " << selection.width
                  << "\n selection height: " << selection.height;
+        */
         for(int sy = selection.dragStart.y(); sy<=selection.height+selection.dragStart.y(); sy++){
             for(int sx = selection.dragStart.x(); sx<=selection.width+selection.dragStart.x(); sx++){
                 // qDebug() <<"sx: " << sx << " sy: " << sy;
@@ -379,14 +401,16 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         selection.position = (event->pos() - selection.selectionOffset) / pixelSize;
 
         */
+        removeLayer(layers.size()-1);
         selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
         for (int my = 0; my < selection.height+1; my++){
             for (int mx = 0; mx < selection.width+1; mx++){
                 int canvasX = selection.selectionOffset.x() + mx;
                 int canvasY = selection.selectionOffset.y() + my;
                 int index = (selection.width+1) * my + mx;
-                qDebug() << "Canvasx: " << canvasX << "CanvasY:" << canvasY
+                /* qDebug() << "Canvasx: " << canvasX << "CanvasY:" << canvasY
                          << "drop point:" << QPoint(event->pos().x()/pixelSize, event->pos().y()/pixelSize);
+                */
                 if (index >= selection.colors.size()) continue;
                 if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
                 if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
@@ -394,6 +418,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
                 layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
             }
         }
+        selection.dragging = false;
         selection.setValues(selection);
         update();
         break;
