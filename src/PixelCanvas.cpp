@@ -226,16 +226,9 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             break;
         }
         case Tool::Move:
-            /*
-            moveColor = layers[activeLayer].at(x, y);
-            layers[activeLayer].at(x, y) = Qt::transparent;
-            selection.selectionOffset = event->pos() - selection.position;
-            for (int mx = 0; mx < selection.width; mx++){
-                for(int my = 0; my < selection.height; my++){
-                    selection.colors.at(mx * selection.width +my) = layers[activeLayer].at(mx + selection.selectionOffset.x(), my + selection.selectionOffset.y());
-                }
-            }
-            */
+            if(selection.isEmpty(selection)) return;
+            selection.dragOffset = event->pos();
+
             break;
 
         }
@@ -349,18 +342,25 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     case Tool::Select:
     {
         selection.dragEnd = QPoint(event->position().x()/ pixelSize, event->position().y()/pixelSize);
+        QPoint topLeft(std::min(selection.dragStart.x(), selection.dragEnd.x()), std::min(selection.dragStart.y(),selection.dragEnd.y()));
+        QPoint bottomRight(std::max(selection.dragStart.x(), selection.dragEnd.x()), std::max(selection.dragStart.y(),selection.dragEnd.y()));
+        selection.dragStart = topLeft;
+        selection.dragEnd = bottomRight;
         selection.width = selection.dragEnd.x() - selection.dragStart.x();
         selection.height = selection.dragEnd.y() - selection.dragStart.y();
         qDebug() << "Drag Start: " << selection.dragStart.x() << selection.dragStart.y()
                  << "\nDrag End: " << selection.dragEnd.x() << selection.dragEnd.y()
                  << "\n selection width: " << selection.width
                  << "\n selection height: " << selection.height;
-        for(int sx = selection.dragStart.x(); sx<=selection.width+selection.dragStart.x(); sx++){
-            for(int sy = selection.dragStart.y(); sy<=selection.height+selection.dragStart.y(); sy++){
-                // qDebug() << "REached loop" << "sx: " << sx << " sy: " << sy;
-                paintColor(sx,sy, Qt::black);
+        for(int sy = selection.dragStart.y(); sy<=selection.height+selection.dragStart.y(); sy++){
+            for(int sx = selection.dragStart.x(); sx<=selection.width+selection.dragStart.x(); sx++){
+                // qDebug() <<"sx: " << sx << " sy: " << sy;
+                selection.colors.push_back(layers[activeLayer].at(sx,sy));
+
             }
         }
+        update();
+        break;
     }
     case Tool::Move:
         /*
@@ -368,13 +368,22 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         layers[activeLayer].at(currentPixel.x(), currentPixel.y()) = moveColor;
         selection.position = (event->pos() - selection.selectionOffset) / pixelSize;
 
-        for (int mx = 0; mx < selection.width; mx++){
-            for(int my = 0; my < selection.height; my++){
-                qDebug() << "mx: " << mx << " my: " << my << "height: " << selection.height;
-                layers[activeLayer].at(mx + selection.selectionOffset.x(), my + selection.selectionOffset.y()) = selection.colors.at(mx * selection.width +my);
+        */
+        selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
+        for (int my = 0; my < selection.height+1; my++){
+            for (int mx = 0; mx < selection.width+1; mx++){
+                int canvasX = selection.selectionOffset.x() + mx;
+                int canvasY = selection.selectionOffset.y() + my;
+                int index = (selection.width+1) * my + mx;
+                qDebug() << "Canvasx: " << canvasX << "CanvasY:" << canvasY
+                         << "drop point:" << QPoint(event->pos().x()/pixelSize, event->pos().y()/pixelSize);
+                if (index >= selection.colors.size()) continue;
+                if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
+                if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+                layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
             }
         }
-        */
+        selection = Selection();
         update();
         break;
     }

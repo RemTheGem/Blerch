@@ -21,9 +21,13 @@ public:
         int height;
         QPoint dragStart;
         QPoint dragEnd;
+        QPoint dragOffset;
         QPoint selectionOffset;
         QPoint position;
         std::vector<QColor> colors;
+        bool isEmpty(const Selection& s){
+            return s.width == 0;
+        }
 
     };
 
