@@ -36,7 +36,8 @@ public:
         Brush,
         Eraser,
         EyeDropper,
-        Fill
+        Fill,
+        Move
     };
 
     // layer methods
@@ -81,6 +82,7 @@ private:
     bool verticalSymmetry = false; // bool for vertical symmetry
     QPoint moveOffset; // point on the canvas for moving picture
     QColor currentColor = Qt::black; // selected color
+    QColor moveColor;
     bool isDrawing = false; // bool to check if user is drawing
     bool isUndoing = false; // bool to check if user is undoing
     bool isErasing = false; // bool to check if user is erasing
@@ -122,7 +124,7 @@ private:
     std::vector<Layer> layers; // vector storing layers
     int activeLayer = 0; // selected layer
     QHash<QRgb, int> colorFrequency; // number of times color has appeared on current canvas
-    Tool currentTool = Tool::Brush; // default tool
+    Tool currentTool = Tool::Move; // default tool
     Layer currentState; // store current state for undo and redo
     Layer undoState; // last state for undo and redo
     std::deque<std::vector<PixelChange>> undoStack; // stack to store undos

@@ -220,6 +220,11 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         case Tool::Fill:
             floodFill(x, y);
             break;
+        case Tool::Move:
+            moveColor = layers[activeLayer].at(x, y);
+            layers[activeLayer].at(x, y) = Qt::transparent;
+            break;
+
         }
 
         update();
@@ -329,6 +334,14 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
+    switch(currentTool){
+    case Tool::Move:
+        QPoint currentPixel = QPoint(event->position().x() / pixelSize, event-> position().y() / pixelSize);
+        layers[activeLayer].at(currentPixel.x(), currentPixel.y()) = moveColor;
+        update();
+        break;
+    }
+
     if(!currentAction.empty()){
         undoStack.push_back(currentAction);
         redoStack.clear();
