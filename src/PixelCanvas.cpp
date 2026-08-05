@@ -100,8 +100,11 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     pen.setWidth(3);
     pen.setStyle(Qt::DashLine);
     painter.setPen(pen);
-
-    QRect selectionRect(selection.dragStart.x()*pixelSize, selection.dragStart.y()*pixelSize, (selection.width+1)*pixelSize, (selection.height+1)*pixelSize);
+    QPoint topLeft(std::min(selection.dragStart.x(), selection.previewEnd.x()),
+                   std::min(selection.dragStart.y(), selection.previewEnd.y()));
+    QPoint bottomRight(std::max(selection.dragStart.x(), selection.previewEnd.x()),
+                       std::max(selection.dragStart.y(), selection.previewEnd.y()));
+    QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
     painter.drawRect(selectionRect);
     }
     buildPalette();
@@ -324,6 +327,15 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
                 changed = true;
             }
             break;
+        case Tool::Select:
+        {
+            int eventX = event->position().x() / pixelSize;
+            int eventY = event->position().y() / pixelSize;
+            eventX = std::clamp(eventX, 0, layers[activeLayer].width - 1);
+            eventY = std::clamp(eventY, 0, layers[activeLayer].height - 1);
+            selection.previewEnd = QPoint(eventX, eventY);
+            update();
+        }
         case Tool::Move:
         {
             if(selection.isEmpty(selection)) return;
@@ -385,7 +397,11 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     switch(currentTool){
     case Tool::Select:
     {
-        selection.dragEnd = QPoint(event->position().x()/ pixelSize, event->position().y()/pixelSize);
+        int eventX = event->position().x()/ pixelSize;
+        int eventY = event->position().y()/pixelSize;
+        eventX = std::clamp(eventX, 0, layers[activeLayer].width -1);
+        eventY = std::clamp(eventY, 0, layers[activeLayer].height -1);
+        selection.dragEnd = QPoint(eventX, eventY);
         QPoint topLeft(std::min(selection.dragStart.x(), selection.dragEnd.x()), std::min(selection.dragStart.y(),selection.dragEnd.y()));
         QPoint bottomRight(std::max(selection.dragStart.x(), selection.dragEnd.x()), std::max(selection.dragStart.y(),selection.dragEnd.y()));
         selection.dragStart = topLeft;
@@ -540,6 +556,8 @@ QList<QColor> PixelCanvas::sortColors(QHash<QRgb, int> colorFrequency){
 void PixelCanvas::commitMove(){
     removeTempLayer();
     qDebug() << "move committed";
+    QRect destRect(selection.selectionOffset.x(), selection.selectionOffset.y(),
+                   selection.width+1, selection.height+1);
     for (int my = 0; my < selection.height+1; my++){
         for (int mx = 0; mx < selection.width+1; mx++){
             int canvasX = selection.selectionOffset.x() + mx;
@@ -549,18 +567,33 @@ void PixelCanvas::commitMove(){
             if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
             if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
             if(selection.colors.at(index) == Qt::transparent) continue;
-            currentAction.push_back({activeLayer, canvasX, canvasY, layers[activeLayer].at(canvasX, canvasY), selection.colors.at(index)});
-            layers[activeLayer].at(selection.dragStart.x()+mx, selection.dragStart.y()+my) = Qt::transparent;
+
             layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
+            selection.previewEnd = QPoint(canvasX, canvasY);
+        }
+    }
+    for (int my = 0; my < selection.height+1; my++){
+        for (int mx = 0; mx < selection.width+1; mx++){
+            int oldX = selection.dragStart.x() + mx;
+            int oldY = selection.dragStart.y() + my;
+            int index = (selection.width+1) * my + mx;
+            if (index >= selection.colors.size()) continue;
+            if (oldX < 0 || oldX >= layers[activeLayer].width) continue;
+            if (oldY < 0 || oldY >= layers[activeLayer].height) continue;
+            if(selection.colors.at(index) == Qt::transparent) continue;
+            if(destRect.contains(oldX, oldY)) continue;
+            layers[activeLayer].at(oldX, oldY) = Qt::transparent;
         }
     }
     selection.dragging = false;
     selection.moveFloating = false;
     selection.setValues(selection);
+    /*
     if(!currentAction.empty()){
         undoStack.push_back(currentAction);
         redoStack.clear();
     }
+    */
     update();
 }
 void PixelCanvas::cancelMove(){
@@ -575,6 +608,9 @@ void PixelCanvas::makeTempLayer(){
     addLayer();
     setActiveLayer(layers.size()-1);
     layers[activeLayer].opacity = 0.5f;
+    layers[activeLayer].width = canvasWidth;
+    layers[activeLayer].height = canvasHeight;
+    qDebug() << "current width" << layers[activeLayer].width;
 }
 void PixelCanvas::removeTempLayer(){
     removeLayer(layers.size()-1);
@@ -772,6 +808,7 @@ void PixelCanvas::loadProject()
     }
     activeLayer = 0;
     updateCanvasSize();
+    resizeCanvas(width, height);
     buildPalette();
     update();
 }

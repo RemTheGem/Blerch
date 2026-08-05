@@ -23,6 +23,7 @@ public:
         bool moveFloating = false;
         QPoint dragStart;
         QPoint dragEnd;
+        QPoint previewEnd;
         QPoint dragOffset;
         QPoint selectionOffset;
         QPoint position;
