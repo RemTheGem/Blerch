@@ -20,6 +20,7 @@ public:
         int width;
         int height;
         bool dragging;
+        bool moveFloating = false;
         QPoint dragStart;
         QPoint dragEnd;
         QPoint dragOffset;
@@ -98,6 +99,8 @@ public:
     void makeTempLayer();
     void removeTempLayer();
     void setBrushSize(int newSize);
+    void commitMove();
+    void cancelMove();
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -105,6 +108,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     int pixelSize = 20; // pixel/zoom size

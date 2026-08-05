@@ -33,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto canvas = new PixelCanvas(this);
     auto colorPreview = new ColorPreviewWidget(this);
     QToolButton *shapeButton = new QToolButton(this);
+    setFocusPolicy(Qt::StrongFocus);
     shapeButton->setText("Shape");
     QMenu *shapeMenu = new QMenu(shapeButton);
     QApplication::setApplicationName("Blerch");
@@ -354,7 +355,8 @@ MainWindow::MainWindow(QWidget *parent)
                                  "Ctrl + Mouse Wheel  - Canvas Zoom\n"
                                  "Shift + Mouse Wheel   - Reference Image Zoom\n"
                                  "Mouse Wheel  - Scroll vertically\n"
-                                 "Alt + Mouse Wheel  - Scroll Horizontally"
+                                 "Alt + Mouse Wheel  - Scroll Horizontally\n\n"
+                                 "After moving something press Enter to confirm or Esc to cancel move"
                                  );
 
     });

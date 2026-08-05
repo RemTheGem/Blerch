@@ -183,6 +183,7 @@ void PixelCanvas::resizeCanvas(int width, int height)
 // mouse events
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
+    setFocus();
     if(layers[activeLayer].type == LayerType::Reference){
         if(event->button() == Qt::LeftButton){
             movingPicture = true;
@@ -228,7 +229,10 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             if(selection.isEmpty(selection)) return;
             selection.dragOffset = event->pos();
             selection.dragging = true;
-            makeTempLayer();
+            if(!selection.moveFloating){
+                makeTempLayer();
+                selection.moveFloating = true;
+            }
             break;
         case Tool::Shape:{
             shape = Shape();
@@ -397,25 +401,9 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         break;
     }
     case Tool::Move:
-        if(selection.isEmpty(selection)) return;
-        removeTempLayer();
-        selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
-        for (int my = 0; my < selection.height+1; my++){
-            for (int mx = 0; mx < selection.width+1; mx++){
-                int canvasX = selection.selectionOffset.x() + mx;
-                int canvasY = selection.selectionOffset.y() + my;
-                int index = (selection.width+1) * my + mx;
-                if (index >= selection.colors.size()) continue;
-                if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
-                if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
-                if(selection.colors.at(index) == Qt::transparent) continue;
-                layers[activeLayer].at(selection.dragStart.x()+mx, selection.dragStart.y()+my) = Qt::transparent;
-                layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
-            }
-        }
         selection.dragging = false;
-        selection.setValues(selection);
-        update();
+        if(selection.isEmpty(selection)) return;
+
         break;
     case Tool::Shape:
     {
@@ -442,6 +430,20 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         undoStack.push_back(currentAction);
         redoStack.clear();
     }
+}
+// key press events
+void PixelCanvas::keyPressEvent(QKeyEvent *event){
+    if(currentTool == Tool::Move && selection.moveFloating){
+        if(event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){
+            commitMove();
+            return;
+        }
+        if(event->key() == Qt::Key_Escape){
+            cancelMove();
+            return;
+        }
+    }
+    QWidget::keyPressEvent(event);
 }
 // helper methods
 void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight){
@@ -534,6 +536,39 @@ QList<QColor> PixelCanvas::sortColors(QHash<QRgb, int> colorFrequency){
         result.append(pair.first);
     }
     return result;
+}
+void PixelCanvas::commitMove(){
+    removeTempLayer();
+    qDebug() << "move committed";
+    for (int my = 0; my < selection.height+1; my++){
+        for (int mx = 0; mx < selection.width+1; mx++){
+            int canvasX = selection.selectionOffset.x() + mx;
+            int canvasY = selection.selectionOffset.y() + my;
+            int index = (selection.width+1) * my + mx;
+            if (index >= selection.colors.size()) continue;
+            if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
+            if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+            if(selection.colors.at(index) == Qt::transparent) continue;
+            currentAction.push_back({activeLayer, canvasX, canvasY, layers[activeLayer].at(canvasX, canvasY), selection.colors.at(index)});
+            layers[activeLayer].at(selection.dragStart.x()+mx, selection.dragStart.y()+my) = Qt::transparent;
+            layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
+        }
+    }
+    selection.dragging = false;
+    selection.moveFloating = false;
+    selection.setValues(selection);
+    if(!currentAction.empty()){
+        undoStack.push_back(currentAction);
+        redoStack.clear();
+    }
+    update();
+}
+void PixelCanvas::cancelMove(){
+    removeTempLayer();
+    qDebug() << "move cancelled";
+    selection.moveFloating = false;
+    selection.dragging = false;
+    update();
 }
 // layer methods
 void PixelCanvas::makeTempLayer(){
@@ -857,6 +892,7 @@ void PixelCanvas::setLayerOpacity(int index, float opacity){
     update();
 }
 void PixelCanvas::setTool(Tool tool){
+    cancelMove();
     currentTool = tool;
 }
 void PixelCanvas::setShape(ShapeType shape){
