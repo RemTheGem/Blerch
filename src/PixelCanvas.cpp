@@ -17,7 +17,7 @@
 #include <QScrollArea>
 #include <QScrollBar>
 
-
+// widgets
 PixelCanvas::PixelCanvas(QWidget *parent)
     : QWidget(parent)
 {
@@ -36,6 +36,9 @@ PixelCanvas::PixelCanvas(QWidget *parent)
     updateCanvasSize();
     setMouseTracking(true);
 }
+ColorPreviewWidget::ColorPreviewWidget(QWidget *parent){
+}
+// paint events
 void PixelCanvas::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -103,35 +106,6 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     }
     buildPalette();
 }
-void PixelCanvas::updateCanvasSize()
-{
-    setFixedSize(layers[activeLayer].width *pixelSize, layers[activeLayer].height *pixelSize);
-    update();
-}
-void PixelCanvas::resizeCanvas(int width, int height)
-{
-    Layer &layer = layers[activeLayer];
-    // old width and height to redraw the previous canvas
-    QVector<QColor> oldPixels = layer.pixels;
-    int oldWidth = layer.width;
-    int oldHeight = layer.height;
-    // these ones so that when we add new layers they knew what size to be
-    canvasHeight = height;
-    canvasWidth = width;
-    layer.width = width;
-    layer.height = height;
-    layer.pixels.assign(width * height, Qt::transparent);
-    for(int y = 0; y < std::min(oldHeight, height); y++){
-        for(int x = 0; x < std::min(oldWidth, width); x++){
-            layer.pixels[y * width + x] = oldPixels[y * oldWidth + x];
-        }
-    }
-    updateCanvasSize();
-    update();
-}
-ColorPreviewWidget::ColorPreviewWidget(QWidget *parent){
-
-}
 void ColorPreviewWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -145,10 +119,6 @@ void ColorPreviewWidget::paintEvent(QPaintEvent *)
     painter.fillRect(rect, selectedColor);
     painter.drawRect(rect);
 
-}
-void ColorPreviewWidget::setPreviewColor(const QColor &color){
-    selectedColor = color;
-    update();
 }
 void PixelCanvas::paintColor(int x, int y, const QColor &color)
 {
@@ -183,14 +153,34 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color)
         }
     }
 }
-void PixelCanvas::setHorizontalSymmetry(bool enabled){
-    horizontalSymmetry = enabled;
+// canvas methods
+void PixelCanvas::updateCanvasSize()
+{
+    setFixedSize(layers[activeLayer].width *pixelSize, layers[activeLayer].height *pixelSize);
     update();
 }
-void PixelCanvas::setVerticalSymmetry(bool enabled){
-    verticalSymmetry = enabled;
+void PixelCanvas::resizeCanvas(int width, int height)
+{
+    Layer &layer = layers[activeLayer];
+    // old width and height to redraw the previous canvas
+    QVector<QColor> oldPixels = layer.pixels;
+    int oldWidth = layer.width;
+    int oldHeight = layer.height;
+    // these ones so that when we add new layers they knew what size to be
+    canvasHeight = height;
+    canvasWidth = width;
+    layer.width = width;
+    layer.height = height;
+    layer.pixels.assign(width * height, Qt::transparent);
+    for(int y = 0; y < std::min(oldHeight, height); y++){
+        for(int x = 0; x < std::min(oldWidth, width); x++){
+            layer.pixels[y * width + x] = oldPixels[y * oldWidth + x];
+        }
+    }
+    updateCanvasSize();
     update();
 }
+// mouse events
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
     if(layers[activeLayer].type == LayerType::Reference){
@@ -280,7 +270,6 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             }
     }
 }
-
 void PixelCanvas::wheelEvent(QWheelEvent *event)
 {
     if(event->modifiers() & Qt::ShiftModifier){
@@ -333,6 +322,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             break;
         case Tool::Move:
         {
+            if(selection.isEmpty(selection)) return;
             clear();
             selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
             for (int my = 0; my < selection.height+1; my++){
@@ -343,6 +333,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
                     if (index >= selection.colors.size()) continue;
                     if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
                     if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+
                     layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
                 }
             }
@@ -400,14 +391,13 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         for(int sy = selection.dragStart.y(); sy<=selection.height+selection.dragStart.y(); sy++){
             for(int sx = selection.dragStart.x(); sx<=selection.width+selection.dragStart.x(); sx++){
                 selection.colors.push_back(layers[activeLayer].at(sx,sy));
-
             }
         }
-        showMoveBoundary();
         update();
         break;
     }
     case Tool::Move:
+        if(selection.isEmpty(selection)) return;
         removeTempLayer();
         selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
         for (int my = 0; my < selection.height+1; my++){
@@ -418,6 +408,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
                 if (index >= selection.colors.size()) continue;
                 if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
                 if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+                if(selection.colors.at(index) == Qt::transparent) continue;
                 layers[activeLayer].at(selection.dragStart.x()+mx, selection.dragStart.y()+my) = Qt::transparent;
                 layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
             }
@@ -452,6 +443,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         redoStack.clear();
     }
 }
+// helper methods
 void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight){
     for(int sx = topLeft.x(); sx <= bottomRight.x(); sx++){
         for(int sy = topLeft.y(); sy <= bottomRight.y(); sy++){
@@ -495,18 +487,55 @@ void PixelCanvas::clear()
     buildPalette();
     update();
 }
-void PixelCanvas::showMoveBoundary(){
-    QPainter painter(this);
+void PixelCanvas::floodFill(int startX, int startY){
+    QColor target = layers[activeLayer].at(startX, startY);
+    QColor fill = currentColor;
+    if(target == fill) return;
+    std::queue<QPoint> q;
+    q.push(QPoint(startX, startY));
+    while (!q.empty()){
+        QPoint p = q.front();
+        q.pop();
+        int x = p.x();
+        int y = p.y();
+        if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
+            if(layers[activeLayer].at(x, y) == target){
+                paintColor(x, y, currentColor);
+                q.push(QPoint(x+1, y));
+                q.push(QPoint(x-1, y));
+                q.push(QPoint(x, y+1));
+                q.push(QPoint(x, y-1));
+            }
+        }
 
+
+    }
 }
-void PixelCanvas::setZoom(int zoom){
-    pixelSize = zoom;
-    updateCanvasSize();
-    update();
+void PixelCanvas::buildPalette(){
+    colorFrequency.clear();
+    for (const auto &layer : layers){
+        if (layer.type != LayerType::Pixel) continue;
+        for (const QColor &color : layer.pixels){
+            if (color == Qt::transparent) continue;
+                colorFrequency[color.rgba()]++;
+        }
+    }
+    emit paletteUpdated(sortColors(colorFrequency));
 }
-int PixelCanvas::getZoom(){
-    return pixelSize;
+QList<QColor> PixelCanvas::sortColors(QHash<QRgb, int> colorFrequency){
+    QList<QPair<QRgb,int>> pairs;
+    for(auto it = colorFrequency.begin(); it != colorFrequency.end(); ++it){
+        pairs.append({it.key(), it.value()});
+    }
+    std::sort(pairs.begin(), pairs.end(), [](auto a, auto b){
+        return a.second > b.second;});
+    QList<QColor> result;
+    for(const auto &pair :pairs){
+        result.append(pair.first);
+    }
+    return result;
 }
+// layer methods
 void PixelCanvas::makeTempLayer(){
     addLayer();
     setActiveLayer(layers.size()-1);
@@ -534,17 +563,6 @@ void PixelCanvas::removeLayer(int index){
     activeLayer = std::clamp(activeLayer,0,(int)layers.size()-1);
     update();
 }
-void PixelCanvas::setActiveLayer(int index){
-    if(index >= 0 && index < layers.size()){
-        activeLayer = index;
-        update();
-    }
-}
-QStringList PixelCanvas::getLayerNames(){
-    QStringList names;
-    for(const auto &layer : layers) names.append(layer.name);
-    return names;
-}
 void PixelCanvas::renameLayer(int index, const QString &name){
     if(index <0 || index >= layers.size()) return;
     layers[index].name = name;
@@ -570,14 +588,7 @@ void PixelCanvas::moveLayerDown(int index)
         activeLayer++;
     update();
 }
-void PixelCanvas::setLayerOpacity(int index, float opacity){
-    if (index < 0 || index >= layers.size()) return;
-    layers[index].opacity = opacity;
-    update();
-}
-float PixelCanvas::getLayerOpacity(int index) const{
-    return layers[index].opacity;
-}
+// File manipulation
 void PixelCanvas::saveImage()
 {
     QImage image(layers[0].width * pixelSize, layers[0].height * pixelSize, QImage::Format_ARGB32);
@@ -765,76 +776,7 @@ void PixelCanvas::pictureToPixel(){
     }
     update();
 }
-void PixelCanvas::medianCut(){
-
-}
-void PixelCanvas::setTool(Tool tool){
-    currentTool = tool;
-}
-void PixelCanvas::setShape(ShapeType shape){
-    currentShape = shape;
-}
-void PixelCanvas::floodFill(int startX, int startY){
-    QColor target = layers[activeLayer].at(startX, startY);
-    QColor fill = currentColor;
-    if(target == fill) return;
-    std::queue<QPoint> q;
-    q.push(QPoint(startX, startY));
-    while (!q.empty()){
-        QPoint p = q.front();
-        q.pop();
-        int x = p.x();
-        int y = p.y();
-        if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height){
-            if(layers[activeLayer].at(x, y) == target){
-                paintColor(x, y, currentColor);
-                q.push(QPoint(x+1, y));
-                q.push(QPoint(x-1, y));
-                q.push(QPoint(x, y+1));
-                q.push(QPoint(x, y-1));
-            }
-        }
-
-
-    }
-}
-void PixelCanvas::setBrushSize(int newSize){
-    brushSize = newSize;
-}
-void PixelCanvas::buildPalette(){
-    colorFrequency.clear();
-    for (const auto &layer : layers){
-        if (layer.type != LayerType::Pixel) continue;
-        for (const QColor &color : layer.pixels){
-            if (color == Qt::transparent) continue;
-                colorFrequency[color.rgba()]++;
-        }
-    }
-    emit paletteUpdated(sortColors(colorFrequency));
-}
-/*
- * for (auto it = colorFrequency.begin(); it != colorFrequency.end(); ++it){
-    QColor color(it.key());
-    int frequency = it.value();
-    qDebug() << color << frequency;
-}
-
-Sort
-*/
-QList<QColor> PixelCanvas::sortColors(QHash<QRgb, int> colorFrequency){
-    QList<QPair<QRgb,int>> pairs;
-    for(auto it = colorFrequency.begin(); it != colorFrequency.end(); ++it){
-        pairs.append({it.key(), it.value()});
-    }
-    std::sort(pairs.begin(), pairs.end(), [](auto a, auto b){
-        return a.second > b.second;});
-    QList<QColor> result;
-        for(const auto &pair :pairs){
-            result.append(pair.first);
-        }
-        return result;
-}
-
+// undo and redo
 void PixelCanvas::undo(){
     if(undoStack.empty()) return;
 
@@ -870,6 +812,56 @@ void PixelCanvas::undoActions(){
         undoStack.push_back(currentAction);
     }
 }
+// getters
 QColor PixelCanvas::getColor(){
     return currentColor;
+}
+int PixelCanvas::getZoom(){
+    return pixelSize;
+}
+QStringList PixelCanvas::getLayerNames(){
+    QStringList names;
+    for(const auto &layer : layers) names.append(layer.name);
+    return names;
+}
+float PixelCanvas::getLayerOpacity(int index) const{
+    return layers[index].opacity;
+}
+// setters
+void ColorPreviewWidget::setPreviewColor(const QColor &color){
+    selectedColor = color;
+    update();
+}
+void PixelCanvas::setHorizontalSymmetry(bool enabled){
+    horizontalSymmetry = enabled;
+    update();
+}
+void PixelCanvas::setVerticalSymmetry(bool enabled){
+    verticalSymmetry = enabled;
+    update();
+}
+void PixelCanvas::setZoom(int zoom){
+    pixelSize = zoom;
+    updateCanvasSize();
+    update();
+}
+void PixelCanvas::setActiveLayer(int index){
+    if(index >= 0 && index < layers.size()){
+        activeLayer = index;
+        update();
+    }
+}
+void PixelCanvas::setLayerOpacity(int index, float opacity){
+    if (index < 0 || index >= layers.size()) return;
+    layers[index].opacity = opacity;
+    update();
+}
+void PixelCanvas::setTool(Tool tool){
+    currentTool = tool;
+}
+void PixelCanvas::setShape(ShapeType shape){
+    currentShape = shape;
+}
+void PixelCanvas::setBrushSize(int newSize){
+    brushSize = newSize;
 }

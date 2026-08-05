@@ -27,7 +27,7 @@ public:
         QPoint position;
         std::vector<QColor> colors;
         bool isEmpty(const Selection& s){
-            return s.width == 0;
+            return s.colors.empty();
         }
         void setValues(Selection s){
             dragStart = s.selectionOffset;
@@ -49,8 +49,6 @@ public:
     void undo(); // undo method
     void redo(); // redo method
     void pictureToPixel(); // turn imported picture into pixel art
-    void showMoveBoundary(); // show a boundary when something is selected
-
     // enum class for available tools
     enum class Tool {
         Brush,
@@ -100,8 +98,6 @@ public:
     void makeTempLayer();
     void removeTempLayer();
     void setBrushSize(int newSize);
-    void medianCut();
-
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;
