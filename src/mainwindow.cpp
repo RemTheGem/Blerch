@@ -185,6 +185,8 @@ MainWindow::MainWindow(QWidget *parent)
     eraserAction->setShortcut(QKeySequence("E"));
     eyeDropperAction->setShortcut(QKeySequence("I"));
     fillAction->setShortcut(QKeySequence("F"));
+    moveAction->setShortcut(QKeySequence("M"));
+    selectAction->setShortcut(QKeySequence("S"));
     moveUpButton->setShortcut(QKeySequence("Ctrl+U"));
     moveDownButton->setShortcut(QKeySequence("Ctrl+D"));
     addLayerButton->setShortcut(QKeySequence("Ctrl+L"));
@@ -335,6 +337,8 @@ MainWindow::MainWindow(QWidget *parent)
                                  "E  - Eraser\n"
                                  "F  - Fill\n\n"
                                  "I  - switch to Eyedropper\n"
+                                 "S  - Select\n"
+                                 "M  - Move\n"
                                  "Middle mouse button   - Use Eyedropper on current pixel\n"
                                  "Ctrl + W  - Color Picker\n\n"
 
@@ -356,7 +360,7 @@ MainWindow::MainWindow(QWidget *parent)
                                  "Shift + Mouse Wheel   - Reference Image Zoom\n"
                                  "Mouse Wheel  - Scroll vertically\n"
                                  "Alt + Mouse Wheel  - Scroll Horizontally\n\n"
-                                 "After moving something press Enter to confirm or Esc to cancel move"
+                                 "After moving something with the move tool\n press Enter to confirm or Esc to cancel move"
                                  );
 
     });
