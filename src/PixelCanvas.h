@@ -85,7 +85,7 @@ public:
     QStringList getLayerNames(); // return the list of layer names
 
     // helper methods
-    void paintColor(int x, int y, const QColor &color); // paint color into the corresponding square
+    void paintColor(int x, int y, const QColor &color, bool recordUndo = true); // paint color into the corresponding square
     QList<QColor> sortColors(QHash<QRgb, int> colorFrequency); // sort a list of colors based on frequency
     void undoActions(); // helper method for undo
     QColor getColor(); // return the current color
@@ -95,8 +95,9 @@ public:
     void setVerticalSymmetry(bool enabled); // set vertical symmetry drawing
     void setTool(Tool tool); // set the current tool
     void setShape(ShapeType shape); // set shape
-    void drawRectangle(QPoint topLeft, QPoint bottomRight);
-    void drawCircle(QPoint topLeft, QPoint bottomRight);
+    void drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true);
+    void drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true);
+    void drawLine(QPoint start, QPoint end, bool recordUndo = true);
     void makeTempLayer();
     void removeTempLayer();
     void setBrushSize(int newSize);

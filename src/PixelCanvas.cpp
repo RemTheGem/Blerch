@@ -123,13 +123,15 @@ void ColorPreviewWidget::paintEvent(QPaintEvent *)
     painter.drawRect(rect);
 
 }
-void PixelCanvas::paintColor(int x, int y, const QColor &color)
+void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
 {
     auto draw = [&](int px, int py){
         if (px >= 0 && px < layers[activeLayer].width &&
             py >= 0 && py < layers[activeLayer].height && layers[activeLayer].at(px, py) != color){
-
-            currentAction.push_back({activeLayer, px, py, layers[activeLayer].at(px, py), color});
+            if(recordUndo){
+                currentAction.push_back({activeLayer, px, py, layers[activeLayer].at(px, py), color});
+                qDebug() << "recorded undo";
+            }
             layers[activeLayer].at(px, py) = color;
         }
     };
@@ -263,6 +265,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
 
             if (x >= 0 && x < layers[activeLayer].width && y >= 0 && y < layers[activeLayer].height) {
                 paintColor(x, y, Qt::transparent);
+                shape = Shape();
             }
 
             update();
@@ -335,6 +338,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             eventY = std::clamp(eventY, 0, layers[activeLayer].height - 1);
             selection.previewEnd = QPoint(eventX, eventY);
             update();
+            break;
         }
         case Tool::Move:
         {
@@ -349,7 +353,6 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
                     if (index >= selection.colors.size()) continue;
                     if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
                     if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
-
                     layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
                 }
             }
@@ -364,10 +367,13 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             shape.width = shape.end.x() - shape.start.x();
             shape.height = shape.end.y() - shape.start.y();
             if(currentShape == ShapeType::Rectangle){
-                drawRectangle(topLeft,bottomRight);
+                drawRectangle(topLeft, bottomRight, false);
             }
-            else if(currentShape == ShapeType::Circle){
-                drawCircle(topLeft, bottomRight);
+            if(currentShape == ShapeType::Circle){
+                drawCircle(topLeft, bottomRight, false);
+            }
+            if(currentShape == ShapeType::Line){
+                drawLine(shape.start, shape.end, false);
             }
             update();
             break;
@@ -424,6 +430,10 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     case Tool::Shape:
     {
         removeTempLayer();
+        if(shape.end == QPoint(0,0) && shape.start == QPoint(0,0)){
+            update();
+            break;
+        }
         shape.end = event->pos()/pixelSize;
         QPoint topLeft(std::min(shape.start.x(), shape.end.x()), std::min(shape.start.y(), shape.end.y()));
         QPoint bottomRight(std::max(shape.start.x(), shape.end.x()), std::max(shape.start.y(),shape.end.y()));
@@ -435,6 +445,9 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 
         else if(currentShape == ShapeType::Circle){
             drawCircle(topLeft, bottomRight);
+        }
+        else if(currentShape == ShapeType::Line){
+            drawLine(shape.start, shape.end);
         }
         update();
         break;
@@ -462,19 +475,18 @@ void PixelCanvas::keyPressEvent(QKeyEvent *event){
     QWidget::keyPressEvent(event);
 }
 // helper methods
-void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight){
+void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo){
     for(int sx = topLeft.x(); sx <= bottomRight.x(); sx++){
         for(int sy = topLeft.y(); sy <= bottomRight.y(); sy++){
             if(sx < 0 || sx >= layers[activeLayer].width) continue;
             if(sy < 0 || sy >= layers[activeLayer].height) continue;
             if(sx == topLeft.x() || sx == bottomRight.x() || sy == topLeft.y() || sy == bottomRight.y()){
-                currentAction.push_back({activeLayer, sx, sy, layers[activeLayer].at(sx, sy), currentColor});
-                layers[activeLayer].at(sx,sy) = currentColor;
+                paintColor(sx,sy, currentColor, recordUndo);
             }
         }
     }
 }
-void PixelCanvas::drawCircle(QPoint topLeft, QPoint bottomRight){
+void PixelCanvas::drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo){
     // midpoint circle algorithm stolen from the internet
     int centerX = (topLeft.x() + bottomRight.x())/2;
     int centerY = (topLeft.y() + bottomRight.y())/2;
@@ -487,10 +499,37 @@ void PixelCanvas::drawCircle(QPoint topLeft, QPoint bottomRight){
                 int py = centerY + cy;
                 if(px < 0 || px >= layers[activeLayer].width) continue;
                 if(py < 0 || py >= layers[activeLayer].height) continue;
-                currentAction.push_back({activeLayer, px, py, layers[activeLayer].at(px, py), currentColor});
-                layers[activeLayer].at(px,py) = currentColor;
+                paintColor(px,py,currentColor, recordUndo);
 
             }
+        }
+    }
+}
+void PixelCanvas::drawLine(QPoint start, QPoint end, bool recordUndo)
+{
+    // Bresenham's algorithm stolen from the internet
+    int x0 = start.x();
+    int y0 = start.y();
+    int x1 = end.x();
+    int y1 = end.y();
+    int dx = std::abs(x1 - x0);
+    int dy = -std::abs(y1 - y0);
+    int sx = (x0 < x1) ? 1 : -1;
+    int sy = (y0 < y1) ? 1 : -1;
+    int err = dx + dy;
+    while(true){
+        if(x0 >= 0 && x0 < layers[activeLayer].width && y0 >= 0 && y0 < layers[activeLayer].height){
+            paintColor(x0, y0, currentColor, recordUndo);
+        }
+        if(x0 == x1 && y0 == y1) break;
+        int e2 = 2 * err;
+        if(e2 >= dy){
+            err += dy;
+            x0 += sx;
+        }
+        if(e2 <= dx){
+            err += dx;
+            y0 += sy;
         }
     }
 }
@@ -499,7 +538,7 @@ void PixelCanvas::clear()
     if (layers[activeLayer].type == LayerType::Reference) return;
     for (int y = 0; y < layers[activeLayer].height; y++) {
         for (int x = 0; x < layers[activeLayer].width; x++) {
-            paintColor(x, y, Qt::transparent);
+            layers[activeLayer].at(x, y) = Qt::transparent;
         }
     }
     buildPalette();
@@ -567,8 +606,8 @@ void PixelCanvas::commitMove(){
             if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
             if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
             if(selection.colors.at(index) == Qt::transparent) continue;
-
-            layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
+            paintColor(canvasX, canvasY,selection.colors.at(index));
+            //layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
             selection.previewEnd = QPoint(canvasX, canvasY);
         }
     }
@@ -582,7 +621,8 @@ void PixelCanvas::commitMove(){
             if (oldY < 0 || oldY >= layers[activeLayer].height) continue;
             if(selection.colors.at(index) == Qt::transparent) continue;
             if(destRect.contains(oldX, oldY)) continue;
-            layers[activeLayer].at(oldX, oldY) = Qt::transparent;
+            paintColor(oldX,oldY,Qt::transparent);
+            // layers[activeLayer].at(oldX, oldY) = Qt::transparent;
         }
     }
     selection.dragging = false;
@@ -598,7 +638,6 @@ void PixelCanvas::commitMove(){
 }
 void PixelCanvas::cancelMove(){
     removeTempLayer();
-    qDebug() << "move cancelled";
     selection.moveFloating = false;
     selection.dragging = false;
     update();
