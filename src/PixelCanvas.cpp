@@ -628,12 +628,12 @@ void PixelCanvas::commitMove(){
     selection.dragging = false;
     selection.moveFloating = false;
     selection.setValues(selection);
-    /*
+
     if(!currentAction.empty()){
         undoStack.push_back(currentAction);
         redoStack.clear();
     }
-    */
+
     update();
 }
 void PixelCanvas::cancelMove(){
@@ -898,6 +898,8 @@ void PixelCanvas::undo(){
         layers[change.layer].at(change.x, change.y) = change.oldColor;
     }
     redoStack.push_back(action);
+    // remove selection if undone
+    selection = Selection();
     update();
 }
 void PixelCanvas::redo(){
