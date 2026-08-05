@@ -130,7 +130,6 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
             py >= 0 && py < layers[activeLayer].height && layers[activeLayer].at(px, py) != color){
             if(recordUndo){
                 currentAction.push_back({activeLayer, px, py, layers[activeLayer].at(px, py), color});
-                qDebug() << "recorded undo";
             }
             layers[activeLayer].at(px, py) = color;
         }
@@ -288,7 +287,7 @@ void PixelCanvas::wheelEvent(QWheelEvent *event)
                 layers[activeLayer].scale *= 1.1f;
             }
             else layers[activeLayer].scale *= 0.9f;
-            layers[activeLayer].scale = std::clamp(layers[activeLayer].scale, 0.001f, 10.0f);
+            layers[activeLayer].scale = std::clamp(layers[activeLayer].scale, 0.0001f, 10.0f);
             update();
         }
         return;
@@ -297,7 +296,7 @@ void PixelCanvas::wheelEvent(QWheelEvent *event)
         if(event->angleDelta().y() > 0)
             setZoom(pixelSize + 2);
         else
-            setZoom(std::max(2, pixelSize - 2));
+            setZoom(std::max(2, pixelSize -2));
         return;
     }
     QWidget::wheelEvent(event);
@@ -533,6 +532,21 @@ void PixelCanvas::drawLine(QPoint start, QPoint end, bool recordUndo)
         }
     }
 }
+void PixelCanvas::resetCanvas()
+{
+    for(int x=0; x <=layers.size()+1; x++){
+        emit clearLayerList();
+    }
+    layers.clear();
+    emit reInitLayers();
+    setTool(Tool::Brush);
+    setColor(Qt::black);
+    selection = Selection();
+    shape = Shape();
+    resizeCanvas(32, 32);
+    buildPalette();
+    update();
+}
 void PixelCanvas::clear()
 {
     if (layers[activeLayer].type == LayerType::Reference) return;
@@ -594,7 +608,6 @@ QList<QColor> PixelCanvas::sortColors(QHash<QRgb, int> colorFrequency){
 }
 void PixelCanvas::commitMove(){
     removeTempLayer();
-    qDebug() << "move committed";
     QRect destRect(selection.selectionOffset.x(), selection.selectionOffset.y(),
                    selection.width+1, selection.height+1);
     for (int my = 0; my < selection.height+1; my++){
@@ -649,7 +662,6 @@ void PixelCanvas::makeTempLayer(){
     layers[activeLayer].opacity = 0.5f;
     layers[activeLayer].width = canvasWidth;
     layers[activeLayer].height = canvasHeight;
-    qDebug() << "current width" << layers[activeLayer].width;
 }
 void PixelCanvas::removeTempLayer(){
     removeLayer(layers.size()-1);

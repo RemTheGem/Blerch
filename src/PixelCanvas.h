@@ -40,6 +40,7 @@ public:
     // main functions
     void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);} // set the current color
     void clear(); // clear the canvas on the current layer
+    void resetCanvas(); // reset the whole canvas
     void saveImage(); // save image as png
     void saveProject(); // save the project as a json file
     void loadProject(); // load project from a json file
@@ -177,6 +178,8 @@ private:
 signals:
     void colorChanged(QColor color); // signal to change the selected color
     void paletteUpdated(QList<QColor> colors); // signal to change the palette
+    void clearLayerList(); // clear current layers
+    void reInitLayers(); // reinitialize layer list
 };
 
 

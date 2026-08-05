@@ -207,7 +207,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(eraseBoard, &QAction::triggered, [=](){
         reply = QMessageBox::warning(this, "Clear Canvas?", "All progress may be lost. Clear Canvas?", QMessageBox::Yes | QMessageBox::Cancel);
         if(reply == QMessageBox::Yes){
-        canvas->clear();
+        canvas->resetCanvas();
         }
     });
     connect(resizeCanvas, &QAction::triggered, [=](){
@@ -215,10 +215,10 @@ MainWindow::MainWindow(QWidget *parent)
         bool okWidth;
         bool okHeight;
         int width = QInputDialog::getInt(
-            this, "Canvas Width", "Width:", 32, 1, 256, 1, &okWidth);
+            this, "Canvas Width", "Width:", 32, 1, 512, 1, &okWidth);
         if(!okWidth)
             return;
-        int height = QInputDialog::getInt(this, "Canvas Height", "Height:", 32, 1, 256, 1, &okHeight);
+        int height = QInputDialog::getInt(this, "Canvas Height", "Height:", 32, 1, 512, 1, &okHeight);
         if(!okHeight)
             return;
         canvas->resizeCanvas(width, height);
@@ -289,6 +289,17 @@ MainWindow::MainWindow(QWidget *parent)
             canvas->removeLayer(row);
             delete layerList->takeItem(row);
         }
+    });
+    connect(canvas, &PixelCanvas::clearLayerList, [=](){
+        int row = layerList->currentRow();
+        if(row>=0){
+            delete layerList->takeItem(row);
+        }
+    });
+    connect(canvas, &PixelCanvas::reInitLayers, [=](){
+        canvas->addLayer();
+        layerList->addItem("Layer " + QString::number(layerList->count()+1));
+        layerList->setCurrentRow(layerList->count()-1);
     });
     connect(layerList,&QListWidget::currentRowChanged, canvas, &PixelCanvas::setActiveLayer);
     connect(moveUpButton, &QPushButton::clicked, [=](){
