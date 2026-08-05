@@ -1,9 +1,0 @@
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/pixel_art.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/edit_cache.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/rebuild_cache.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/list_install_components.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/install.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/install/local.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/install/strip.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/pixel_art_autogen_timestamp_deps.dir
-/home/rem/programming/pixel_art/pixel_art/build/Desktop-Debug/CMakeFiles/pixel_art_autogen.dir

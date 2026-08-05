@@ -1,3 +1,0 @@
-# Hashes of file build rules.
-67e46f9a4794e2772daa092da5187cfa CMakeFiles/pixel_art_autogen
-40e3bc9207bfd07f03ed6390bcb31d7e pixel_art_autogen/timestamp
