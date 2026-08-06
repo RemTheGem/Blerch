@@ -185,6 +185,8 @@ signals:
     void paletteUpdated(QList<QColor> colors); // signal to change the palette
     void clearLayerList(); // clear current layers
     void reInitLayers(); // reinitialize layer list
+    void mousePositionChanged(int x, int y); // signal to change current mouse position in status bar
+    void canvasSizeChanged(int x, int y);
 };
 
 

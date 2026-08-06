@@ -161,6 +161,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
 void PixelCanvas::updateCanvasSize()
 {
     setFixedSize(layers[activeLayer].width *pixelSize, layers[activeLayer].height *pixelSize);
+    emit canvasSizeChanged(canvasWidth, canvasHeight);
     update();
 }
 void PixelCanvas::resizeCanvas(int width, int height)
@@ -304,6 +305,7 @@ void PixelCanvas::wheelEvent(QWheelEvent *event)
 }
 void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
 {
+    emit mousePositionChanged((event->position().x()/pixelSize)+1, (event->position().y()/pixelSize)+1);
     if(movingPicture){
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();

@@ -179,6 +179,11 @@ MainWindow::MainWindow(QWidget *parent)
     toolGroup->addAction(selectAction);
     toolGroup->addAction(shapeAction);
     showMaximized();
+    // status Bar
+    QLabel *positionLabel = new QLabel("X: 0 Y: 0", this);
+    statusBar()->addPermanentWidget(positionLabel);
+    QLabel *canvasSizeLabel = new QLabel("32x32", this);
+    statusBar()->addPermanentWidget(canvasSizeLabel);
 
     // keyboard shortcuts
     pickColor->setShortcut(QKeySequence("Ctrl+W"));
@@ -253,15 +258,19 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(undo, &QAction::triggered, [=](){
         canvas->undo();
+        statusBar()->showMessage("Undo", 2000);
     });
     connect(redo, &QAction::triggered, [=](){
         canvas->redo();
+        statusBar()->showMessage("Redo", 2000);
     });
     connect(copyPixels, &QAction::triggered, [=](){
         canvas->copyPixels();
+        statusBar()->showMessage("Copied!", 2000);
     });
     connect(pastePixels, &QAction::triggered, [=](){
         canvas->pastePixels();
+        statusBar()->showMessage("Left Click or press enter to confirm. Esc to Cancel", 5000);
     });
     connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setPreviewColor);
     connect(saveProject, &QAction::triggered, [=](){
@@ -272,6 +281,7 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(0);
+        statusBar()->showMessage("Project Loaded!", 4000);
     });
     connect(loadPicture, &QAction::triggered, [=](){
         canvas->loadPicture();
@@ -374,6 +384,8 @@ MainWindow::MainWindow(QWidget *parent)
                                  "Editing:\n"
                                  "Ctrl + Z  - Undo\n"
                                  "Ctrl + Y  - Redo\n"
+                                 "Ctrl + C  - Copy Selection\n"
+                                 "Ctrl + V  - Paste Selection\n"
                                  "Ctrl + P  - Load Picture\n"
                                  "Ctrl + S  - Save Picture\n"
                                  "Ctrl + O  - Load Project\n"
@@ -394,6 +406,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
     connect(brushSizeSlider, &QSlider::valueChanged, [=](int value){
         canvas->setBrushSize(value);
+    });
+    connect(canvas, &PixelCanvas::mousePositionChanged, this, [=](int x, int y){
+        positionLabel->setText(QString("X: %1 Y: %2 ").arg(x).arg(y));
+    });
+    connect(canvas, &PixelCanvas::canvasSizeChanged, this, [=](int x, int y){
+        canvasSizeLabel->setText(QString(" %1x%2 ").arg(x).arg(y));
     });
 }
 
