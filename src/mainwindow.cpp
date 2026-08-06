@@ -205,8 +205,6 @@ MainWindow::MainWindow(QWidget *parent)
     copyPixels->setShortcut(QKeySequence("Ctrl+C"));
     pastePixels->setShortcut(QKeySequence("Ctrl+V"));
 
-    qDebug() << palette->width();
-
     // Connections (needs organizing -_-#)
     connect(pickColor, &QAction::triggered, [=]() {
         QColor color = QColorDialog::getColor(Qt::white, this);
@@ -331,7 +329,6 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->moveLayerUp(index);
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
-        qDebug() << canvas-> getLayerNames() << " layers";
         layerList->setCurrentRow(index + 1);
     });
     connect(moveDownButton, &QPushButton::clicked, [=](){

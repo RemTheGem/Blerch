@@ -52,8 +52,8 @@ public:
     void undo(); // undo method
     void redo(); // redo method
     void pictureToPixel(); // turn imported picture into pixel art
-    void copyPixels();
-    void pastePixels();
+    void copyPixels(); // copy pixels
+    void pastePixels(); // paste copied pixels
     // enum class for available tools
     enum class Tool {
         Brush,
@@ -90,7 +90,6 @@ public:
     // helper methods
     void paintColor(int x, int y, const QColor &color, bool recordUndo = true); // paint color into the corresponding square
     QList<QColor> sortColors(QHash<QRgb, int> colorFrequency); // sort a list of colors based on frequency
-    void undoActions(); // helper method for undo
     QColor getColor(); // return the current color
     int getZoom(); // get the current zoom
     void setZoom(int zoom); // set the zoom amount
@@ -98,16 +97,16 @@ public:
     void setVerticalSymmetry(bool enabled); // set vertical symmetry drawing
     void setTool(Tool tool); // set the current tool
     void setShape(ShapeType shape); // set shape
-    void drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true);
-    void drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true);
-    void drawLine(QPoint start, QPoint end, bool recordUndo = true);
-    void makeTempLayer();
-    void removeTempLayer();
-    void setBrushSize(int newSize);
-    void commitMove();
-    void cancelMove();
-    void commitPaste();
-    void cancelPaste();
+    void drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw a rectangle
+    void drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw a circle
+    void drawLine(QPoint start, QPoint end, bool recordUndo = true); // function to draw a straight line
+    void makeTempLayer(); // make temporary layer for preview
+    void removeTempLayer(); // remove temporary layer
+    void setBrushSize(int newSize); // change brush size
+    void commitMove(); // confirm move
+    void cancelMove(); // cancel move
+    void commitPaste(); // confirm paste
+    void cancelPaste(); // cancel paste
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -127,7 +126,6 @@ private:
     bool verticalSymmetry = false; // bool for vertical symmetry
     QPoint moveOffset; // point on the canvas for moving picture
     QColor currentColor = Qt::black; // selected color
-    QColor moveColor;
     bool isDrawing = false; // bool to check if user is drawing
     bool isUndoing = false; // bool to check if user is undoing
     bool isErasing = false; // bool to check if user is erasing
@@ -171,7 +169,7 @@ private:
     int activeLayer = 0; // selected layer
     QHash<QRgb, int> colorFrequency; // number of times color has appeared on current canvas
     Tool currentTool = Tool::Brush; // default tool
-    ShapeType currentShape = ShapeType::Rectangle;
+    ShapeType currentShape = ShapeType::Rectangle; // default shape
     Selection selection;
     Shape shape;
     Layer currentState; // store current state for undo and redo
@@ -186,7 +184,7 @@ signals:
     void clearLayerList(); // clear current layers
     void reInitLayers(); // reinitialize layer list
     void mousePositionChanged(int x, int y); // signal to change current mouse position in status bar
-    void canvasSizeChanged(int x, int y);
+    void canvasSizeChanged(int x, int y); // signal to show canvas size in status bar
 };
 
 
