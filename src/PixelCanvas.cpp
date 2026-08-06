@@ -194,6 +194,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             moveOffset = event->pos() - layers[activeLayer].position;
         }
     }
+    if(isPasting) return;
     else{
     currentAction.clear();
     if(event->button() == Qt::LeftButton){
@@ -307,8 +308,25 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
+    if(isPasting){
+        if(selection.isEmpty(selection)) return;
+        clear();
+        selection.movePosition = QPoint(event->position().x()/pixelSize, event->position().y()/pixelSize);
+        for (int py = 0; py < selection.height+1; py++){
+            for (int px = 0; px < selection.width+1; px++){
+                int canvasX = selection.movePosition.x() - (selection.width/2) + px;
+                int canvasY = selection.movePosition.y() - (selection.height/2) + py;
+                int index = (selection.width+1) * py + px;
+                if (index >= selection.colors.size()) continue;
+                if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
+                if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+                layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
+            }
+        }
+        update();
+        return;
+    }
     if (!isDrawing) return;
-
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
     bool changed = false;
@@ -399,6 +417,10 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
     }
+    if(isPasting){
+        commitPaste();
+        return;
+    }
     switch(currentTool){
     case Tool::Select:
     {
@@ -423,6 +445,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     }
     case Tool::Move:
         selection.dragging = false;
+        // check if redundant
         if(selection.isEmpty(selection)) return;
 
         break;
@@ -461,6 +484,16 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 }
 // key press events
 void PixelCanvas::keyPressEvent(QKeyEvent *event){
+    if(isPasting){
+        if(event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){
+            commitPaste();
+            return;
+        }
+        if(event->key() == Qt::Key_Escape){
+            cancelPaste();
+            return;
+        }
+    }
     if(currentTool == Tool::Move && selection.moveFloating){
         if(event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){
             commitMove();
@@ -638,6 +671,20 @@ void PixelCanvas::commitMove(){
             // layers[activeLayer].at(oldX, oldY) = Qt::transparent;
         }
     }
+    for (int my = 0; my < selection.height+1; my++){
+        for (int mx = 0; mx < selection.width+1; mx++){
+            int oldX = selection.dragStart.x() + mx;
+            int oldY = selection.dragStart.y() + my;
+            int index = (selection.width+1) * my + mx;
+            if (index >= selection.colors.size()) continue;
+            if (oldX < 0 || oldX >= layers[activeLayer].width) continue;
+            if (oldY < 0 || oldY >= layers[activeLayer].height) continue;
+            if(selection.colors.at(index) == Qt::transparent) continue;
+            if(destRect.contains(oldX, oldY)) continue;
+            paintColor(oldX,oldY,Qt::transparent);
+            // layers[activeLayer].at(oldX, oldY) = Qt::transparent;
+        }
+    }
     selection.dragging = false;
     selection.moveFloating = false;
     selection.setValues(selection);
@@ -653,6 +700,41 @@ void PixelCanvas::cancelMove(){
     removeTempLayer();
     selection.moveFloating = false;
     selection.dragging = false;
+    update();
+}
+void PixelCanvas::copyPixels(){
+    qDebug() << "copied!";
+}
+void PixelCanvas::pastePixels(){
+    isPasting = true;
+    makeTempLayer();
+}
+void PixelCanvas::commitPaste(){
+    removeTempLayer();
+    for (int py = 0; py < selection.height+1; py++){
+        for (int px = 0; px < selection.width+1; px++){
+            int canvasX = selection.movePosition.x() - (selection.width/2) + px;
+            int canvasY = selection.movePosition.y() - (selection.height/2) + py;
+            int index = (selection.width+1) * py + px;
+            if (index >= selection.colors.size()) continue;
+            if (canvasX < 0 || canvasX >= layers[activeLayer].width) continue;
+            if (canvasY < 0 || canvasY >= layers[activeLayer].height) continue;
+            if(selection.colors.at(index) == Qt::transparent) continue;
+            paintColor(canvasX, canvasY,selection.colors.at(index));
+            //layers[activeLayer].at(canvasX, canvasY) = selection.colors.at(index);
+
+        }
+    }
+    if(!currentAction.empty()){
+        undoStack.push_back(currentAction);
+        redoStack.clear();
+    }
+    isPasting = false;
+    update();
+}
+void PixelCanvas::cancelPaste(){
+    removeTempLayer();
+    isPasting = false;
     update();
 }
 // layer methods

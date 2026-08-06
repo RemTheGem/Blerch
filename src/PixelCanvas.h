@@ -26,7 +26,7 @@ public:
         QPoint previewEnd;
         QPoint dragOffset;
         QPoint selectionOffset;
-        QPoint position;
+        QPoint movePosition;
         std::vector<QColor> colors;
         bool isEmpty(const Selection& s){
             return s.colors.empty();
@@ -52,6 +52,8 @@ public:
     void undo(); // undo method
     void redo(); // redo method
     void pictureToPixel(); // turn imported picture into pixel art
+    void copyPixels();
+    void pastePixels();
     // enum class for available tools
     enum class Tool {
         Brush,
@@ -104,6 +106,8 @@ public:
     void setBrushSize(int newSize);
     void commitMove();
     void cancelMove();
+    void commitPaste();
+    void cancelPaste();
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -127,6 +131,7 @@ private:
     bool isDrawing = false; // bool to check if user is drawing
     bool isUndoing = false; // bool to check if user is undoing
     bool isErasing = false; // bool to check if user is erasing
+    bool isPasting = false;
     // enum class for different layer types
     // Pixel is for drawing, Reference is for pictures that have been imported
     enum class LayerType{

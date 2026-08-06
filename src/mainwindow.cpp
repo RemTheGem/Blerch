@@ -132,6 +132,10 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *eyeDropperAction = toolbar->addAction("Eye Dropper");
     QAction *fillAction = toolbar->addAction("Fill");
     QAction *shapeAction = new QAction("Shape", this);
+    QAction *pastePixels = new QAction("Paste", this);
+    QAction *copyPixels = new QAction("Copy", this);
+    addAction(copyPixels);
+    addAction(pastePixels);
     shapeButton->setDefaultAction(shapeAction);
     shapeButton->setMenu(shapeMenu);
     shapeButton->setPopupMode(QToolButton::MenuButtonPopup);
@@ -193,6 +197,9 @@ MainWindow::MainWindow(QWidget *parent)
     saveProject->setShortcut(QKeySequence("Ctrl+Shift+S"));
     loadProject->setShortcut(QKeySequence("Ctrl+O"));
     loadPicture->setShortcut(QKeySequence("Ctrl+P"));
+    copyPixels->setShortcut(QKeySequence("Ctrl+C"));
+    pastePixels->setShortcut(QKeySequence("Ctrl+V"));
+
     qDebug() << palette->width();
 
     // Connections (needs organizing -_-#)
@@ -249,6 +256,12 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(redo, &QAction::triggered, [=](){
         canvas->redo();
+    });
+    connect(copyPixels, &QAction::triggered, [=](){
+        canvas->copyPixels();
+    });
+    connect(pastePixels, &QAction::triggered, [=](){
+        canvas->pastePixels();
     });
     connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setPreviewColor);
     connect(saveProject, &QAction::triggered, [=](){
