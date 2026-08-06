@@ -3,10 +3,12 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
 
 ## Features
 - Brush, Eraser, Fill and eyedropper tools
+- Select, Copy, Paste and Move pixels
 - Custom color picker
 - Custom Brush sizes
 - undo and redo support
-- Clear and resize canvas
+- Resize canvas
+- Reset Canvas completely
 - adjustable canvas zoom
 - Frequency based color palette
 - Symmetry Drawing
@@ -16,9 +18,16 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
   - Adjust layer opacity
 - Save and reload projects
 - Export art as PNG with transparency support
+- Turn any Picture into Pixel art with custom:
+  - Height
+  - Width
+  - Fixed/dynamic aspect ratio
+  - number of colors
 - Keyboard and mouse shortcuts for most features mentioned
 - Built in help menu showing all shortcut
 - More on the way!! (If i dont forget about this)
+
+(I may have forgotten some features lmao)
 
 <img src="images/smoke 3.png" width="600"/>
 
