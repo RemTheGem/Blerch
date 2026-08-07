@@ -11,6 +11,7 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
 - Reset Canvas completely
 - adjustable canvas zoom
 - Frequency based color palette
+- Import palette or use one of the presets
 - Symmetry Drawing
 - import images for referencing with scaling and movement support
 - Layers which includes
@@ -25,6 +26,7 @@ A simple Desktop application built with Qt and C++ to make simple pixel art on a
   - number of colors
 - Keyboard and mouse shortcuts for most features mentioned
 - Built in help menu showing all shortcut
+- Persistent memory for recent projects, last project and imported palettes
 - More on the way!! (If i dont forget about this)
 
 (I may have forgotten some features lmao)
