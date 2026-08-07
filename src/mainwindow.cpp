@@ -319,12 +319,15 @@ MainWindow::MainWindow(QWidget *parent)
             QString paletteName = QFileInfo(fileName).baseName();
             int customIndex = paletteSelector->findData("custom");
             if(customIndex == -1){
-                paletteSelector->addItem(paletteName, "custom");
+                QVariantMap customData;
+                customData["type"] = "custom";
+                customData["path"] = fileName;
+                paletteSelector->addItem(paletteName, customData);
             }
             else{
                 paletteSelector->setItemText(customIndex, paletteName);
             }
-            paletteSelector->setCurrentIndex(paletteSelector->findData("custom"));
+            paletteSelector->setCurrentIndex(paletteSelector->findText(paletteName));
         }
     });
     connect(zoomIn, &QAction::triggered, [=](){
@@ -438,13 +441,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(paletteSelector, &QComboBox::currentIndexChanged,
             this, [=](int index){
 
-        QString path = paletteSelector->itemData(index).toString();
-        if(path.isEmpty()){
-            customPalette->clearPalette();
-            return;
-        }
-        customPalette->loadGPL(path);
+        QVariant data = paletteSelector->itemData(index);
 
+        if(data.typeId() == QMetaType::QString){
+            QString path = data.toString();
+            if(path.isEmpty()){
+                customPalette->clearPalette();
+                return;
+            }
+            customPalette->loadGPL(path);
+        }
+        else if(data.typeId() == QMetaType::QVariantMap){
+            QVariantMap map = data.toMap();
+            customPalette->loadGPL(map["path"].toString());
+            qDebug() << map["path"].toString();
+        }
             });
     connect(horizontalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setHorizontalSymmetry);
     connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
