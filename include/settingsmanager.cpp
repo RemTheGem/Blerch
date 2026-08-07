@@ -15,3 +15,22 @@ void SettingsManager::setLastProject(const QString &path){
 QString SettingsManager::getLastProject(){
     return settings.value("lastProject", "").toString();
 }
+void SettingsManager::addRecentFile(const QString &path){
+    QStringList files = getRecentFiles();
+    files.removeAll(path);
+    files.prepend(path);
+    while(files.size()>10){
+        files.removeLast();
+
+    }
+    settings.setValue("recentFiles", files);
+}
+QStringList SettingsManager::getRecentFiles(){
+    return settings.value("recentFiles", QStringList()).toStringList();
+}
+void SettingsManager::setCustomPalette(const QString &path){
+    settings.setValue("customPalette", path);
+}
+QString SettingsManager::getCustomPalette(){
+    return settings.value("customPalette", "").toString();
+}

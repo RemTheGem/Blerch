@@ -55,6 +55,8 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setAlignment(Qt::AlignCenter);
     // settings
     QString lastProject = SettingsManager::instance().getLastProject();
+    QString previousPalette = SettingsManager::instance().getCustomPalette();
+
     // shape menu setup
     shapeMenu->addAction("Rectangle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
@@ -97,7 +99,7 @@ MainWindow::MainWindow(QWidget *parent)
     // palette and symmetry buttons setup
     QWidget *paletteContainer = new QWidget(this);
     QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
-    paletteWidget *palette = new paletteWidget;
+    paletteWidget *paletteW = new paletteWidget;
     CustomPalette *customPalette = new CustomPalette;
     QSlider *brushSizeSlider = new QSlider(Qt::Horizontal);
     QLabel *brushSizeLabel = new QLabel("Brush Size");
@@ -125,11 +127,11 @@ MainWindow::MainWindow(QWidget *parent)
     paletteLayout->addWidget(paletteSelector);
     paletteLayout->addWidget(customPalette);
     paletteLayout->addWidget(paletteLabel);
-    paletteLayout->addWidget(palette);
+    paletteLayout->addWidget(paletteW);
     paletteLayout->addStretch();
     // size policies
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    palette->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    paletteW->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     layerPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     layerPanel->setMinimumWidth(100);
@@ -179,8 +181,9 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *loadPicture = fileMenu->addAction("Open Reference Picture");
     QAction *loadProjectAction = fileMenu->addAction("Open Project");
     QAction *loadLastProject = fileMenu->addAction("Open Last Project");
+    recentFilesMenu = fileMenu->addMenu("Recent Files");
     QAction *saveDrawing = fileMenu->addAction("Export PNG");
-    QAction *saveProject = fileMenu->addAction("Save Project");
+    QAction *saveProjectAction = fileMenu->addAction("Save Project");
     QAction *loadPalette = fileMenu->addAction("Import Palette");
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
     QAction *openPicture = picToPixMenu->addAction("Open Picture");
@@ -210,6 +213,11 @@ MainWindow::MainWindow(QWidget *parent)
     statusBar()->addPermanentWidget(positionLabel);
     QLabel *canvasSizeLabel = new QLabel("32x32", this);
     statusBar()->addPermanentWidget(canvasSizeLabel);
+    // laod settings
+    if(!previousPalette.isEmpty()){
+        customPalette->loadGPL(previousPalette);
+    }
+    updateRecentFiles();
 
     // keyboard shortcuts
     pickColor->setShortcut(QKeySequence("Ctrl+W"));
@@ -225,7 +233,7 @@ MainWindow::MainWindow(QWidget *parent)
     moveUpButton->setShortcut(QKeySequence("Ctrl+U"));
     moveDownButton->setShortcut(QKeySequence("Ctrl+D"));
     addLayerButton->setShortcut(QKeySequence("Ctrl+L"));
-    saveProject->setShortcut(QKeySequence("Ctrl+Shift+S"));
+    saveProjectAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
     loadProjectAction->setShortcut(QKeySequence("Ctrl+O"));
     loadPicture->setShortcut(QKeySequence("Ctrl+P"));
     copyPixels->setShortcut(QKeySequence("Ctrl+C"));
@@ -297,8 +305,8 @@ MainWindow::MainWindow(QWidget *parent)
         statusBar()->showMessage("Left Click or press enter to confirm. Esc to Cancel", 5000);
     });
     connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setPreviewColor);
-    connect(saveProject, &QAction::triggered, [=](){
-        canvas->saveProject();
+    connect(saveProjectAction, &QAction::triggered, [=](){
+        saveProject();
     });
     connect(loadProjectAction, &QAction::triggered, [=](){
         loadProject();
@@ -343,6 +351,7 @@ MainWindow::MainWindow(QWidget *parent)
                 paletteSelector->setItemText(customIndex, paletteName);
             }
             paletteSelector->setCurrentIndex(paletteSelector->findText(paletteName));
+            SettingsManager::instance().setCustomPalette(fileName);
         }
     });
     connect(zoomIn, &QAction::triggered, [=](){
@@ -449,8 +458,8 @@ MainWindow::MainWindow(QWidget *parent)
                                  );
 
     });
-    connect(palette, &paletteWidget::colorSelected, canvas, &PixelCanvas::setColor);
-    connect(canvas, &PixelCanvas::paletteUpdated, palette, &paletteWidget::setColors);
+    connect(paletteW, &paletteWidget::colorSelected, canvas, &PixelCanvas::setColor);
+    connect(canvas, &PixelCanvas::paletteUpdated, paletteW, &paletteWidget::setColors);
     connect(customPalette, &CustomPalette::colorSelected, canvas, &PixelCanvas::setColor);
     connect(customPalette, &CustomPalette::paletteUpdatedCustom, customPalette, &CustomPalette::setColors);
     connect(paletteSelector, &QComboBox::currentIndexChanged,
@@ -496,6 +505,39 @@ void MainWindow::loadProject(const QString &filePath){
     canvas->loadFromJson(doc.object());
 
     SettingsManager::instance().setLastProject(path);
+    SettingsManager::instance().addRecentFile(path);
+}
+void MainWindow::saveProject(const QString &filePath){
+    QString path = filePath;
+    if(path.isEmpty()){
+        path = QFileDialog::getSaveFileName(this, "Save Project", "", "Pixel Project (*.json)");
+        if(path.isEmpty())return;
+    }
+    if(!path.endsWith(".json")) path += ".json";
+    canvas->saveProject(path);
+    SettingsManager::instance().setLastProject(path);
+    SettingsManager::instance().addRecentFile(path);
+}
+void MainWindow::updateRecentFiles(){
+    recentFilesMenu->clear();
+    QStringList files = SettingsManager::instance().getRecentFiles();
+    if(files.empty()){
+        QAction *empty = recentFilesMenu->addAction("No Recent Files");
+        empty->setEnabled(false);
+        return;
+    }
+    for(QString file :files){
+        if(!QFile::exists(file)) continue;
+        QAction *action = recentFilesMenu->addAction(QFileInfo(file).fileName());
+        action->setData(file);
+        connect(action, &QAction::triggered,this, [=]{
+            loadProject(action->data().toString());
+            layerList->clear();
+            layerList->addItems(canvas->getLayerNames());
+            layerList->setCurrentRow(0);
+            statusBar()->showMessage("Project Loaded!", 4000);
+        });
+    }
 }
 MainWindow::~MainWindow()
 {

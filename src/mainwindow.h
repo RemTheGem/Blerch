@@ -24,6 +24,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
     void loadProject(const QString &filePath = QString());
+    void saveProject(const QString &filePath = "");
 
 
 
@@ -34,5 +35,7 @@ private:
     QPushButton *addLayerButton;
     QPushButton *removeLayerButton;
     PixelCanvas *canvas;
+    QMenu *recentFilesMenu;
+    void updateRecentFiles();
 };
 #endif // MAINWINDOW_H

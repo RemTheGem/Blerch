@@ -6,8 +6,13 @@ class SettingsManager
 {
 public:
     static SettingsManager& instance();
+
     void setLastProject(const QString &path);
     QString getLastProject();
+    void addRecentFile(const QString &path);
+    QStringList getRecentFiles();
+    void setCustomPalette(const QString &path);
+    QString getCustomPalette();
 private:
     SettingsManager();
     QSettings settings;

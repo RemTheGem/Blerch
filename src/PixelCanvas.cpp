@@ -860,11 +860,9 @@ void PixelCanvas::saveImage()
         image.save(fileName);
     }
 }
-void PixelCanvas::saveProject()
+void PixelCanvas::saveProject(const QString &path)
 {
-    QString fileName = QFileDialog::getSaveFileName(this, "Save Project", "", "Pixel Project (*.json)");
-    if(fileName.isEmpty()) return;
-    if(!fileName.endsWith(".json")) fileName += ".json";
+    QString fileName = path;
     QJsonObject root;
     root["Width"] = layers[0].width;
     root["Height"] = layers[0].height;
@@ -1085,7 +1083,9 @@ void PixelCanvas::setLayerOpacity(int index, float opacity){
     update();
 }
 void PixelCanvas::setTool(Tool tool){
+    if(selection.moveFloating){
     cancelMove();
+    }
     currentTool = tool;
 }
 void PixelCanvas::setShape(ShapeType shape){
