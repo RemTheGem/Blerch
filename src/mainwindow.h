@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "PixelCanvas.h"
 #include <QMainWindow>
 #include <QMouseEvent>
 #include <QMessageBox>
@@ -22,6 +23,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+    void loadProject(const QString &filePath = QString());
 
 
 
@@ -31,5 +33,6 @@ private:
     QListWidget *layerList;
     QPushButton *addLayerButton;
     QPushButton *removeLayerButton;
+    PixelCanvas *canvas;
 };
 #endif // MAINWINDOW_H

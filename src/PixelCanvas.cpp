@@ -908,14 +908,8 @@ void PixelCanvas::loadPicture()
     activeLayer = layers.size()-1;
     update();
 }
-void PixelCanvas::loadProject()
+void PixelCanvas::loadFromJson(QJsonObject root)
 {
-    QString fileName = QFileDialog::getOpenFileName(this, "Load Project", "", "Pixel Project (*.json)");
-    if(fileName.isEmpty()) return;
-    QFile file(fileName);
-    if(!file.open(QIODevice::ReadOnly)) return;
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    QJsonObject root = doc.object();
 
     int width = root["Width"].toInt();
     int height = root["Height"].toInt();

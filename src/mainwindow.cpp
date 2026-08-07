@@ -3,6 +3,7 @@
 #include "PixelCanvas.h"
 #include "tools/palettewidget.h"
 #include "tools/custompalette.h"
+#include "../include/settingsmanager.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QToolBar>
@@ -25,6 +26,9 @@
 #include <QToolButton>
 #include <QFileDialog>
 #include <QComboBox>
+#include <QJsonDocument>
+#include <QJsonObject>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -33,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     // sorry for the mess here. moving stuff around changes how they look in the UI. idk any better way lol
     // main setup
-    auto canvas = new PixelCanvas(this);
+    canvas = new PixelCanvas(this);
     auto colorPreview = new ColorPreviewWidget(this);
     QToolButton *shapeButton = new QToolButton(this);
     setFocusPolicy(Qt::StrongFocus);
@@ -49,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignCenter);
+    // settings
+    QString lastProject = SettingsManager::instance().getLastProject();
     // shape menu setup
     shapeMenu->addAction("Rectangle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
@@ -170,10 +176,11 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *eraseBoard = toolbar->addAction("Clear Canvas");
     QAction *resizeCanvas = toolbar->addAction("Resize Canvas");
     toolbar->addSeparator();
+    QAction *loadPicture = fileMenu->addAction("Open Reference Picture");
+    QAction *loadProjectAction = fileMenu->addAction("Open Project");
+    QAction *loadLastProject = fileMenu->addAction("Open Last Project");
     QAction *saveDrawing = fileMenu->addAction("Export PNG");
     QAction *saveProject = fileMenu->addAction("Save Project");
-    QAction *loadProject = fileMenu->addAction("Open Project");
-    QAction *loadPicture = fileMenu->addAction("Open Picture");
     QAction *loadPalette = fileMenu->addAction("Import Palette");
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
     QAction *openPicture = picToPixMenu->addAction("Open Picture");
@@ -219,7 +226,7 @@ MainWindow::MainWindow(QWidget *parent)
     moveDownButton->setShortcut(QKeySequence("Ctrl+D"));
     addLayerButton->setShortcut(QKeySequence("Ctrl+L"));
     saveProject->setShortcut(QKeySequence("Ctrl+Shift+S"));
-    loadProject->setShortcut(QKeySequence("Ctrl+O"));
+    loadProjectAction->setShortcut(QKeySequence("Ctrl+O"));
     loadPicture->setShortcut(QKeySequence("Ctrl+P"));
     copyPixels->setShortcut(QKeySequence("Ctrl+C"));
     pastePixels->setShortcut(QKeySequence("Ctrl+V"));
@@ -293,8 +300,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(saveProject, &QAction::triggered, [=](){
         canvas->saveProject();
     });
-    connect(loadProject, &QAction::triggered, [=](){
-        canvas->loadProject();
+    connect(loadProjectAction, &QAction::triggered, [=](){
+        loadProject();
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+        layerList->setCurrentRow(0);
+        statusBar()->showMessage("Project Loaded!", 4000);
+    });
+    connect(loadLastProject, &QAction::triggered, [=](){
+
+        loadProject(lastProject);
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(0);
@@ -454,7 +469,6 @@ MainWindow::MainWindow(QWidget *parent)
         else if(data.typeId() == QMetaType::QVariantMap){
             QVariantMap map = data.toMap();
             customPalette->loadGPL(map["path"].toString());
-            qDebug() << map["path"].toString();
         }
             });
     connect(horizontalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setHorizontalSymmetry);
@@ -469,7 +483,20 @@ MainWindow::MainWindow(QWidget *parent)
         canvasSizeLabel->setText(QString(" %1x%2 ").arg(x).arg(y));
     });
 }
+void MainWindow::loadProject(const QString &filePath){
+    QString path = filePath;
+    if(path.isEmpty()){
+        path = QFileDialog::getOpenFileName(this, "Open Project", "", "JSON file (*.json)");
+    }
+    if(path.isEmpty()) return;
+    QFile file(path);
+    if(!file.open(QIODevice::ReadOnly)) return;
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 
+    canvas->loadFromJson(doc.object());
+
+    SettingsManager::instance().setLastProject(path);
+}
 MainWindow::~MainWindow()
 {
     delete ui;

@@ -33,6 +33,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         tools/mediancut.h tools/mediancut.cpp
         dialogs/pictureimportdialog.h dialogs/pictureimportdialog.cpp
         tools/custompalette.h tools/custompalette.cpp
+        ../include/settingsmanager.h ../include/settingsmanager.cpp
 
 
 

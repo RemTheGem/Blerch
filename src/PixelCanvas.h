@@ -43,7 +43,7 @@ public:
     void resetCanvas(); // reset the whole canvas
     void saveImage(); // save image as png
     void saveProject(); // save the project as a json file
-    void loadProject(); // load project from a json file
+    void loadFromJson(QJsonObject obj); // load project from a json file
     void loadPicture(); // load a picture on a separate layer for reference
     void updateCanvasSize(); // update the current canvas size
     void buildPalette(); // get colors and their corresponding frequencies from the canvas and add them to a hash table
