@@ -33,11 +33,4 @@ void paletteWidget::mousePressEvent(QMouseEvent *event){
     if(index >= 0 && index < colors.size()){
         emit colorSelected(colors[index]);
     }
-
-    qDebug() << "x:" << event->position().x()
-             << "y:" << event->position().y()
-             << "row:" << row
-             << "col:" << col
-             << "index:" << index
-             << "size:" << colors.size();
 }

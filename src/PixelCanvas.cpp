@@ -1017,6 +1017,7 @@ void PixelCanvas::pictureToPixel(){
     }
     update();
 }
+
 // undo and redo
 void PixelCanvas::undo(){
     if(undoStack.empty()) return;

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "PixelCanvas.h"
 #include "tools/palettewidget.h"
+#include "tools/custompalette.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QToolBar>
@@ -22,6 +23,8 @@
 #include <QLabel>
 #include <QSplitter>
 #include <QToolButton>
+#include <QFileDialog>
+#include <QComboBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -89,8 +92,19 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *paletteContainer = new QWidget(this);
     QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
     paletteWidget *palette = new paletteWidget;
+    CustomPalette *customPalette = new CustomPalette;
     QSlider *brushSizeSlider = new QSlider(Qt::Horizontal);
     QLabel *brushSizeLabel = new QLabel("Brush Size");
+    QLabel *paletteLabel = new QLabel("Frequent Colors");
+    QLabel *customPaletteLabel = new QLabel("Palette");
+    QComboBox *paletteSelector = new QComboBox(this);
+    paletteSelector->addItem("None Selected...", "");
+    paletteSelector->addItem("Pico-8", ":/palettes/pico-8.gpl");
+    paletteSelector->addItem("Sweetie 16", ":/palettes/sweetie-16.gpl");
+    paletteSelector->addItem("DawnBringer 16", ":/palettes/dawnbringer-16.gpl");
+    paletteSelector->addItem("DawnBringer 32", ":/palettes/dawnbringer-32.gpl");
+    paletteSelector->addItem("Endesga 32", ":/palettes/endesga-32.gpl");
+    paletteSelector->addItem("Resurrect 64", ":/palettes/resurrect-64.gpl");
     brushSizeSlider->setRange(1,16);
     brushSizeSlider->setValue(1);
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
@@ -101,6 +115,10 @@ MainWindow::MainWindow(QWidget *parent)
     paletteLayout->addWidget(verticalSymmetryButton);
     horizontalSymmetryButton->setCheckable(true);
     verticalSymmetryButton->setCheckable(true);
+    paletteLayout->addWidget(customPaletteLabel);
+    paletteLayout->addWidget(paletteSelector);
+    paletteLayout->addWidget(customPalette);
+    paletteLayout->addWidget(paletteLabel);
     paletteLayout->addWidget(palette);
     paletteLayout->addStretch();
     // size policies
@@ -156,6 +174,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveProject = fileMenu->addAction("Save Project");
     QAction *loadProject = fileMenu->addAction("Open Project");
     QAction *loadPicture = fileMenu->addAction("Open Picture");
+    QAction *loadPalette = fileMenu->addAction("Import Palette");
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
     QAction *openPicture = picToPixMenu->addAction("Open Picture");
     QAction *zoomIn = toolbar->addAction("+");
@@ -293,6 +312,21 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(layerList->count() - 1);
     });
+    connect(loadPalette, &QAction::triggered, this, [=]{
+        QString fileName = QFileDialog::getOpenFileName(this, "Open Palette", "", "GPL File (*.gpl)");
+        if (!fileName.isEmpty()){
+            customPalette->loadGPL(fileName);
+            QString paletteName = QFileInfo(fileName).baseName();
+            int customIndex = paletteSelector->findData("custom");
+            if(customIndex == -1){
+                paletteSelector->addItem(paletteName, "custom");
+            }
+            else{
+                paletteSelector->setItemText(customIndex, paletteName);
+            }
+            paletteSelector->setCurrentIndex(paletteSelector->findData("custom"));
+        }
+    });
     connect(zoomIn, &QAction::triggered, [=](){
         canvas->setZoom(canvas->getZoom() + 2);
     });
@@ -399,6 +433,19 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(palette, &paletteWidget::colorSelected, canvas, &PixelCanvas::setColor);
     connect(canvas, &PixelCanvas::paletteUpdated, palette, &paletteWidget::setColors);
+    connect(customPalette, &CustomPalette::colorSelected, canvas, &PixelCanvas::setColor);
+    connect(customPalette, &CustomPalette::paletteUpdatedCustom, customPalette, &CustomPalette::setColors);
+    connect(paletteSelector, &QComboBox::currentIndexChanged,
+            this, [=](int index){
+
+        QString path = paletteSelector->itemData(index).toString();
+        if(path.isEmpty()){
+            customPalette->clearPalette();
+            return;
+        }
+        customPalette->loadGPL(path);
+
+            });
     connect(horizontalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setHorizontalSymmetry);
     connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
     connect(brushSizeSlider, &QSlider::valueChanged, [=](int value){
