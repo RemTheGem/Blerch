@@ -140,6 +140,7 @@ MainWindow::MainWindow(QWidget *parent)
     QMenu *fileMenu = menuBar()->addMenu("File");
     QMenu *picToPixMenu = menuBar()->addMenu("Picture to Pixel");
     QMenu *helpMenu = menuBar()->addMenu("Help");
+    QMenu *canvasMenu = menuBar->addMenu("Canvas");
     // organization
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(paletteContainer);
@@ -187,6 +188,8 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *loadPalette = fileMenu->addAction("Import Palette");
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
     QAction *openPicture = picToPixMenu->addAction("Open Picture");
+    QAction *flipHorizontal = canvasMenu->addMenu("Flip Horizontal");
+    QAction *flipVertical = canvasMenu->addMenu("Flip Vertical");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     brushAction->setChecked(true); // default tool as brush
@@ -480,6 +483,13 @@ MainWindow::MainWindow(QWidget *parent)
             customPalette->loadGPL(map["path"].toString());
         }
             });
+    Vertical");
+    connect(flipHorizontal, QAction::Triggered, [=](){
+      canvas->flipHorizontal();
+    });
+    connect(flipVertical, QAction::Triggered, [=](){
+        canvas->flipVertical();
+    });
     connect(horizontalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setHorizontalSymmetry);
     connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
     connect(brushSizeSlider, &QSlider::valueChanged, [=](int value){
