@@ -139,8 +139,8 @@ MainWindow::MainWindow(QWidget *parent)
     // menus
     QMenu *fileMenu = menuBar()->addMenu("File");
     QMenu *picToPixMenu = menuBar()->addMenu("Picture to Pixel");
-    QMenu *helpMenu = menuBar()->addMenu("Help");
     QMenu *canvasMenu = menuBar()->addMenu("Canvas");
+    QMenu *helpMenu = menuBar()->addMenu("Help");
     // organization
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(paletteContainer);
