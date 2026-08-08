@@ -28,6 +28,7 @@
 #include <QComboBox>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QTimer>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -47,12 +48,33 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("Blerch");
     setWindowIcon(QIcon(":/Blerch icon v2.png"));
     QWidget *container = new QWidget(this);
-    QHBoxLayout *mainLayout = new QHBoxLayout(container);
+    QVBoxLayout *mainLayout = new QVBoxLayout(container);
     mainLayout->setContentsMargins(0,0,0,0);
     QScrollArea *scroll = new QScrollArea(this);
     scroll->setWidget(canvas);
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignCenter);
+    QWidget *frameContainer = new QWidget;
+    frameLayout = new QVBoxLayout(frameContainer);
+    QScrollArea *frameScroll = new QScrollArea;
+    frameScroll->setWidgetResizable(true);
+    frameScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    frameScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    QWidget *frameButtonsContainer = new QWidget;
+    frameButtonsLayout = new QHBoxLayout(frameButtonsContainer);
+    QHBoxLayout *controlsLayout = new QHBoxLayout;
+    QPushButton *addFrameButton = new QPushButton("Add Frame");
+    QPushButton *deleteFrameButton = new QPushButton("Remove Frame");
+    QPushButton *playAnimationButton = new QPushButton("▶");
+    QPushButton *pauseAnimationButton = new QPushButton("⏸");
+    controlsLayout->addWidget(addFrameButton);
+    controlsLayout->addWidget(deleteFrameButton);
+    controlsLayout->addWidget(playAnimationButton);
+    controlsLayout->addWidget(pauseAnimationButton);
+    frameScroll->setWidget(frameButtonsContainer);
+    frameLayout->addWidget(frameScroll);
+    frameLayout->addLayout(controlsLayout);
+    animationTimer = new QTimer(this);
     // settings
     QString lastProject = SettingsManager::instance().getLastProject();
     QString previousPalette = SettingsManager::instance().getCustomPalette();
@@ -121,6 +143,7 @@ MainWindow::MainWindow(QWidget *parent)
     brushSizeSlider->setValue(1);
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
     QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
+
     paletteLayout->addWidget(brushSizeLabel);
     paletteLayout->addWidget(brushSizeSlider);
     paletteLayout->addWidget(horizontalSymmetryButton);
@@ -146,9 +169,15 @@ MainWindow::MainWindow(QWidget *parent)
     QMenu *canvasMenu = menuBar()->addMenu("Canvas");
     QMenu *helpMenu = menuBar()->addMenu("Help");
     // organization
+    QSplitter *canvasSplitter = new QSplitter(Qt::Vertical);
+    canvasSplitter->addWidget(scroll);
+    canvasSplitter->addWidget(frameContainer);
+    canvasSplitter->setStretchFactor(0,1);
+    canvasSplitter->setStretchFactor(1,0);
+    canvasSplitter->setSizes({600, 100});
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(paletteContainer);
-    splitter->addWidget(scroll);
+    splitter->addWidget(canvasSplitter);
     splitter->addWidget(layerPanel);
     splitter->setSizes({190, 1100, 200});
     splitter->setStretchFactor(0, 0);
@@ -225,6 +254,7 @@ MainWindow::MainWindow(QWidget *parent)
         customPalette->loadGPL(previousPalette);
     }
     updateRecentFiles();
+    updateTimeline();
 
     // keyboard shortcuts
     pickColor->setShortcut(QKeySequence("Ctrl+W"));
@@ -329,6 +359,11 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(0);
         statusBar()->showMessage("Project Loaded!", 4000);
+    });
+    connect(canvas, &PixelCanvas::frameChanged, [=](){
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+        layerList->setCurrentRow(0);
     });
     connect(loadPicture, &QAction::triggered, [=](){
         canvas->loadPicture();
@@ -469,11 +504,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(canvas, &PixelCanvas::paletteUpdated, paletteW, &paletteWidget::setColors);
     connect(customPalette, &CustomPalette::colorSelected, canvas, &PixelCanvas::setColor);
     connect(customPalette, &CustomPalette::paletteUpdatedCustom, customPalette, &CustomPalette::setColors);
-    connect(paletteSelector, &QComboBox::currentIndexChanged,
-            this, [=](int index){
-
+    connect(paletteSelector, &QComboBox::currentIndexChanged, this, [=](int index){
         QVariant data = paletteSelector->itemData(index);
-
         if(data.typeId() == QMetaType::QString){
             QString path = data.toString();
             if(path.isEmpty()){
@@ -486,8 +518,7 @@ MainWindow::MainWindow(QWidget *parent)
             QVariantMap map = data.toMap();
             customPalette->loadGPL(map["path"].toString());
         }
-            });
-
+    });
     connect(flipHorizontal, &QAction::triggered, [=](){
         canvas->flipHorizontal();
     });
@@ -505,6 +536,50 @@ MainWindow::MainWindow(QWidget *parent)
     connect(canvas, &PixelCanvas::canvasSizeChanged, this, [=](int x, int y){
         canvasSizeLabel->setText(QString(" %1x%2 ").arg(x).arg(y));
     });
+    connect(addFrameButton, &QPushButton::clicked, this, [this](){
+        canvas->addFrame();
+        updateTimeline();
+    });
+    connect(deleteFrameButton, &QPushButton::clicked, this, [this](){
+        canvas->deleteFrame(canvas->getCurrentFrame());
+        updateTimeline();
+    });
+    connect(playAnimationButton, &QPushButton::clicked, this, [this](){
+        playAnimation();
+        updateTimeline();
+    });
+    connect(pauseAnimationButton, &QPushButton::clicked, this, [this](){
+        pauseAnimation();
+        updateTimeline();
+    });
+    connect(animationTimer, &QTimer::timeout, this, [this](){
+        int next = canvas->getCurrentFrame() + 1;
+        if (next >= canvas->getFrameSize()) next = 0;
+        canvas->switchFrame(next);
+        updateTimeline();
+    });
+}
+void MainWindow::playAnimation(){
+    animationTimer->start(100);
+}
+void MainWindow::pauseAnimation(){
+    animationTimer->stop();
+}
+void MainWindow::updateTimeline(){
+    while (QLayoutItem *item = frameButtonsLayout->takeAt(0)){
+        delete item->widget();
+        delete item;
+    }
+    for (int i = 0; i < canvas->getFrameSize(); i++) {
+        QPushButton *button = new QPushButton(QString::number(i + 1));
+        button->setCheckable(true);
+        button->setChecked(i == canvas->getCurrentFrame());
+        connect(button, &QPushButton::clicked, this, [this, i]() {
+                    canvas->switchFrame(i);
+                    updateTimeline();
+        });
+        frameButtonsLayout->addWidget(button);
+    }
 }
 void MainWindow::loadProject(const QString &filePath){
     QString path = filePath;

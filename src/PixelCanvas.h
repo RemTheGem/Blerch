@@ -22,7 +22,6 @@ public:
         int height;
         bool dragging;
         bool moveFloating = false;
-        bool selectionActive = false;
         QPoint dragStart;
         QPoint dragEnd;
         QPoint previewEnd;
@@ -40,6 +39,7 @@ public:
         }
 
     };
+
 
     // main functions
     void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);} // set the current color
@@ -115,6 +115,12 @@ public:
     void cancelMove(); // cancel move
     void commitPaste(); // confirm paste
     void cancelPaste(); // cancel paste
+    int getCurrentFrame();
+    int getFrameSize();
+    // frame methods
+    void addFrame();
+    void deleteFrame(int index);
+    void switchFrame(int index);
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -164,6 +170,10 @@ private:
             return pixels[y * width +x];
         }
     };
+    struct Frame{
+        QList<Layer> layers;
+        int duration = 100;
+    };
     // struct for storing any changes in pixel color
     struct PixelChange{
         int layer;
@@ -174,6 +184,8 @@ private:
     };
     // others
     std::vector<Layer> layers; // vector storing layers
+    QList<Frame> frames;
+    int currentFrame = 0;
     int activeLayer = 0; // selected layer
     QHash<QRgb, int> colorFrequency; // number of times color has appeared on current canvas
     Tool currentTool = Tool::Brush; // default tool
@@ -193,6 +205,7 @@ signals:
     void reInitLayers(); // reinitialize layer list
     void mousePositionChanged(int x, int y); // signal to change current mouse position in status bar
     void canvasSizeChanged(int x, int y); // signal to show canvas size in status bar
+    void frameChanged();
 };
 
 

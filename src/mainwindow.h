@@ -25,6 +25,9 @@ public:
     ~MainWindow() override;
     void loadProject(const QString &filePath = QString());
     void saveProject(const QString &filePath = "");
+    void playAnimation();
+    void pauseAnimation();
+    void updateTimeline();
 
 
 
@@ -36,6 +39,10 @@ private:
     QPushButton *removeLayerButton;
     PixelCanvas *canvas;
     QMenu *recentFilesMenu;
+    QTimer *animationTimer;
+    QVBoxLayout *frameLayout;
+    QHBoxLayout *frameButtonsLayout;
+
     void updateRecentFiles();
 };
 #endif // MAINWINDOW_H
