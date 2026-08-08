@@ -784,6 +784,39 @@ void PixelCanvas::removeTempLayer(){
     removeLayer(layers.size()-1);
 }
 // ########## add comments for the rest
+void PixelCanvas::flipHorizontal()
+{
+    Layer tempLayer = layers[activeLayer];
+    
+    int width = layers[activeLayer].width;
+    int height = layers[activeLayer].height;
+    
+    for(int x = 0; x < width; x++)
+    {
+        for(int y = 0; y < height; y++)
+        {
+            layers[activeLayer].at(x, y) = tempLayer.at(width - 1 - x, y);
+        }
+    }
+    update();
+}
+
+void PixelCanvas::flipVertical()
+{
+    Layer tempLayer = layers[activeLayer];
+    int width = layers[activeLayer].width;
+    int height = layers[activeLayer].height;
+    for(int x = 0; x < width; x++)
+    {
+        for(int y = 0; y < height; y++)
+        {
+            
+            layers[activeLayer].at(x, y) = tempLayer.at(x, height - 1 - y);
+        }
+    }
+    update();
+}
+
 void PixelCanvas::addLayer(){
     Layer layer;
     layer.name = "Layer " + QString::number(layers.size()+1);
