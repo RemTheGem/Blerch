@@ -73,6 +73,7 @@ public:
     enum class ShapeType{
         Rectangle,
         Circle,
+        Ellipse,
         Line
     };
     struct Shape{
@@ -105,6 +106,7 @@ public:
     void setShape(ShapeType shape); // set shape
     void drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw a rectangle
     void drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw a circle
+    void drawEllipse(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw an ellipse
     void drawLine(QPoint start, QPoint end, bool recordUndo = true); // function to draw a straight line
     void makeTempLayer(); // make temporary layer for preview
     void removeTempLayer(); // remove temporary layer

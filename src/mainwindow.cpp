@@ -66,6 +66,10 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Circle);
     });
+    shapeMenu->addAction("Ellipse", [=]{
+        canvas->setTool(PixelCanvas::Tool::Shape);
+        canvas->setShape(PixelCanvas::ShapeType::Ellipse);
+    });
     shapeMenu->addAction("Line", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Line);

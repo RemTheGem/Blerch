@@ -403,6 +403,9 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             if(currentShape == ShapeType::Circle){
                 drawCircle(topLeft, bottomRight, false);
             }
+            if(currentShape == ShapeType::Ellipse){
+                drawEllipse(topLeft, bottomRight, false);
+            }
             if(currentShape == ShapeType::Line){
                 drawLine(shape.start, shape.end, false);
             }
@@ -486,6 +489,9 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         else if(currentShape == ShapeType::Circle){
             drawCircle(topLeft, bottomRight);
         }
+        else if(currentShape == ShapeType::Ellipse){
+            drawEllipse(topLeft, bottomRight);
+        }
         else if(currentShape == ShapeType::Line){
             drawLine(shape.start, shape.end);
         }
@@ -542,7 +548,7 @@ void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordU
     }
 }
 // function to draw circle
-void PixelCanvas::drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo){
+void PixelCanvas::drawEllipse(QPoint topLeft, QPoint bottomRight, bool recordUndo){
     // midpoint circle algorithm stolen from the internet
     int centerX = (topLeft.x() + bottomRight.x())/2;
     int centerY = (topLeft.y() + bottomRight.y())/2;
@@ -558,6 +564,42 @@ void PixelCanvas::drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo
                 paintColor(px,py,currentColor, recordUndo);
 
             }
+        }
+    }
+}
+void PixelCanvas::drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo)
+{
+    int centerX = (topLeft.x() + bottomRight.x()) / 2;
+    int centerY = (topLeft.y() + bottomRight.y()) / 2;
+
+    int radius = std::min(
+                     bottomRight.x() - topLeft.x(),
+                     bottomRight.y() - topLeft.y()
+                     ) / 2;
+
+    int x = radius;
+    int y = 0;
+    int decision = 1 - radius;
+
+    while (x >= y) {
+
+        paintColor(centerX + x, centerY + y, currentColor, recordUndo);
+        paintColor(centerX + y, centerY + x, currentColor, recordUndo);
+        paintColor(centerX - y, centerY + x, currentColor, recordUndo);
+        paintColor(centerX - x, centerY + y, currentColor, recordUndo);
+
+        paintColor(centerX - x, centerY - y, currentColor, recordUndo);
+        paintColor(centerX - y, centerY - x, currentColor, recordUndo);
+        paintColor(centerX + y, centerY - x, currentColor, recordUndo);
+        paintColor(centerX + x, centerY - y, currentColor, recordUndo);
+
+        y++;
+
+        if (decision <= 0) {
+            decision += 2 * y + 1;
+        } else {
+            x--;
+            decision += 2 * (y - x) + 1;
         }
     }
 }
