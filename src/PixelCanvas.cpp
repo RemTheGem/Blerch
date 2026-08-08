@@ -137,8 +137,8 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
         for (int offsetX = -radius; offsetX <= radius; offsetX++){
             int pixelX = x + offsetX;
             int pixelY = y + offsetY;
-            int mirrorX = layers[activeLayer].width  - 1 - x;
-            int mirrorY = layers[activeLayer].height - 1 - y;
+            int mirrorX = layers[activeLayer].width  - 1 - pixelX;
+            int mirrorY = layers[activeLayer].height - 1 - pixelY;
             draw(pixelX, pixelY);
             if (horizontalSymmetry)
                 draw(mirrorX, pixelY);
