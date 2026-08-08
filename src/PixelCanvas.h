@@ -54,6 +54,8 @@ public:
     void pictureToPixel(); // turn imported picture into pixel art
     void copyPixels(); // copy pixels
     void pastePixels(); // paste copied pixels
+    void flipHorizontal();
+    void flipVertical();
     // enum class for available tools
     enum class Tool {
         Brush,
