@@ -176,8 +176,6 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *undo = toolbar->addAction("Undo");
     QAction *redo = toolbar->addAction("Redo");
     toolbar->addWidget(spacer);
-    QAction *eraseBoard = toolbar->addAction("Clear Canvas");
-    QAction *resizeCanvas = toolbar->addAction("Resize Canvas");
     toolbar->addSeparator();
     QAction *loadPicture = fileMenu->addAction("Open Reference Picture");
     QAction *loadProjectAction = fileMenu->addAction("Open Project");
@@ -190,6 +188,8 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *openPicture = picToPixMenu->addAction("Open Picture");
     QAction *flipHorizontal = canvasMenu->addAction("Flip Horizontal");
     QAction *flipVertical = canvasMenu->addAction("Flip Vertical");
+    QAction *resizeCanvas = canvasMenu->addAction("Resize Canvas");
+    QAction *eraseBoard = canvasMenu->addAction("Clear Canvas");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     brushAction->setChecked(true); // default tool as brush
