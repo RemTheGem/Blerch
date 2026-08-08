@@ -8,6 +8,7 @@
 #include <deque>
 #include <vector>
 #include <QWheelEvent>
+#include <algorithm>
 
 class PixelCanvas : public QWidget
 {
@@ -21,12 +22,15 @@ public:
         int height;
         bool dragging;
         bool moveFloating = false;
+        bool selectionActive = false;
         QPoint dragStart;
         QPoint dragEnd;
         QPoint previewEnd;
         QPoint dragOffset;
         QPoint selectionOffset;
         QPoint movePosition;
+        QPoint topLeft; // used for move only. preview has its own
+        QPoint bottomRight; // used for move only. preview has its own
         std::vector<QColor> colors;
         bool isEmpty(const Selection& s){
             return s.colors.empty();

@@ -88,7 +88,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         painter.restore();
     }
     // if we are using move or select then draw the outline for selection
-    if(currentTool == Tool::Move || currentTool == Tool::Select){
+    if((currentTool == Tool::Move || currentTool == Tool::Select) && selection.selectionActive){
     QPen pen;
     pen.setWidth(3);
     pen.setStyle(Qt::DashLine);
@@ -99,6 +99,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
                        std::max(selection.dragStart.y(), selection.previewEnd.y()));
     QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
     painter.drawRect(selectionRect);
+    qDebug() << selection.previewEnd << selection.dragStart;
     }
     // build color palette according to the colors used
     buildPalette();
@@ -187,6 +188,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         if(event->button() == Qt::LeftButton){
             movingPicture = true;
             moveOffset = event->pos() - layers[activeLayer].position;
+            return;
         }
     }
     currentAction.clear();
@@ -225,6 +227,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             // clear previous selection and start a new one
             selection = Selection();
             selection.dragStart = QPoint(x, y);
+            selection.selectionActive = true;
             break;
         }
         case Tool::Move:
@@ -291,7 +294,7 @@ void PixelCanvas::wheelEvent(QWheelEvent *event)
                 layers[activeLayer].scale *= 1.1f;
             }
             else layers[activeLayer].scale *= 0.9f;
-            layers[activeLayer].scale = std::clamp(layers[activeLayer].scale, 0.0001f, 10.0f);
+            layers[activeLayer].scale = std::clamp(layers[activeLayer].scale, 0.001f, 10.0f);
             update();
         }
         return;
@@ -314,6 +317,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     if(movingPicture){
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
         update();
+        return;
     }
     // draw a preview of copied selection when pasting
     if(isPasting){
@@ -370,7 +374,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             // draw a preview of where the moved selection is
             if(selection.isEmpty(selection)) return;
             clear();
-            selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.dragStart.x(), selection.dragStart.y());
+            selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.topLeft.x(), selection.topLeft.y());
             for (int my = 0; my < selection.height+1; my++){
                 for (int mx = 0; mx < selection.width+1; mx++){
                     int canvasX = selection.selectionOffset.x() + mx;
@@ -423,11 +427,12 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     isDrawing = false;
     isErasing = false;
-    movingPicture = false;
     // if moving reference picture
     if(movingPicture){
         layers[activeLayer].position = (event->pos() - moveOffset) / pixelSize;
+        movingPicture = false;
         update();
+        return;
     }
     // to confirm paste
     if(isPasting){
@@ -443,14 +448,12 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         eventX = std::clamp(eventX, 0, layers[activeLayer].width -1);
         eventY = std::clamp(eventY, 0, layers[activeLayer].height -1);
         selection.dragEnd = QPoint(eventX, eventY);
-        QPoint topLeft(std::min(selection.dragStart.x(), selection.dragEnd.x()), std::min(selection.dragStart.y(),selection.dragEnd.y()));
-        QPoint bottomRight(std::max(selection.dragStart.x(), selection.dragEnd.x()), std::max(selection.dragStart.y(),selection.dragEnd.y()));
-        selection.dragStart = topLeft;
-        selection.dragEnd = bottomRight;
-        selection.width = selection.dragEnd.x() - selection.dragStart.x();
-        selection.height = selection.dragEnd.y() - selection.dragStart.y();
-        for(int sy = selection.dragStart.y(); sy<=selection.height+selection.dragStart.y(); sy++){
-            for(int sx = selection.dragStart.x(); sx<=selection.width+selection.dragStart.x(); sx++){
+        selection.topLeft = QPoint(std::min(selection.dragStart.x(), selection.dragEnd.x()), std::min(selection.dragStart.y(),selection.dragEnd.y()));
+        selection.bottomRight = QPoint(std::max(selection.dragStart.x(), selection.dragEnd.x()), std::max(selection.dragStart.y(),selection.dragEnd.y()));
+        selection.width = selection.bottomRight.x() - selection.topLeft.x();
+        selection.height = selection.bottomRight.y() - selection.topLeft.y();
+        for(int sy = selection.topLeft.y(); sy<=selection.bottomRight.y(); sy++){
+            for(int sx = selection.topLeft.x(); sx<=selection.bottomRight.x(); sx++){
                 selection.colors.push_back(layers[activeLayer].at(sx,sy));
             }
         }
@@ -703,8 +706,8 @@ void PixelCanvas::commitMove(){
     // erase the pixels from old location
     for (int my = 0; my < selection.height+1; my++){
         for (int mx = 0; mx < selection.width+1; mx++){
-            int oldX = selection.dragStart.x() + mx;
-            int oldY = selection.dragStart.y() + my;
+            int oldX = selection.topLeft.x() + mx;
+            int oldY = selection.topLeft.y() + my;
             int index = (selection.width+1) * my + mx;
             if (index >= selection.colors.size()) continue;
             if (oldX < 0 || oldX >= layers[activeLayer].width) continue;
