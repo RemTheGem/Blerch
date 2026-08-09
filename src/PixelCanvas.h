@@ -110,17 +110,18 @@ public:
     void drawLine(QPoint start, QPoint end, bool recordUndo = true); // function to draw a straight line
     void makeTempLayer(); // make temporary layer for preview
     void removeTempLayer(); // remove temporary layer
+    int getActiveLayer() const;
     void setBrushSize(int newSize); // change brush size
     void commitMove(); // confirm move
     void cancelMove(); // cancel move
     void commitPaste(); // confirm paste
     void cancelPaste(); // cancel paste
-    int getCurrentFrame();
-    int getFrameSize();
     // frame methods
     void addFrame();
     void deleteFrame(int index);
     void switchFrame(int index);
+    int getCurrentFrame();
+    int getFrameSize();
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -206,6 +207,7 @@ signals:
     void mousePositionChanged(int x, int y); // signal to change current mouse position in status bar
     void canvasSizeChanged(int x, int y); // signal to show canvas size in status bar
     void frameChanged();
+    void layerChanged();
 };
 
 

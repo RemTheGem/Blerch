@@ -350,6 +350,7 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(0);
+        updateTimeline();
         statusBar()->showMessage("Project Loaded!", 4000);
     });
     connect(loadLastProject, &QAction::triggered, [=](){
@@ -364,6 +365,7 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
         layerList->setCurrentRow(0);
+        updateTimeline();
     });
     connect(loadPicture, &QAction::triggered, [=](){
         canvas->loadPicture();
@@ -425,7 +427,6 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->addItem("Layer " + QString::number(layerList->count()+1));
         layerList->setCurrentRow(layerList->count()-1);
     });
-    connect(layerList,&QListWidget::currentRowChanged, canvas, &PixelCanvas::setActiveLayer);
     connect(moveUpButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
         if(index <0 || index >= layerList->count()-1) return;
@@ -460,6 +461,13 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(opacitySlider, &QSlider::valueChanged, [=](int value){
         canvas->setLayerOpacity(layerList->currentRow(), value / 100.0f);
+    });
+    connect(canvas, &PixelCanvas::layerChanged, this, [=]() {
+        layerList->clear();
+        layerList->addItems(canvas->getLayerNames());
+
+        if (layerList->count() > 0)
+            layerList->setCurrentRow(canvas->getActiveLayer());
     });
     connect(shortcutsAction, &QAction::triggered, [=](){
 

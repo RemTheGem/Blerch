@@ -903,6 +903,9 @@ void PixelCanvas::moveLayerDown(int index)
         activeLayer++;
     update();
 }
+int PixelCanvas::getActiveLayer() const{
+    return activeLayer;
+}
 // File manipulation
 void PixelCanvas::saveImage()
 {
@@ -947,7 +950,7 @@ void PixelCanvas::saveProject(const QString &path)
         frameObject["duration"] = frame.duration;
         QJsonArray layerArray;
 
-        for(const auto &layer : frames[currentFrame].layers){
+        for(const auto &layer : frame.layers){
             QJsonObject layerObject;
             layerObject["name"] = layer.name;
             layerObject["visible"] = layer.visible;
@@ -994,62 +997,41 @@ void PixelCanvas::loadFromJson(QJsonObject root)
     int width = root["Width"].toInt();
     int height = root["Height"].toInt();
 
-    if (root.contains("layers")){
-        frames[currentFrame].layers.clear();
-        QJsonArray layerArray = root["layers"].toArray();
-
+    QJsonArray frameArray = root["frames"].toArray();
+    if (frameArray.isEmpty()) return;
+    for(const auto &frameValue : frameArray){
+        QJsonObject frameObject = frameValue.toObject();
+        Frame frame;
+        frame.duration = frameObject["duration"].toInt(100);
+        QJsonArray layerArray = frameObject["layers"].toArray();
         for(const auto &layerValue : layerArray){
             QJsonObject layerObject = layerValue.toObject();
             Layer layer;
-            layer.name = layerObject["name"].toString();
+            layer.name =  layerObject["name"].toString();
             layer.visible = layerObject["visible"].toBool();
-            layer.opacity = layerObject["opacity"].toDouble(1.0);
+            layer.opacity = layerObject["opacity"].toDouble();
             layer.width = width;
             layer.height = height;
-            layer.pixels.resize(width * height);
+            layer.pixels.resize(width*height);
 
             QJsonArray pixels = layerObject["pixels"].toArray();
             int index = 0;
             for(int y = 0; y < height; y++){
                 for(int x = 0; x < width; x++){
-                    layer.at(x,y) = QColor(pixels[index].toString());
+                    if(index<pixels.size()){
+                        layer.at(x,y) = QColor(pixels[index].toString());
+                    }
                     index++;
                 }
             }
-            frames[currentFrame].layers.push_back(layer);
+            frame.layers.push_back(layer);
         }
+        frames.push_back(frame);
     }
-    else{
-        frames[currentFrame].layers.clear();
-        if (root.contains("gridSize")){
-            width = root["gridSize"].toInt();
-            height = width;
-        }
-        else {
-            width = root["Width"].toInt();
-            height = root["Height"].toInt();
-        }
-        if(frames[currentFrame].layers.empty()){
-            addLayer();
-        }
-        if(width > frames[currentFrame].layers[activeLayer].width || height > frames[currentFrame].layers[activeLayer].height){
-            frames[currentFrame].layers[activeLayer].width = width;
-            frames[currentFrame].layers[activeLayer].height = height;
-            frames[currentFrame].layers[activeLayer].pixels.resize(frames[currentFrame].layers[activeLayer].width * frames[currentFrame].layers[activeLayer].height);
-            updateCanvasSize();
-        }
-        // this can be done better i know it lol
-        QJsonArray pixelMap = root["pixels"].toArray();
-        int index = 0;
-        for(int y =0; y<height; y++){
-            for(int x=0; x<width; x++){
-                QString colorString = pixelMap[index].toString();
-                paintColor(x, y, QColor(colorString));
-                index++;
-            }
-        }
-    }
+    currentFrame = 0;
     activeLayer = 0;
+    emit frameChanged();
+    emit layerChanged();
     updateCanvasSize();
     resizeCanvas(width, height);
     buildPalette();
@@ -1086,7 +1068,7 @@ void PixelCanvas::pictureToPixel(){
     for (int y = 0; y < canvasHeight; y++) {
         for (int x = 0; x < canvasWidth; x++) {
             QColor mapped = medianCut.nearestColor(image.pixelColor(x, y), palette);
-            paintColor(x, y, mapped);
+            frames[currentFrame].layers[activeLayer].at(x, y) = mapped;
         }
     }
     update();
@@ -1186,6 +1168,7 @@ void PixelCanvas::switchFrame(int index){
     if (activeLayer >= frames[currentFrame].layers.size())
         activeLayer = frames[currentFrame].layers.size() - 1;
     emit frameChanged();
+    emit layerChanged();
     update();
 }
 int PixelCanvas::getCurrentFrame(){
