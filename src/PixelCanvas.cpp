@@ -823,7 +823,7 @@ void PixelCanvas::removeTempLayer(){
 // ########## add comments for the rest
 void PixelCanvas::flipHorizontal()
 {
-    for(auto &layer : layers){
+    for(auto &layer : frames[currentFrame].layers){
     Layer tempLayer = layer;
     
     int width = layer.width;
@@ -842,7 +842,7 @@ void PixelCanvas::flipHorizontal()
 
 void PixelCanvas::flipVertical()
 {
-    for(auto &layer : layers){
+    for(auto &layer : frames[currentFrame].layers){
     Layer tempLayer = layer;
     int width = layer.width;
     int height = layer.height;
