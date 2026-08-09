@@ -32,7 +32,6 @@ PixelCanvas::PixelCanvas(QWidget *parent)
             layer.at(x,y) = Qt::transparent;
         }
     }
-    undoStack.push_back(currentAction);
     initialFrame.layers.push_back(layer);
     frames.append(initialFrame);
     updateCanvasSize();
@@ -1175,8 +1174,26 @@ void PixelCanvas::setLayerOpacity(int index, float opacity){
     update();
 }
 // frame methods
-void PixelCanvas::addFrame(){
+void PixelCanvas::duplicateFrame(){
     Frame newFrame = frames[currentFrame];
+    frames.insert(currentFrame + 1, newFrame);
+    currentFrame++;
+    activeLayer = 0;
+    update();
+}
+void PixelCanvas::addFrame(){
+    Frame newFrame;
+    Layer layer;
+    layer.name = "Layer 1";
+    layer.width = canvasWidth;
+    layer.height = canvasHeight;
+    layer.pixels.resize(canvasWidth * canvasHeight);
+    for (int y = 0; y < layer.height; y++) {
+        for (int x = 0; x < layer.width; x++) {
+            layer.at(x,y) = Qt::transparent;
+        }
+    }
+    newFrame.layers.push_back(layer);
     frames.insert(currentFrame + 1, newFrame);
     currentFrame++;
     activeLayer = 0;

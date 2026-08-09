@@ -118,6 +118,7 @@ public:
     void commitPaste(); // confirm paste
     void cancelPaste(); // cancel paste
     // frame methods
+    void duplicateFrame();
     void addFrame();
     void deleteFrame(int index);
     void switchFrame(int index);

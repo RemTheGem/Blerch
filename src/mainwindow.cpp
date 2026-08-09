@@ -65,6 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
     frameButtonsLayout = new QHBoxLayout(frameButtonsContainer);
     QHBoxLayout *controlsLayout = new QHBoxLayout;
     QPushButton *addFrameButton = new QPushButton("Add Frame");
+    QPushButton *duplicateFrameButton = new QPushButton("Duplicate Frame");
     QPushButton *deleteFrameButton = new QPushButton("Remove Frame");
     QPushButton *playAnimationButton = new QPushButton("▶");
     QPushButton *pauseAnimationButton = new QPushButton("⏸");
@@ -73,9 +74,10 @@ MainWindow::MainWindow(QWidget *parent)
     durationSpinBox->setValue(100);
     durationSpinBox->setSuffix(" ms");
     controlsLayout->addWidget(addFrameButton);
-    controlsLayout->addWidget(deleteFrameButton);
+    controlsLayout->addWidget(duplicateFrameButton);
     controlsLayout->addWidget(playAnimationButton);
     controlsLayout->addWidget(pauseAnimationButton);
+    controlsLayout->addWidget(deleteFrameButton);
     controlsLayout->addWidget(durationSpinBox);
     frameScroll->setWidget(frameButtonsContainer);
     frameLayout->addWidget(frameScroll);
@@ -393,9 +395,15 @@ MainWindow::MainWindow(QWidget *parent)
         statusBar()->showMessage("Project Loaded!", 4000);
     });
     connect(canvas, &PixelCanvas::frameChanged, [=](){
+        int previousLayer = canvas->getActiveLayer();
+
         layerList->clear();
         layerList->addItems(canvas->getLayerNames());
-        layerList->setCurrentRow(0);
+        if(layerList->count() >0){
+            int newLayer = std::min(previousLayer, layerList->count() -1);
+            layerList->setCurrentRow(newLayer);
+            canvas->setActiveLayer(newLayer);
+        }
         updateTimeline();
     });
     connect(loadPicture, &QAction::triggered, [=](){
@@ -574,6 +582,10 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(canvas, &PixelCanvas::canvasSizeChanged, this, [=](int x, int y){
         canvasSizeLabel->setText(QString(" %1x%2 ").arg(x).arg(y));
+    });
+    connect(duplicateFrameButton, &QPushButton::clicked, this, [this](){
+        canvas->duplicateFrame();
+        updateTimeline();
     });
     connect(addFrameButton, &QPushButton::clicked, this, [this](){
         canvas->addFrame();
