@@ -49,6 +49,7 @@ public:
     void saveProject(const QString &path); // save the project as a json file
     void loadFromJson(QJsonObject obj); // load project from a json file
     void loadPicture(); // load a picture on a separate layer for reference
+    void saveSpriteSheet(const QString &path, int columns, int scale);
     void updateCanvasSize(); // update the current canvas size
     void buildPalette(); // get colors and their corresponding frequencies from the canvas and add them to a hash table
     void resizeCanvas(int width, int height); // set the canvas size
@@ -124,6 +125,7 @@ public:
     int getFrameSize();
     int getFrameDuration();
     void setFrameDuration(int value);
+    QImage renderFrame(int frameIndex);
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;

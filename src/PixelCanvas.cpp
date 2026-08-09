@@ -1082,7 +1082,26 @@ void PixelCanvas::pictureToPixel(){
     }
     update();
 }
-
+void PixelCanvas::saveSpriteSheet(const QString &path, int cols, int scale){
+    int rows = (frames.size() + cols - 1) / cols;
+    int frameWidth = canvasWidth * scale;
+    int frameHeight = canvasHeight *scale;
+    QImage spriteSheet(cols * frameWidth, rows *frameHeight, QImage::Format_ARGB32);
+    spriteSheet.fill(Qt::transparent);
+    QPainter painter(&spriteSheet);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+    for(int i = 0; i<frames.size(); i++){
+        QImage frame = renderFrame(i);
+        if(scale > 1){
+            frame = frame.scaled(frameWidth, frameHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        }
+        int x = (i % cols) * frameWidth;
+        int y = (i / cols) * frameHeight;
+        painter.drawImage(x, y, frame);
+    }
+    painter.end();
+    spriteSheet.save(path);
+}
 // undo and redo
 void PixelCanvas::undo(){
     if(undoStack.empty()) return;
@@ -1193,7 +1212,23 @@ int PixelCanvas::getFrameDuration(){
 void PixelCanvas::setFrameDuration(int value){
     frames[currentFrame].duration = value;
 }
-
+QImage PixelCanvas::renderFrame(int frameIndex){
+    QImage image(canvasWidth, canvasHeight, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+    for (const auto &layer : frames[frameIndex].layers){
+        if (!layer.visible) continue;
+        painter.setOpacity(layer.opacity);
+        for (int y = 0; y < layer.height; y++){
+            for (int x = 0; x < layer.width; x++){
+                QColor color = layer.at(x, y);
+                if (color.alpha() > 0) painter.fillRect(x, y, 1, 1, color);
+            }
+        }
+    }
+    return image;
+}
 void PixelCanvas::setTool(Tool tool){
     if(selection.moveFloating){
     cancelMove();

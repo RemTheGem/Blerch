@@ -29,6 +29,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTimer>
+#include <QFormLayout>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -172,6 +173,7 @@ MainWindow::MainWindow(QWidget *parent)
     QMenu *fileMenu = menuBar()->addMenu("File");
     QMenu *picToPixMenu = menuBar()->addMenu("Picture to Pixel");
     QMenu *canvasMenu = menuBar()->addMenu("Canvas");
+    QMenu *exportMenu = menuBar()->addMenu("Export");
     QMenu *helpMenu = menuBar()->addMenu("Help");
     // organization
     QSplitter *canvasSplitter = new QSplitter(Qt::Vertical);
@@ -219,8 +221,6 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *loadProjectAction = fileMenu->addAction("Open Project");
     QAction *loadLastProject = fileMenu->addAction("Open Last Project");
     recentFilesMenu = fileMenu->addMenu("Recent Files");
-    QAction *saveDrawing = fileMenu->addAction("Export PNG");
-    QAction *saveProjectAction = fileMenu->addAction("Save Project");
     QAction *loadPalette = fileMenu->addAction("Import Palette");
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
     QAction *openPicture = picToPixMenu->addAction("Open Picture");
@@ -228,6 +228,9 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *flipVertical = canvasMenu->addAction("Flip Vertical");
     QAction *resizeCanvas = canvasMenu->addAction("Resize Canvas");
     QAction *eraseBoard = canvasMenu->addAction("Clear Canvas");
+    QAction *saveDrawing = exportMenu->addAction("Export PNG");
+    QAction *saveProjectAction = exportMenu->addAction("Save Project");
+    QAction *saveSpriteSheetAction = exportMenu->addAction("Export as Sprite Sheet");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     brushAction->setChecked(true); // default tool as brush
@@ -349,6 +352,29 @@ MainWindow::MainWindow(QWidget *parent)
     connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setPreviewColor);
     connect(saveProjectAction, &QAction::triggered, [=](){
         saveProject();
+    });
+    connect(saveSpriteSheetAction, &QAction::triggered, [=](){
+        QDialog dialog(this);
+        dialog.setWindowTitle("Export Sprite Sheet");
+        QFormLayout *layout = new QFormLayout(&dialog);
+        QSpinBox *columnSpin = new QSpinBox(&dialog);
+        columnSpin->setRange(1,100);
+        columnSpin->setValue(5);
+
+        QSpinBox *scaleSpin = new QSpinBox(&dialog);
+        scaleSpin->setRange(1,16);
+        scaleSpin->setValue(1);
+        layout->addRow("Columns:", columnSpin);
+        layout->addRow("Scale:", scaleSpin);
+        QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+        layout->addWidget(buttons);
+        connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+        if(dialog.exec() == QDialog::Accepted){
+            int cols = columnSpin->value();
+            int scale = scaleSpin->value();
+            saveSpriteSheet("", cols, scale);
+        }
     });
     connect(loadProjectAction, &QAction::triggered, [=](){
         loadProject();
@@ -627,6 +653,15 @@ void MainWindow::saveProject(const QString &filePath){
     canvas->saveProject(path);
     SettingsManager::instance().setLastProject(path);
     SettingsManager::instance().addRecentFile(path);
+}
+void MainWindow::saveSpriteSheet(const QString &filePath, int columns, int scale){
+    QString path = filePath;
+    if(path.isEmpty()){
+        path = QFileDialog::getSaveFileName(this, "Save Sprite Sheet", "", "PNG Image (*.png)");
+    }
+    if(!path.isEmpty()){
+        canvas->saveSpriteSheet(path, columns, scale);
+    }
 }
 void MainWindow::updateRecentFiles(){
     recentFilesMenu->clear();
