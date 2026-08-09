@@ -941,24 +941,31 @@ void PixelCanvas::saveProject(const QString &path)
     QJsonObject root;
     root["Width"] = frames[currentFrame].layers[0].width;
     root["Height"] = frames[currentFrame].layers[0].height;
-    QJsonArray layerArray;
+    QJsonArray frameArray;
+    for(const auto &frame:frames){
+        QJsonObject frameObject;
+        frameObject["duration"] = frame.duration;
+        QJsonArray layerArray;
 
-    for(const auto &layer : frames[currentFrame].layers){
-        QJsonObject layerObject;
-        layerObject["name"] = layer.name;
-        layerObject["visible"] = layer.visible;
-        layerObject["opacity"] = layer.opacity;
-        QJsonArray pixelMap;
+        for(const auto &layer : frames[currentFrame].layers){
+            QJsonObject layerObject;
+            layerObject["name"] = layer.name;
+            layerObject["visible"] = layer.visible;
+            layerObject["opacity"] = layer.opacity;
+            QJsonArray pixelMap;
 
-        for(int y = 0; y < layer.height; y++){
-            for(int x = 0; x < layer.width; x++){
-                pixelMap.append(layer.at(x,y).name(QColor::HexArgb));
+            for(int y = 0; y < layer.height; y++){
+                for(int x = 0; x < layer.width; x++){
+                    pixelMap.append(layer.at(x,y).name(QColor::HexArgb));
+                }
             }
+            layerObject["pixels"] = pixelMap;
+            layerArray.append(layerObject);
         }
-        layerObject["pixels"] = pixelMap;
-        layerArray.append(layerObject);
+        frameObject["layers"] = layerArray;
+        frameArray.append(frameObject);
     }
-    root["layers"] = layerArray;
+    root["frames"] = frameArray;
     QJsonDocument doc(root);
     QFile file(fileName);
     if(file.open(QIODevice::WriteOnly))
