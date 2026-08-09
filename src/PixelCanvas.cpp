@@ -156,7 +156,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
 // canvas methods
 void PixelCanvas::updateCanvasSize()
 {
-    setFixedSize(frames[currentFrame].layers[activeLayer].width *pixelSize, frames[currentFrame].layers[activeLayer].height *pixelSize);
+    setFixedSize(canvasWidth *pixelSize, canvasHeight*pixelSize);
     emit canvasSizeChanged(canvasWidth, canvasHeight);
     update();
 }
@@ -689,7 +689,7 @@ void PixelCanvas::floodFill(int startX, int startY){
 // build palette based on its frequency of appearance
 void PixelCanvas::buildPalette(){
     colorFrequency.clear();
-    for (const auto &layer : layers){
+    for (const auto &layer : frames[currentFrame].layers){
         // only check pixel layers
         if (layer.type != LayerType::Pixel) continue;
         for (const QColor &color : layer.pixels){
@@ -940,7 +940,6 @@ void PixelCanvas::saveImage()
 }
 void PixelCanvas::saveProject(const QString &path)
 {
-    QString fileName = path;
     QJsonObject root;
     root["Width"] = frames[currentFrame].layers[0].width;
     root["Height"] = frames[currentFrame].layers[0].height;
@@ -955,14 +954,20 @@ void PixelCanvas::saveProject(const QString &path)
             layerObject["name"] = layer.name;
             layerObject["visible"] = layer.visible;
             layerObject["opacity"] = layer.opacity;
-            QJsonArray pixelMap;
-
+            QByteArray pixelData;
+            pixelData.resize(layer.width * layer.height * 4);
+            int index = 0;
             for(int y = 0; y < layer.height; y++){
                 for(int x = 0; x < layer.width; x++){
-                    pixelMap.append(layer.at(x,y).name(QColor::HexArgb));
+                    QColor color = layer.at(x,y);
+                    pixelData[index++] = static_cast<char>(color.red());
+                    pixelData[index++] = static_cast<char>(color.green());
+                    pixelData[index++] = static_cast<char>(color.blue());
+                    pixelData[index++] = static_cast<char>(color.alpha());
                 }
             }
-            layerObject["pixels"] = pixelMap;
+            QByteArray compressed = qCompress(pixelData, 9);
+            layerObject["pixels"] = QString::fromLatin1(compressed.toBase64());
             layerArray.append(layerObject);
         }
         frameObject["layers"] = layerArray;
@@ -970,7 +975,7 @@ void PixelCanvas::saveProject(const QString &path)
     }
     root["frames"] = frameArray;
     QJsonDocument doc(root);
-    QFile file(fileName);
+    QFile file(path);
     if(file.open(QIODevice::WriteOnly))
     {
         file.write(doc.toJson());
@@ -1013,15 +1018,19 @@ void PixelCanvas::loadFromJson(QJsonObject root)
             layer.width = width;
             layer.height = height;
             layer.pixels.resize(width*height);
-
-            QJsonArray pixels = layerObject["pixels"].toArray();
+            QString encoded = layerObject["pixels"].toString();
+            QByteArray compressed = QByteArray::fromBase64(encoded.toLatin1());
+            QByteArray pixelData = qUncompress(compressed);
             int index = 0;
             for(int y = 0; y < height; y++){
                 for(int x = 0; x < width; x++){
-                    if(index<pixels.size()){
-                        layer.at(x,y) = QColor(pixels[index].toString());
+                    if(index+4 <= pixelData.size()){
+                        int r = static_cast<unsigned char>(pixelData[index++]);
+                        int g = static_cast<unsigned char>(pixelData[index++]);
+                        int b = static_cast<unsigned char>(pixelData[index++]);
+                        int a = static_cast<unsigned char>(pixelData[index++]);
+                        layer.at(x, y) = QColor(r, g, b, a);
                     }
-                    index++;
                 }
             }
             frame.layers.push_back(layer);
@@ -1169,6 +1178,7 @@ void PixelCanvas::switchFrame(int index){
         activeLayer = frames[currentFrame].layers.size() - 1;
     emit frameChanged();
     emit layerChanged();
+    buildPalette();
     update();
 }
 int PixelCanvas::getCurrentFrame(){
