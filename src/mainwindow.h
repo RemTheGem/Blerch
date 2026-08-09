@@ -8,6 +8,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QSpinBox>
 
 
 QT_BEGIN_NAMESPACE
@@ -42,6 +43,7 @@ private:
     QTimer *animationTimer;
     QVBoxLayout *frameLayout;
     QHBoxLayout *frameButtonsLayout;
+    QSpinBox *durationSpinBox;
 
     void updateRecentFiles();
 };

@@ -1187,6 +1187,13 @@ int PixelCanvas::getCurrentFrame(){
 int PixelCanvas::getFrameSize(){
     return frames.size();
 }
+int PixelCanvas::getFrameDuration(){
+    return frames[currentFrame].duration;
+}
+void PixelCanvas::setFrameDuration(int value){
+    frames[currentFrame].duration = value;
+}
+
 void PixelCanvas::setTool(Tool tool){
     if(selection.moveFloating){
     cancelMove();

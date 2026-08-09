@@ -122,6 +122,8 @@ public:
     void switchFrame(int index);
     int getCurrentFrame();
     int getFrameSize();
+    int getFrameDuration();
+    void setFrameDuration(int value);
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;

@@ -67,10 +67,15 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *deleteFrameButton = new QPushButton("Remove Frame");
     QPushButton *playAnimationButton = new QPushButton("▶");
     QPushButton *pauseAnimationButton = new QPushButton("⏸");
+    durationSpinBox = new QSpinBox(this);
+    durationSpinBox->setRange(1, 60000);
+    durationSpinBox->setValue(100);
+    durationSpinBox->setSuffix(" ms");
     controlsLayout->addWidget(addFrameButton);
     controlsLayout->addWidget(deleteFrameButton);
     controlsLayout->addWidget(playAnimationButton);
     controlsLayout->addWidget(pauseAnimationButton);
+    controlsLayout->addWidget(durationSpinBox);
     frameScroll->setWidget(frameButtonsContainer);
     frameLayout->addWidget(frameScroll);
     frameLayout->addLayout(controlsLayout);
@@ -564,11 +569,18 @@ MainWindow::MainWindow(QWidget *parent)
         int next = canvas->getCurrentFrame() + 1;
         if (next >= canvas->getFrameSize()) next = 0;
         canvas->switchFrame(next);
+        durationSpinBox->blockSignals(true);
+        durationSpinBox->setValue(canvas->getFrameDuration());
+        durationSpinBox->blockSignals(false);
+        animationTimer->start(canvas->getFrameDuration());
         updateTimeline();
+    });
+    connect(durationSpinBox, &QSpinBox::valueChanged, this, [=](int value){
+                canvas->setFrameDuration(value);
     });
 }
 void MainWindow::playAnimation(){
-    animationTimer->start(100);
+    animationTimer->start(canvas->getFrameDuration());
 }
 void MainWindow::pauseAnimation(){
     animationTimer->stop();
@@ -583,8 +595,9 @@ void MainWindow::updateTimeline(){
         button->setCheckable(true);
         button->setChecked(i == canvas->getCurrentFrame());
         connect(button, &QPushButton::clicked, this, [this, i]() {
-                    canvas->switchFrame(i);
-                    updateTimeline();
+            canvas->switchFrame(i);
+            durationSpinBox->setValue(canvas->getFrameDuration());
+            updateTimeline();
         });
         frameButtonsLayout->addWidget(button);
     }
