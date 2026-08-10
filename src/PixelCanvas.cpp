@@ -1239,6 +1239,8 @@ void PixelCanvas::deleteFrame(int index){
 }
 void PixelCanvas::switchFrame(int index){
     if (index < 0 || index >= frames.size()) return;
+    cancelPaste();
+    cancelMove();
     currentFrame = index;
     if (activeLayer >= frames[currentFrame].layers.size())
         activeLayer = frames[currentFrame].layers.size() - 1;
