@@ -13,6 +13,8 @@ public:
     QStringList getRecentFiles();
     void setCustomPalette(const QString &path);
     QString getCustomPalette();
+    void setLastSaveDirectory(const QString &path);
+    QString getLastSaveDirectory();
 private:
     SettingsManager();
     QSettings settings;

@@ -656,22 +656,26 @@ void MainWindow::loadProject(const QString &filePath){
     SettingsManager::instance().addRecentFile(path);
 }
 void MainWindow::saveProject(const QString &filePath){
+    QString dir = SettingsManager::instance().getLastSaveDirectory();
     QString path = filePath;
     if(path.isEmpty()){
-        path = QFileDialog::getSaveFileName(this, "Save Project", "", "Pixel Project (*.json)");
+        path = QFileDialog::getSaveFileName(this, "Save Project", dir, "Pixel Project (*.json)");
         if(path.isEmpty())return;
     }
     if(!path.endsWith(".json")) path += ".json";
+    SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
     canvas->saveProject(path);
     SettingsManager::instance().setLastProject(path);
     SettingsManager::instance().addRecentFile(path);
 }
 void MainWindow::saveSpriteSheet(const QString &filePath, int columns, int scale){
+    QString dir = SettingsManager::instance().getLastSaveDirectory();
     QString path = filePath;
     if(path.isEmpty()){
-        path = QFileDialog::getSaveFileName(this, "Save Sprite Sheet", "", "PNG Image (*.png)");
+        path = QFileDialog::getSaveFileName(this, "Save Sprite Sheet", dir, "PNG Image (*.png)");
     }
     if(!path.isEmpty()){
+        SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
         canvas->saveSpriteSheet(path, columns, scale);
     }
 }

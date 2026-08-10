@@ -34,3 +34,9 @@ void SettingsManager::setCustomPalette(const QString &path){
 QString SettingsManager::getCustomPalette(){
     return settings.value("customPalette", "").toString();
 }
+void SettingsManager::setLastSaveDirectory(const QString &path){
+    settings.setValue("lastSaveDirectory", path);
+}
+QString SettingsManager::getLastSaveDirectory(){
+    return settings.value("lastSaveDirectory", "").toString();
+}
