@@ -199,10 +199,10 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     if(event->button() == Qt::LeftButton){
     isDrawing = true;
     // make sure you don't overwrite on the old canvas. if you do, it leads to both actions being on the same canvas and any subsequent undos undoes both.
-    if(isUndoing){
-        undoStack.push_back(currentAction);
-        isUndoing = false;
-    }
+    //if(isUndoing){
+    //    undoStack.push_back(currentAction);
+    //    isUndoing = false;
+    //}
 
     // coordinates of the cursor with respect to our canvas
     int x = event->position().x() / pixelSize;
@@ -258,10 +258,10 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             isDrawing = true;
             isErasing = true;
             // make sure you don't overwrite on the old canvas. if you do, it leads to both actions being on the same canvas and any subsequent undos undoes both.
-            if(isUndoing){
-                undoStack.push_back(currentAction);
-                isUndoing = false;
-            }
+            //if(isUndoing){
+            //    undoStack.push_back(currentAction);
+            //    isUndoing = false;
+            //}
 
 
             int x = event->position().x() / pixelSize;
@@ -503,8 +503,12 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 
     // push what you did to the undo stack
     if(!currentAction.empty()){
-        undoStack.push_back(currentAction);
-        redoStack.clear();
+        UndoAction action;
+        action.type = UndoType::Pixel;
+        action.changes = currentAction;
+
+        frames[currentFrame].undoStack.push_back(action);
+        frames[currentFrame].redoStack.clear();
     }
 }
 // key press events
@@ -757,8 +761,11 @@ void PixelCanvas::commitMove(){
     selection.setValues(selection);
     // add what you did to undo stack
     if(!currentAction.empty()){
-        undoStack.push_back(currentAction);
-        redoStack.clear();
+        UndoAction action;
+        action.type = UndoType::Pixel;
+        action.changes = currentAction;
+        frames[currentFrame].undoStack.push_back(action);
+        frames[currentFrame].redoStack.clear();
     }
 
     update();
@@ -797,8 +804,11 @@ void PixelCanvas::commitPaste(){
         }
     }
     if(!currentAction.empty()){
-        undoStack.push_back(currentAction);
-        redoStack.clear();
+        UndoAction action;
+        action.type = UndoType::Pixel;
+        action.changes = currentAction;
+        frames[currentFrame].undoStack.push_back(action);
+        frames[currentFrame].redoStack.clear();
     }
     isPasting = false;
     update();
@@ -823,9 +833,12 @@ void PixelCanvas::removeTempLayer(){
 // ########## add comments for the rest
 void PixelCanvas::flipHorizontal()
 {
+    UndoAction action;
+    action.type = UndoType::Snapshot;
+    action.before = frames[currentFrame].layers;
     for(auto &layer : frames[currentFrame].layers){
     Layer tempLayer = layer;
-    
+
     int width = layer.width;
     int height = layer.height;
     
@@ -837,11 +850,17 @@ void PixelCanvas::flipHorizontal()
             }
         }
     }
+    action.after = frames[currentFrame].layers;
+    frames[currentFrame].undoStack.push_back(action);
+    frames[currentFrame].redoStack.clear();
     update();
 }
 
 void PixelCanvas::flipVertical()
 {
+    UndoAction action;
+    action.type = UndoType::Snapshot;
+    action.before = frames[currentFrame].layers;
     for(auto &layer : frames[currentFrame].layers){
     Layer tempLayer = layer;
     int width = layer.width;
@@ -855,6 +874,9 @@ void PixelCanvas::flipVertical()
             }
         }
     }
+    action.after = frames[currentFrame].layers;
+    frames[currentFrame].undoStack.push_back(action);
+    frames[currentFrame].redoStack.clear();
     update();
 }
 
@@ -1102,33 +1124,39 @@ void PixelCanvas::saveSpriteSheet(const QString &path, int cols, int scale){
     spriteSheet.save(path);
 }
 // undo and redo
-void PixelCanvas::undo(){
-    if(undoStack.empty()) return;
-
-    auto action = undoStack.back();
-    undoStack.pop_back();
-
-    for(auto &change : action){
-        frames[currentFrame].layers[change.layer].at(change.x, change.y) = change.oldColor;
+void PixelCanvas::undo()
+{
+    Frame &frame = frames[currentFrame];
+    if (frame.undoStack.empty()) return;
+    UndoAction action = frame.undoStack.back();
+    frame.undoStack.pop_back();
+    if(action.type == UndoType::Pixel){
+        for (auto &change : action.changes){
+            frame.layers[change.layer].at(change.x, change.y) = change.oldColor;
+        }
+    } else if(action.type == UndoType::Snapshot){
+        frame.layers = action.before;
     }
-    redoStack.push_back(action);
-    // remove selection if undone
+    frame.redoStack.push_back(action);
     selection = Selection();
     update();
 }
-void PixelCanvas::redo(){
-    if(redoStack.empty()) return;
-
-    auto action = redoStack.back();
-    redoStack.pop_back();
-
-    for (auto &change : action){
-        frames[currentFrame].layers[change.layer].at(change.x, change.y) = change.newColor;
+void PixelCanvas::redo()
+{
+    Frame &frame = frames[currentFrame];
+    if(frame.redoStack.empty()) return;
+    UndoAction action = frame.redoStack.back();
+    frame.redoStack.pop_back();
+    if(action.type == UndoType::Pixel){
+        for (auto &change : action.changes){
+            frame.layers[change.layer] .at(change.x, change.y) = change.newColor;
+        }
+    } else if(action.type == UndoType::Snapshot){
+        frame.layers = action.after;
     }
-    undoStack.push_back(action);
+    frame.undoStack.push_back(action);
     update();
 }
-
 // getters
 QColor PixelCanvas::getColor(){
     return currentColor;
@@ -1179,6 +1207,8 @@ void PixelCanvas::duplicateFrame(){
     frames.insert(currentFrame + 1, newFrame);
     currentFrame++;
     activeLayer = 0;
+    frames[currentFrame].undoStack.clear();
+    frames[currentFrame].redoStack.clear();
     update();
 }
 void PixelCanvas::addFrame(){

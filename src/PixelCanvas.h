@@ -176,10 +176,6 @@ private:
             return pixels[y * width +x];
         }
     };
-    struct Frame{
-        QList<Layer> layers;
-        int duration = 100;
-    };
     // struct for storing any changes in pixel color
     struct PixelChange{
         int layer;
@@ -188,6 +184,23 @@ private:
         QColor oldColor;
         QColor newColor;
     };
+    enum class UndoType{
+        Pixel,
+        Snapshot
+    };
+    struct UndoAction{
+        UndoType type;
+        QVector<PixelChange> changes;
+        QVector<Layer>before;
+        QVector<Layer>after;
+    };
+    struct Frame{
+        QList<Layer> layers;
+        int duration = 100;
+        QVector<UndoAction> undoStack; // stack to store undos
+        QVector<UndoAction> redoStack; // stack to store redos
+    };
+
     // others
     std::vector<Layer> layers; // vector storing layers
     QList<Frame> frames;
@@ -200,9 +213,7 @@ private:
     Shape shape;
     Layer currentState; // store current state for undo and redo
     Layer undoState; // last state for undo and redo
-    std::deque<std::vector<PixelChange>> undoStack; // stack to store undos
-    std::deque<std::vector<PixelChange>> redoStack; // stack to store redos
-    std::vector<PixelChange> currentAction; // vector to store current action
+    QVector<PixelChange> currentAction; // vector to store current action
     int maxUndo = 5; // max number of undos (probably redundant atp. cbf to check)
 signals:
     void colorChanged(QColor color); // signal to change the selected color
