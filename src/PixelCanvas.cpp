@@ -1,6 +1,7 @@
 #include "PixelCanvas.h"
 #include "tools/mediancut.h"
 #include "dialogs/pictureimportdialog.h"
+#include "../thirdParty/gif-h/gif.h"
 #include <QPainter>
 #include <QMouseEvent>
 #include <QPaintEvent>
@@ -1124,6 +1125,31 @@ void PixelCanvas::saveSpriteSheet(const QString &path, int cols, int scale){
     }
     painter.end();
     spriteSheet.save(path);
+}
+void PixelCanvas::saveGIF(const QString &path, int scale){
+    QByteArray filePath = path.toUtf8();
+    GifWriter writer = {};
+    int imageWidth = canvasWidth *scale;
+    int imageHeight = canvasHeight *scale;
+    int maxScale = qMin(64, 8192/qMax(canvasWidth, canvasHeight));
+    scale = qBound(1,scale,maxScale);
+    QImage firstImage = renderFrame(0).convertToFormat(QImage::Format_RGBA8888);
+    if(scale >1) firstImage = firstImage.scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    if(!GifBegin(&writer, filePath.constData(), firstImage.width(), firstImage.height(), frames[0].duration/10)){
+        qDebug()<< "Gif Begin failed";
+        return;
+    }
+    for(int i = 0; i < frames.size(); i++){
+    QImage image = renderFrame(i).convertToFormat(QImage::Format_RGBA8888);
+    if(scale >1) image = image.scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        if(!GifWriteFrame(&writer, image.constBits(), image.width(), image.height(), frames[i].duration/10)){
+            qDebug() << "Gif write faile on frame" << i;
+            GifEnd(&writer);
+            return;
+        }
+    qDebug()<<"Gif write successful";
+    }
+    GifEnd(&writer);
 }
 // undo and redo
 void PixelCanvas::undo()

@@ -27,6 +27,7 @@ public:
     void loadProject(const QString &filePath = QString());
     void saveProject(const QString &filePath = "");
     void saveSpriteSheet(const QString &filePath = "", int columns = 5, int scale = 1);
+    void saveGIF(const QString &filePath = "", int scale = 16);
     void playAnimation();
     void pauseAnimation();
     void updateTimeline();

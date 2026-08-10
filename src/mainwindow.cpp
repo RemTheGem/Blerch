@@ -233,6 +233,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveDrawing = exportMenu->addAction("Export PNG");
     QAction *saveProjectAction = exportMenu->addAction("Save Project");
     QAction *saveSpriteSheetAction = exportMenu->addAction("Export as Sprite Sheet");
+    QAction *saveGIFAction = exportMenu->addAction("Export GIF");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     brushAction->setChecked(true); // default tool as brush
@@ -376,6 +377,26 @@ MainWindow::MainWindow(QWidget *parent)
             int cols = columnSpin->value();
             int scale = scaleSpin->value();
             saveSpriteSheet("", cols, scale);
+        }
+    });
+    connect(saveGIFAction, &QAction::triggered, [=](){
+        QDialog dialog(this);
+        dialog.setWindowTitle("Export GIF");
+        QFormLayout *layout = new QFormLayout(&dialog);
+
+        QSpinBox *scaleSpin = new QSpinBox(&dialog);
+        scaleSpin->setRange(1,64);
+        scaleSpin->setValue(16);
+        layout->addRow("Scale:", scaleSpin);
+        QLabel *infoLabel = new QLabel("Use scale 16 or higher for normal use!");
+        layout->addWidget(infoLabel);
+        QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+        layout->addWidget(buttons);
+        connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+        if(dialog.exec() == QDialog::Accepted){
+            int scale = scaleSpin->value();
+            saveGIF("", scale);
         }
     });
     connect(loadProjectAction, &QAction::triggered, [=](){
@@ -677,6 +698,17 @@ void MainWindow::saveSpriteSheet(const QString &filePath, int columns, int scale
     if(!path.isEmpty()){
         SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
         canvas->saveSpriteSheet(path, columns, scale);
+    }
+}
+void MainWindow::saveGIF(const QString &filePath, int scale){
+    QString dir = SettingsManager::instance().getLastSaveDirectory();
+    QString path = filePath;
+    if(path.isEmpty()){
+        path = QFileDialog::getSaveFileName(this, "Save GIF", dir, "GIF File (*.gif)");
+    }
+    if(!path.isEmpty()){
+        SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
+        canvas->saveGIF(path, scale);
     }
 }
 void MainWindow::updateRecentFiles(){
