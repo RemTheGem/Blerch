@@ -774,6 +774,7 @@ void PixelCanvas::commitMove(){
     update();
 }
 void PixelCanvas::cancelMove(){
+    if (!selection.moveFloating) return;
     removeTempLayer();
     selection.moveFloating = false;
     selection.dragging = false;
@@ -817,6 +818,7 @@ void PixelCanvas::commitPaste(){
     update();
 }
 void PixelCanvas::cancelPaste(){
+    if(!isPasting) return;
     removeTempLayer();
     isPasting = false;
     update();
@@ -1237,6 +1239,8 @@ void PixelCanvas::duplicateFrame(){
     activeLayer = 0;
     frames[currentFrame].undoStack.clear();
     frames[currentFrame].redoStack.clear();
+    emit layerChanged();
+    emit frameChanged();
     update();
 }
 void PixelCanvas::addFrame(){
@@ -1255,6 +1259,8 @@ void PixelCanvas::addFrame(){
     frames.insert(currentFrame + 1, newFrame);
     currentFrame++;
     activeLayer = 0;
+    emit frameChanged();
+    emit layerChanged();
     update();
 }
 void PixelCanvas::deleteFrame(int index){
