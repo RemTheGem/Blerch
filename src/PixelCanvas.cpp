@@ -89,7 +89,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         painter.restore();
     }
     // if we are using move or select then draw the outline for selection
-    if(currentTool == Tool::Move || currentTool == Tool::Select){
+    if((currentTool == Tool::Move || currentTool == Tool::Select) && selection.canMove){
     QPen pen;
     pen.setWidth(3);
     pen.setStyle(Qt::DashLine);
@@ -227,13 +227,14 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         {
             // clear previous selection and start a new one
             selection = Selection();
+            selection.canMove = true;
             selection.dragStart = QPoint(x, y);
             break;
         }
         case Tool::Move:
         {
             // make sure we have a selection
-            if(selection.isEmpty(selection)) return;
+            if(selection.isEmpty(selection) || !selection.canMove) return;
             selection.dragOffset = event->pos();
             selection.dragging = true;
             if(!selection.moveFloating){
@@ -372,7 +373,8 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         case Tool::Move:
         {
             // draw a preview of where the moved selection is
-            if(selection.isEmpty(selection)) return;
+            if(selection.isEmpty(selection) || !selection.canMove) return;
+
             clear();
             selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.topLeft.x(), selection.topLeft.y());
             for (int my = 0; my < selection.height+1; my++){
@@ -465,7 +467,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     }
     case Tool::Move:
         selection.dragging = false;
-        if(selection.isEmpty(selection)) return;
+        if(selection.isEmpty(selection) || !selection.canMove) return;
         break;
     case Tool::Shape:
     {
@@ -1241,6 +1243,7 @@ void PixelCanvas::switchFrame(int index){
     if (index < 0 || index >= frames.size()) return;
     cancelPaste();
     cancelMove();
+    selection.canMove = false;
     currentFrame = index;
     if (activeLayer >= frames[currentFrame].layers.size())
         activeLayer = frames[currentFrame].layers.size() - 1;

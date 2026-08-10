@@ -22,6 +22,7 @@ public:
         int height;
         bool dragging;
         bool moveFloating = false;
+        bool canMove = false;
         QPoint dragStart;
         QPoint dragEnd;
         QPoint previewEnd;
