@@ -203,6 +203,10 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *shapeAction = new QAction("Shape", this);
     QAction *pastePixels = new QAction("Paste", this);
     QAction *copyPixels = new QAction("Copy", this);
+    QAction *copyFrameAction = new QAction("Copy Frame", this);
+    QAction *pasteFrameAction = new QAction("Paste Frame", this);
+    addAction(copyFrameAction);
+    addAction(pasteFrameAction);
     addAction(copyPixels);
     addAction(pastePixels);
     shapeButton->setDefaultAction(shapeAction);
@@ -286,6 +290,8 @@ MainWindow::MainWindow(QWidget *parent)
     loadPicture->setShortcut(QKeySequence("Ctrl+P"));
     copyPixels->setShortcut(QKeySequence("Ctrl+C"));
     pastePixels->setShortcut(QKeySequence("Ctrl+V"));
+    copyFrameAction->setShortcut(QKeySequence("Ctrl+Shift+C"));
+    pasteFrameAction->setShortcut(QKeySequence("Ctrl+Shift+V"));
 
     // Connections (needs organizing -_-#)
     connect(pickColor, &QAction::triggered, [=]() {
@@ -351,6 +357,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(pastePixels, &QAction::triggered, [=](){
         canvas->pastePixels();
         statusBar()->showMessage("Left Click or press enter to confirm. Esc to Cancel", 5000);
+    });
+    connect(copyFrameAction, &QAction::triggered, [=](){
+        canvas->copyFrame();
+        statusBar()->showMessage("Frame Copied!", 2000);
+    });
+    connect(pasteFrameAction, &QAction::triggered, [=](){
+        canvas->pasteFrame();
     });
     connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setPreviewColor);
     connect(saveProjectAction, &QAction::triggered, [=](){

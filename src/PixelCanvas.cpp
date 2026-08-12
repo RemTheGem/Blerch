@@ -190,8 +190,8 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         if(event->button() == Qt::LeftButton){
             movingPicture = true;
             moveOffset = event->pos() - frames[currentFrame].layers[activeLayer].position;
-            return;
         }
+        return;
     }
     currentAction.clear();
     if(isPasting) return;
@@ -1235,6 +1235,21 @@ void PixelCanvas::setLayerOpacity(int index, float opacity){
 void PixelCanvas::duplicateFrame(){
     Frame newFrame = frames[currentFrame];
     frames.insert(currentFrame + 1, newFrame);
+    currentFrame++;
+    activeLayer = 0;
+    frames[currentFrame].undoStack.clear();
+    frames[currentFrame].redoStack.clear();
+    emit layerChanged();
+    emit frameChanged();
+    update();
+}
+void PixelCanvas::copyFrame(){
+    copiedFrame = Frame();
+    copiedFrame = frames[currentFrame];
+}
+void PixelCanvas::pasteFrame(){
+    if(copiedFrame.isEmpty()) return;
+    frames.insert(currentFrame + 1, copiedFrame);
     currentFrame++;
     activeLayer = 0;
     frames[currentFrame].undoStack.clear();

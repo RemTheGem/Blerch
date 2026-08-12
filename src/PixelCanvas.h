@@ -123,6 +123,8 @@ public:
     void duplicateFrame();
     void addFrame();
     void deleteFrame(int index);
+    void copyFrame();
+    void pasteFrame();
     void switchFrame(int index);
     int getCurrentFrame();
     int getFrameSize();
@@ -201,12 +203,17 @@ private:
         int duration = 100;
         QVector<UndoAction> undoStack; // stack to store undos
         QVector<UndoAction> redoStack; // stack to store redos
+
+        bool isEmpty() {
+            return layers.isEmpty();
+        }
     };
 
     // others
     std::vector<Layer> layers; // vector storing layers
     QList<Frame> frames;
     int currentFrame = 0;
+    Frame copiedFrame;
     int activeLayer = 0; // selected layer
     QHash<QRgb, int> colorFrequency; // number of times color has appeared on current canvas
     Tool currentTool = Tool::Brush; // default tool
