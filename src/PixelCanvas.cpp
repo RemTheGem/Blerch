@@ -1291,6 +1291,13 @@ void PixelCanvas::switchFrame(int index){
     cancelPaste();
     cancelMove();
     selection.canMove = false;
+    if(!currentAction.empty()){
+        UndoAction action;
+        action.type = UndoType::Pixel;
+        action.changes = currentAction;
+        frames[currentFrame].undoStack.push_back(action);
+        frames[currentFrame].redoStack.clear();
+    }
     currentFrame = index;
     if (activeLayer >= frames[currentFrame].layers.size())
         activeLayer = frames[currentFrame].layers.size() - 1;
