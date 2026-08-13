@@ -3,6 +3,7 @@
 #include "PixelCanvas.h"
 #include "tools/palettewidget.h"
 #include "tools/custompalette.h"
+#include "tools/colorpreviewwidget.h"
 #include "../include/settingsmanager.h"
 #include <QMouseEvent>
 #include <QPaintEvent>

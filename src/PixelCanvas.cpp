@@ -38,8 +38,7 @@ PixelCanvas::PixelCanvas(QWidget *parent)
     updateCanvasSize();
     setMouseTracking(true);
 }
-ColorPreviewWidget::ColorPreviewWidget(QWidget *parent){
-}
+
 // paint events
 void PixelCanvas::paintEvent(QPaintEvent *)
 {
@@ -105,21 +104,6 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     }
     // build color palette according to the colors used
     buildPalette();
-}
-// preview for current color
-void ColorPreviewWidget::paintEvent(QPaintEvent *)
-{
-    QPainter painter(this);
-    QRect rect(
-        0,
-        0,
-        previewSize,
-        previewSize
-        );
-    painter.setPen(Qt::black);
-    painter.fillRect(rect, selectedColor);
-    painter.drawRect(rect);
-
 }
 // draw stuff with coordinates and color as parameters
 void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
@@ -1203,10 +1187,7 @@ float PixelCanvas::getLayerOpacity(int index) const{
     return frames[currentFrame].layers[index].opacity;
 }
 // setters
-void ColorPreviewWidget::setPreviewColor(const QColor &color){
-    selectedColor = color;
-    update();
-}
+
 void PixelCanvas::setHorizontalSymmetry(bool enabled){
     horizontalSymmetry = enabled;
     update();

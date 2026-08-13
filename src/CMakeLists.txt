@@ -34,6 +34,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         dialogs/pictureimportdialog.h dialogs/pictureimportdialog.cpp
         tools/custompalette.h tools/custompalette.cpp
         ../include/settingsmanager.h ../include/settingsmanager.cpp
+        tools/colorpreviewwidget.h tools/colorpreviewwidget.cpp
 
 
 
