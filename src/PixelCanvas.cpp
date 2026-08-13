@@ -906,7 +906,7 @@ void PixelCanvas::removeLayer(int index){
 }
 void PixelCanvas::renameLayer(int index, const QString &name){
     if(index <0 || index >= frames[currentFrame].layers.size()) return;
-    layers[index].name = name;
+    frames[currentFrame].layers[index].name = name;
 }
 void PixelCanvas::moveLayerUp(int index)
 {
