@@ -35,6 +35,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         tools/custompalette.h tools/custompalette.cpp
         ../include/settingsmanager.h ../include/settingsmanager.cpp
         tools/colorpreviewwidget.h tools/colorpreviewwidget.cpp
+        model/canvasdocument.h model/canvasdocument.cpp
+        model/CanvasTypes.h
+        model/canvasdocument.h model/canvasdocument.cpp
+        model/CanvasTypes.h
 
 
 

@@ -40,6 +40,7 @@ private:
     QListWidget *layerList;
     QPushButton *addLayerButton;
     QPushButton *removeLayerButton;
+    CanvasDocument *document;
     PixelCanvas *canvas;
     QMenu *recentFilesMenu;
     QTimer *animationTimer;

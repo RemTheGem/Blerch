@@ -4,6 +4,7 @@
 #include "tools/palettewidget.h"
 #include "tools/custompalette.h"
 #include "tools/colorpreviewwidget.h"
+#include "model/canvasdocument.h"
 #include "../include/settingsmanager.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
@@ -40,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     // sorry for the mess here. moving stuff around changes how they look in the UI. idk any better way lol
     // main setup
+    document = new CanvasDocument(this);
     canvas = new PixelCanvas(this);
     auto colorPreview = new ColorPreviewWidget(this);
     QToolButton *shapeButton = new QToolButton(this);
@@ -306,7 +308,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(eraseBoard, &QAction::triggered, [=](){
         reply = QMessageBox::warning(this, "Clear Canvas?", "All progress may be lost. Clear Canvas?", QMessageBox::Yes | QMessageBox::Cancel);
         if(reply == QMessageBox::Yes){
-        canvas->resetCanvas();
+        document->resetCanvas();
         }
     });
     connect(resizeCanvas, &QAction::triggered, [=](){
@@ -320,7 +322,7 @@ MainWindow::MainWindow(QWidget *parent)
         int height = QInputDialog::getInt(this, "Canvas Height", "Height:", 32, 1, 512, 1, &okHeight);
         if(!okHeight)
             return;
-        canvas->resizeCanvas(width, height);
+        document->resizeCanvas(width, height);
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
         canvas->saveImage();
@@ -344,11 +346,11 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->setTool(PixelCanvas::Tool::Select);
     });
     connect(undo, &QAction::triggered, [=](){
-        canvas->undo();
+        document->undo();
         statusBar()->showMessage("Undo", 2000);
     });
     connect(redo, &QAction::triggered, [=](){
-        canvas->redo();
+        document->redo();
         statusBar()->showMessage("Redo", 2000);
     });
     connect(copyPixels, &QAction::triggered, [=](){
@@ -360,11 +362,11 @@ MainWindow::MainWindow(QWidget *parent)
         statusBar()->showMessage("Left Click or press enter to confirm. Esc to Cancel", 5000);
     });
     connect(copyFrameAction, &QAction::triggered, [=](){
-        canvas->copyFrame();
+        document->copyFrame();
         statusBar()->showMessage("Frame Copied!", 2000);
     });
     connect(pasteFrameAction, &QAction::triggered, [=](){
-        canvas->pasteFrame();
+        document->pasteFrame();
     });
     connect(canvas, &PixelCanvas::colorChanged, colorPreview, &ColorPreviewWidget::setPreviewColor);
     connect(saveProjectAction, &QAction::triggered, [=](){
@@ -429,15 +431,15 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->setCurrentRow(0);
         statusBar()->showMessage("Project Loaded!", 4000);
     });
-    connect(canvas, &PixelCanvas::frameChanged, [=](){
-        int previousLayer = canvas->getActiveLayer();
+    connect(document, &CanvasDocument::frameChanged, [=](){
+        int previousLayer = document->getActiveLayer();
 
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
         if(layerList->count() >0){
             int newLayer = std::min(previousLayer, layerList->count() -1);
             layerList->setCurrentRow(newLayer);
-            canvas->setActiveLayer(newLayer);
+            document->setActiveLayer(newLayer);
         }
         updateTimeline();
     });
@@ -479,42 +481,42 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->setZoom(canvas->getZoom() - 2);
     });
     connect(addLayerButton,&QPushButton::clicked,[=](){
-        canvas->addLayer();
+        document->addLayer();
         layerList->addItem("Layer " + QString::number(layerList->count()+1));
         layerList->setCurrentRow(layerList->count()-1);
     });
     connect(removeLayerButton,&QPushButton::clicked,[=](){
         int row = layerList->currentRow();
         if(row >= 0){
-            canvas->removeLayer(row);
+            document->removeLayer(row);
             delete layerList->takeItem(row);
         }
     });
-    connect(canvas, &PixelCanvas::clearLayerList, [=](){
+    connect(document, &CanvasDocument::clearLayerList, [=](){
         int row = layerList->currentRow();
         if(row>=0){
             delete layerList->takeItem(row);
         }
     });
-    connect(canvas, &PixelCanvas::reInitLayers, [=](){
-        canvas->addLayer();
+    connect(document, &CanvasDocument::reInitLayers, [=](){
+        document->addLayer();
         layerList->addItem("Layer " + QString::number(layerList->count()+1));
         layerList->setCurrentRow(layerList->count()-1);
     });
     connect(moveUpButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
         if(index <0 || index >= layerList->count()-1) return;
-        canvas->moveLayerUp(index);
+        document->moveLayerUp(index);
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
         layerList->setCurrentRow(index + 1);
     });
     connect(moveDownButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
         if(index <=0 || index > layerList->count()-1) return;
-        canvas->moveLayerDown(index);
+        document->moveLayerDown(index);
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
         layerList->setCurrentRow(index - 1);
     });
     connect(renameLayerButton, &QPushButton::clicked, [=](){
@@ -525,23 +527,23 @@ MainWindow::MainWindow(QWidget *parent)
                                             QLineEdit::Normal, layerList->currentItem()->text(),&ok);
         if(ok && !name.isEmpty())
         {
-            canvas->renameLayer(index, name);
+            document->renameLayer(index, name);
             layerList->item(index)->setText(name);
         }
     });
     connect(layerList, &QListWidget::currentRowChanged, [=](int row){
-        canvas->setActiveLayer(row);
-        opacitySlider->setValue(canvas->getLayerOpacity(row)*100);
+        document->setActiveLayer(row);
+        opacitySlider->setValue(document->getLayerOpacity(row)*100);
     });
     connect(opacitySlider, &QSlider::valueChanged, [=](int value){
-        canvas->setLayerOpacity(layerList->currentRow(), value / 100.0f);
+        document->setLayerOpacity(layerList->currentRow(), value / 100.0f);
     });
-    connect(canvas, &PixelCanvas::layerChanged, this, [=]() {
+    connect(document, &CanvasDocument::layerChanged, this, [=]() {
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
 
         if (layerList->count() > 0)
-            layerList->setCurrentRow(canvas->getActiveLayer());
+            layerList->setCurrentRow(document->getActiveLayer());
     });
     connect(shortcutsAction, &QAction::triggered, [=](){
 
@@ -583,7 +585,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     });
     connect(paletteW, &paletteWidget::colorSelected, canvas, &PixelCanvas::setColor);
-    connect(canvas, &PixelCanvas::paletteUpdated, paletteW, &paletteWidget::setColors);
+    connect(document, &CanvasDocument::paletteUpdated, paletteW, &paletteWidget::setColors);
     connect(customPalette, &CustomPalette::colorSelected, canvas, &PixelCanvas::setColor);
     connect(customPalette, &CustomPalette::paletteUpdatedCustom, customPalette, &CustomPalette::setColors);
     connect(paletteSelector, &QComboBox::currentIndexChanged, this, [=](int index){
@@ -615,19 +617,19 @@ MainWindow::MainWindow(QWidget *parent)
     connect(canvas, &PixelCanvas::mousePositionChanged, this, [=](int x, int y){
         positionLabel->setText(QString("X: %1 Y: %2 ").arg(x).arg(y));
     });
-    connect(canvas, &PixelCanvas::canvasSizeChanged, this, [=](int x, int y){
+    connect(document, &CanvasDocument::canvasSizeChanged, this, [=](int x, int y){
         canvasSizeLabel->setText(QString(" %1x%2 ").arg(x).arg(y));
     });
     connect(duplicateFrameButton, &QPushButton::clicked, this, [this](){
-        canvas->duplicateFrame();
+        document->duplicateFrame();
         updateTimeline();
     });
     connect(addFrameButton, &QPushButton::clicked, this, [this](){
-        canvas->addFrame();
+        document->addFrame();
         updateTimeline();
     });
     connect(deleteFrameButton, &QPushButton::clicked, this, [this](){
-        canvas->deleteFrame(canvas->getCurrentFrame());
+        document->deleteFrame(document->getCurrentFrame());
         updateTimeline();
     });
     connect(playAnimationButton, &QPushButton::clicked, this, [this](){
@@ -639,21 +641,21 @@ MainWindow::MainWindow(QWidget *parent)
         updateTimeline();
     });
     connect(animationTimer, &QTimer::timeout, this, [this](){
-        int next = canvas->getCurrentFrame() + 1;
-        if (next >= canvas->getFrameSize()) next = 0;
-        canvas->switchFrame(next);
+        int next = document->getCurrentFrame() + 1;
+        if (next >= document->getFrameSize()) next = 0;
+        document->switchFrame(next);
         durationSpinBox->blockSignals(true);
-        durationSpinBox->setValue(canvas->getFrameDuration());
+        durationSpinBox->setValue(document->getFrameDuration());
         durationSpinBox->blockSignals(false);
-        animationTimer->start(canvas->getFrameDuration());
+        animationTimer->start(document->getFrameDuration());
         updateTimeline();
     });
     connect(durationSpinBox, &QSpinBox::valueChanged, this, [=](int value){
-                canvas->setFrameDuration(value);
+                document->setFrameDuration(value);
     });
 }
 void MainWindow::playAnimation(){
-    animationTimer->start(canvas->getFrameDuration());
+    animationTimer->start(document->getFrameDuration());
 }
 void MainWindow::pauseAnimation(){
     animationTimer->stop();
@@ -663,13 +665,13 @@ void MainWindow::updateTimeline(){
         delete item->widget();
         delete item;
     }
-    for (int i = 0; i < canvas->getFrameSize(); i++) {
+    for (int i = 0; i < document->getFrameSize(); i++) {
         QPushButton *button = new QPushButton(QString::number(i + 1));
         button->setCheckable(true);
-        button->setChecked(i == canvas->getCurrentFrame());
+        button->setChecked(i == document->getCurrentFrame());
         connect(button, &QPushButton::clicked, this, [this, i]() {
-            canvas->switchFrame(i);
-            durationSpinBox->setValue(canvas->getFrameDuration());
+            document->switchFrame(i);
+            durationSpinBox->setValue(document->getFrameDuration());
             updateTimeline();
         });
         frameButtonsLayout->addWidget(button);
@@ -740,7 +742,7 @@ void MainWindow::updateRecentFiles(){
         connect(action, &QAction::triggered,this, [=]{
             loadProject(action->data().toString());
             layerList->clear();
-            layerList->addItems(canvas->getLayerNames());
+            layerList->addItems(document->getLayerNames());
             layerList->setCurrentRow(0);
             statusBar()->showMessage("Project Loaded!", 4000);
         });
