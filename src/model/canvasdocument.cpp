@@ -66,7 +66,7 @@ void CanvasDocument::buildPalette(){
             colorFrequency[color.rgba()]++;
         }
     }
-    emit paletteChanged(sortColors(colorFrequency));
+    emit paletteUpdated(sortColors(colorFrequency));
 }
 
 QList<QColor> CanvasDocument::sortColors(const QHash<QRgb, int> &colorFrequency)const {
@@ -93,5 +93,194 @@ void CanvasDocument::addLayer(){
     buildPalette();
     emit layerChanged();
 }
+void CanvasDocument::removeLayer(int index){
+    if(frames[currentFrameIndex].layers.size() <=1) return;
+    frames[currentFrameIndex].layers.erase(frames[currentFrameIndex].layers.begin() + index);
+    activeLayerIndex = std::clamp(activeLayerIndex, 0, (int)frames[currentFrameIndex].layers.size() -1);
+    emit layerChanged();
+}
+void CanvasDocument::setActiveLayer(int index){
+    if(index< 0|| index>= frames[currentFrameIndex].layers.size()) return;
+    if(activeLayerIndex == index) return;
+    activeLayerIndex = index;
+    emit layerChanged();
+}
+void CanvasDocument::moveLayerDown(int index){
+    if(index<=0|| index>=frames[currentFrameIndex].layers.size()) return;
+    std::swap(frames[currentFrameIndex].layers[index], frames[currentFrameIndex].layers[index-1]);
+    if(activeLayerIndex == index)activeLayerIndex++;
+    emit layerChanged();
+}
+void CanvasDocument::moveLayerUp(int index){
+    if(index < 0 || index >= frames[currentFrameIndex].layers.size() -1) return;
+    std::swap(frames[currentFrameIndex].layers[index], frames[currentFrameIndex].layers[index+1]);
+    if(activeLayerIndex == index) activeLayerIndex++;
+    else if(activeLayerIndex == index +1) activeLayerIndex--;
+    emit layerChanged();
 
+}
 
+void CanvasDocument::renameLayer(int index, const QString &name){
+    if(index < 0 || index >= frames[currentFrameIndex].layers.size()) return;
+    frames[currentFrameIndex].layers[index].name = name;
+    emit layerChanged();
+}
+void CanvasDocument::setLayerOpacity(int index, float opacity){
+    if(index < 0 || index >= frames[currentFrameIndex].layers.size()) return;
+    frames[currentFrameIndex].layers[index].opacity = opacity;
+    emit layerChanged();
+}
+float CanvasDocument::getLayerOpacity(int index ) const{
+    if(index <0 || index >= frames[currentFrameIndex].layers.size()) return 1.0f;
+    return frames[currentFrameIndex].layers[index].opacity;
+}
+QStringList CanvasDocument::getLayerNames() const {
+    QStringList names;
+    for(const auto &layer :frames[currentFrameIndex].layers) names.append(layer.name);
+    return names;
+}
+int CanvasDocument::getActiveLayer() const {return activeLayerIndex;}
+
+void CanvasDocument::makeTempLayer(){
+    addLayer();
+    frames[currentFrameIndex].layers[activeLayerIndex].opacity = 0.5f;
+    frames[currentFrameIndex].layers[activeLayerIndex].width = canvasWidth;
+    frames[currentFrameIndex].layers[activeLayerIndex].height = canvasHeight;
+}
+void CanvasDocument::removeTempLayer(){
+    removeLayer(frames[currentFrameIndex].layers.size()-1);
+}
+Layer &CanvasDocument::activeLayer_() {return frames[currentFrameIndex].layers[activeLayerIndex];}
+const Layer &CanvasDocument::activeLayer_() const {return frames[currentFrameIndex].layers[activeLayerIndex];}
+Frame &CanvasDocument::currentFrame_() {return frames[currentFrameIndex];}
+const Frame &CanvasDocument::currentFrame_() const {return frames[currentFrameIndex];}
+
+void CanvasDocument::duplicateFrame(){
+    Frame newFrame = frames[currentFrameIndex];
+    frames.insert(currentFrameIndex+1, newFrame);
+    currentFrameIndex++;
+    activeLayerIndex = 0;
+    frames[currentFrameIndex].undoStack.clear();
+    frames[currentFrameIndex].redoStack.clear();
+    emit layerChanged();
+    emit frameChanged();
+}
+
+void CanvasDocument::copyFrame() {copiedFrame = frames[currentFrameIndex];}
+
+void CanvasDocument::pasteFrame(){
+    if(copiedFrame.isEmpty())return;
+    frames.insert(currentFrameIndex+1, copiedFrame);
+    currentFrameIndex++;
+    activeLayerIndex = 0;
+    frames[currentFrameIndex].undoStack.clear();
+    frames[currentFrameIndex].redoStack.clear();
+    emit layerChanged();
+    emit frameChanged();
+}
+void CanvasDocument::addFrame(){
+    Frame newFrame;
+    Layer layer;
+    layer.name = "Layer 1";
+    layer.width = canvasWidth;
+    layer.height = canvasHeight;
+    layer.pixels.resize(canvasWidth *canvasHeight);
+    for(int y= 0; y <layer.height; y++){
+        for(int x = 0; x <layer.width; x++){
+            layer.at(x, y) = Qt::transparent;
+        }
+    }
+    newFrame.layers.push_back(layer);
+    frames.insert(currentFrameIndex+1, newFrame);
+    currentFrameIndex++;
+    activeLayerIndex = 0;
+    emit layerChanged();
+    emit frameChanged();
+
+}
+void CanvasDocument::deleteFrame(int index){
+    if(frames.size() <= 1) return;
+    if(index <0 || index >= frames.size()) return;
+    frames.removeAt(index);
+    if(currentFrameIndex >= frames.size()) currentFrameIndex = frames.size() -1;
+    if(activeLayerIndex >= frames[currentFrameIndex].layers.size())
+        activeLayerIndex = frames[currentFrameIndex].layers.size()-1;
+    emit frameChanged();
+}
+
+void CanvasDocument::switchFrame(int index){
+    if(index < 0 || index >= frames.size()) return;
+    currentFrameIndex = index;
+    if(activeLayerIndex >= frames[currentFrameIndex].layers.size())
+        activeLayerIndex = frames[currentFrameIndex].layers.size()-1;
+    emit frameChanged();
+    emit layerChanged();
+    buildPalette();
+}
+int CanvasDocument::getCurrentFrame() const { return currentFrameIndex;}
+int CanvasDocument::getFrameSize() const {return frames.size();}
+int CanvasDocument::getFrameDuration() const {return frames[currentFrameIndex].duration;}
+int CanvasDocument::getThisFrameDuration(int index) const {return frames[index].duration;}
+void CanvasDocument::setFrameDuration(int value){frames[currentFrameIndex].duration = value;}
+
+QImage CanvasDocument::renderFrame(int frameIndex) const {
+    QImage image(canvasWidth, canvasHeight, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter (&image);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+    for(const auto &layer :frames[frameIndex].layers){
+        if(!layer.visible) continue;
+        painter.setOpacity(layer.opacity);
+        for(int y = 0; y < layer.height; y ++){
+            for(int x = 0; x < layer.width; x++){
+                QColor color = layer.at(x, y);
+                if(color.alpha()>9) painter.fillRect(x,y,1,1,color);
+            }
+        }
+    }
+    return image;
+}
+
+void CanvasDocument::loadFrames(const QList<Frame> &newFrames){
+    frames = newFrames;
+    currentFrameIndex = 0;
+    activeLayerIndex = 0;
+    emit frameChanged();
+    emit layerChanged();
+}
+void CanvasDocument::pushUndoAction(const UndoAction &action){
+    frames[currentFrameIndex].undoStack.push_back(action);
+    frames[currentFrameIndex].redoStack.clear();
+}
+void CanvasDocument::undo(){
+    Frame &frame = frames[currentFrameIndex];
+    if(frame.undoStack.empty()) return;
+    UndoAction action = frame.undoStack.back();
+    frame.undoStack.pop_back();
+    if(action.type == UndoType::Pixel){
+        for(auto &change : action.changes ){
+            frame.layers[change.layer].at(change.x, change.y) = change.oldColor;
+        }
+    }
+    else if(action.type == UndoType::Snapshot){
+        frame.layers = action.before;
+    }
+    frame.redoStack.push_back(action);
+    emit documentMutated();
+}
+void CanvasDocument::redo(){
+    Frame &frame = frames[currentFrameIndex];
+    if(frame.redoStack.empty()) return;
+    UndoAction action = frame.redoStack.back();
+    frame.redoStack.pop_back();
+    if(action.type== UndoType::Pixel){
+        for(auto &change : action.changes){
+            frame.layers[change.layer].at(change.x, change.y) = change.newColor;
+        }
+    }
+    else if(action.type == UndoType::Snapshot){
+        frame.layers = action.after;
+    }
+    frame.undoStack.push_back(action);
+    emit documentMutated();
+}

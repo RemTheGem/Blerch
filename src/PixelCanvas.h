@@ -65,6 +65,7 @@ public:
     void pastePixels(); // paste copied pixels
     void flipHorizontal();
     void flipVertical();
+    CanvasDocument* getDocument() const {return document;}
     // enum class for available tools
     enum class Tool {
         Brush,

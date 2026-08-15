@@ -27,6 +27,9 @@ PixelCanvas::PixelCanvas(QWidget *parent)
         selection = Selection();
         update();
     });
+    connect(document, &CanvasDocument::layerChanged, this,[this]{update();});
+    connect(document, &CanvasDocument::frameChanged, this, [this]{update();});
+    connect(document, &CanvasDocument::canvasSizeChanged, this, [this]{updateCanvasSize();});
     updateCanvasSize();
     setMouseTracking(true);
 }

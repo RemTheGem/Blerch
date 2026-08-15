@@ -30,7 +30,7 @@ public:
     void moveLayerDown(int index);
     void renameLayer(int index, const QString &name);
     void setLayerOpacity(int index, float opacity);
-    float getLayeropacity(int index) const;
+    float getLayerOpacity(int index) const;
     QStringList getLayerNames() const;
     int getActiveLayer() const;
     void makeTempLayer();
@@ -50,7 +50,7 @@ public:
     int getCurrentFrame() const;
     int getFrameSize() const;
     int getFrameDuration() const;
-    int getThisFrameDuration() const;
+    int getThisFrameDuration(int index) const;
     void setFrameDuration(int value);
     QImage renderFrame(int frameIndex) const;
     const QList<Frame> &allFrames() const {return frames;}
@@ -62,7 +62,7 @@ public:
 signals:
     void layerChanged();
     void frameChanged();
-    void paletteChanged(QList<QColor> colors);
+    void paletteUpdated(QList<QColor> colors);
     void clearLayerList();
     void reInitLayers();
     void canvasSizeChanged(int width, int height);

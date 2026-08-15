@@ -41,8 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     // sorry for the mess here. moving stuff around changes how they look in the UI. idk any better way lol
     // main setup
-    document = new CanvasDocument(this);
     canvas = new PixelCanvas(this);
+    document = canvas->getDocument();
     auto colorPreview = new ColorPreviewWidget(this);
     QToolButton *shapeButton = new QToolButton(this);
     setFocusPolicy(Qt::StrongFocus);
@@ -322,7 +322,7 @@ MainWindow::MainWindow(QWidget *parent)
         int height = QInputDialog::getInt(this, "Canvas Height", "Height:", 32, 1, 512, 1, &okHeight);
         if(!okHeight)
             return;
-        document->resizeCanvas(width, height);
+        canvas->resizeCanvas(width, height);
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
         canvas->saveImage();
@@ -482,8 +482,6 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(addLayerButton,&QPushButton::clicked,[=](){
         document->addLayer();
-        layerList->addItem("Layer " + QString::number(layerList->count()+1));
-        layerList->setCurrentRow(layerList->count()-1);
     });
     connect(removeLayerButton,&QPushButton::clicked,[=](){
         int row = layerList->currentRow();
@@ -532,6 +530,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
     connect(layerList, &QListWidget::currentRowChanged, [=](int row){
+        if(row < 0) return;
         document->setActiveLayer(row);
         opacitySlider->setValue(document->getLayerOpacity(row)*100);
     });
@@ -643,7 +642,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(animationTimer, &QTimer::timeout, this, [this](){
         int next = document->getCurrentFrame() + 1;
         if (next >= document->getFrameSize()) next = 0;
-        document->switchFrame(next);
+        canvas->switchFrame(next);
         durationSpinBox->blockSignals(true);
         durationSpinBox->setValue(document->getFrameDuration());
         durationSpinBox->blockSignals(false);
@@ -670,7 +669,7 @@ void MainWindow::updateTimeline(){
         button->setCheckable(true);
         button->setChecked(i == document->getCurrentFrame());
         connect(button, &QPushButton::clicked, this, [this, i]() {
-            document->switchFrame(i);
+            canvas->switchFrame(i);
             durationSpinBox->setValue(document->getFrameDuration());
             updateTimeline();
         });
