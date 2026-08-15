@@ -73,6 +73,7 @@ private:
     int canvasHeight = 32;
     int currentFrameIndex = 0;
     int activeLayerIndex = 0;
+    bool isTempLayer = false;
     QList<Frame> frames;
     Frame copiedFrame;
     QHash<QRgb, int> colorFrequency;

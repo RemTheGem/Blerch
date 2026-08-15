@@ -1,6 +1,7 @@
 #include "CanvasDocument.h"
 #include <QPainter>
 #include <algorithm>
+#include <QDebug>
 
 CanvasDocument::CanvasDocument(QObject *parent) : QObject(parent) {
     Frame initialFrame;
@@ -91,13 +92,16 @@ void CanvasDocument::addLayer(){
     frames[currentFrameIndex].layers.push_back(layer);
     activeLayerIndex = frames[currentFrameIndex].layers.size()-1;
     buildPalette();
-    emit layerChanged();
+    if(!isTempLayer) emit layerChanged();
 }
 void CanvasDocument::removeLayer(int index){
     if(frames[currentFrameIndex].layers.size() <=1) return;
     frames[currentFrameIndex].layers.erase(frames[currentFrameIndex].layers.begin() + index);
     activeLayerIndex = std::clamp(activeLayerIndex, 0, (int)frames[currentFrameIndex].layers.size() -1);
-    emit layerChanged();
+    if(!isTempLayer) {
+        emit layerChanged();
+    }
+    isTempLayer = false;
 }
 void CanvasDocument::setActiveLayer(int index){
     if(index< 0|| index>= frames[currentFrameIndex].layers.size()) return;
@@ -136,13 +140,17 @@ float CanvasDocument::getLayerOpacity(int index ) const{
 }
 QStringList CanvasDocument::getLayerNames() const {
     QStringList names;
-    for(const auto &layer :frames[currentFrameIndex].layers) names.append(layer.name);
+    for(const auto &layer :frames[currentFrameIndex].layers){
+        names.append(layer.name);
+    }
     return names;
 }
 int CanvasDocument::getActiveLayer() const {return activeLayerIndex;}
 
 void CanvasDocument::makeTempLayer(){
+    isTempLayer = true;
     addLayer();
+    setActiveLayer(frames[currentFrameIndex].layers.size()-1);
     frames[currentFrameIndex].layers[activeLayerIndex].opacity = 0.5f;
     frames[currentFrameIndex].layers[activeLayerIndex].width = canvasWidth;
     frames[currentFrameIndex].layers[activeLayerIndex].height = canvasHeight;

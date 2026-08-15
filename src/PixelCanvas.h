@@ -56,7 +56,6 @@ public:
     void saveGIF(const QString &path, int scale);
     void updateCanvasSize(); // update the current canvas size
     void buildPalette(); // get colors and their corresponding frequencies from the canvas and add them to a hash table
-    void resizeCanvas(int width, int height); // set the canvas size
     void floodFill(int x, int y); // method for flood fill tool
     void undo(); // undo method
     void redo(); // redo method

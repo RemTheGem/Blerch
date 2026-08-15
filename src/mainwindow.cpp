@@ -113,7 +113,7 @@ MainWindow::MainWindow(QWidget *parent)
     QVBoxLayout *layerLayout = new QVBoxLayout(layerPanel);
     QHBoxLayout *layerButtons = new QHBoxLayout();
     layerList = new QListWidget(this);
-    layerList->addItems(canvas->getLayerNames());
+    layerList->addItems(document->getLayerNames());
     layerList->setCurrentRow(0);
     addLayerButton = new QPushButton("+", this);
     removeLayerButton = new QPushButton("-", this);
@@ -322,7 +322,7 @@ MainWindow::MainWindow(QWidget *parent)
         int height = QInputDialog::getInt(this, "Canvas Height", "Height:", 32, 1, 512, 1, &okHeight);
         if(!okHeight)
             return;
-        canvas->resizeCanvas(width, height);
+        document->resizeCanvas(width, height);
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
         canvas->saveImage();
@@ -418,7 +418,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(loadProjectAction, &QAction::triggered, [=](){
         loadProject();
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
         layerList->setCurrentRow(0);
         updateTimeline();
         statusBar()->showMessage("Project Loaded!", 4000);
@@ -427,7 +427,7 @@ MainWindow::MainWindow(QWidget *parent)
 
         loadProject(lastProject);
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
         layerList->setCurrentRow(0);
         statusBar()->showMessage("Project Loaded!", 4000);
     });
@@ -446,13 +446,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(loadPicture, &QAction::triggered, [=](){
         canvas->loadPicture();
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
         layerList->setCurrentRow(layerList->count() - 1);
     });
     connect(openPicture, &QAction::triggered, [=](){
         canvas->pictureToPixel();
         layerList->clear();
-        layerList->addItems(canvas->getLayerNames());
+        layerList->addItems(document->getLayerNames());
         layerList->setCurrentRow(layerList->count() - 1);
     });
     connect(loadPalette, &QAction::triggered, this, [=]{
@@ -481,11 +481,13 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->setZoom(canvas->getZoom() - 2);
     });
     connect(addLayerButton,&QPushButton::clicked,[=](){
+        canvas->cancelPaste();
         document->addLayer();
     });
     connect(removeLayerButton,&QPushButton::clicked,[=](){
         int row = layerList->currentRow();
         if(row >= 0){
+            canvas->cancelPaste();
             document->removeLayer(row);
             delete layerList->takeItem(row);
         }

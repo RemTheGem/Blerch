@@ -95,7 +95,6 @@ void PixelCanvas::paintEvent(QPaintEvent *)
                        std::max(selection.dragStart.y(), selection.previewEnd.y()));
     QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
     painter.drawRect(selectionRect);
-    qDebug() << selection.previewEnd << selection.dragStart;
     }
     // build color palette according to the colors used
     document->buildPalette();
@@ -137,11 +136,6 @@ void PixelCanvas::updateCanvasSize()
 {
     setFixedSize(document->getCanvasWidth()*pixelSize, document->getCanvasHeight()*pixelSize);
     update();
-}
-void PixelCanvas::resizeCanvas(int width, int height)
-{
-    document->resizeCanvas(width, height);
-    updateCanvasSize();
 }
 // mouse events
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
@@ -201,7 +195,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             selection.dragOffset = event->pos();
             selection.dragging = true;
             if(!selection.moveFloating){
-                makeTempLayer();
+                document->makeTempLayer();
                 selection.moveFloating = true;
             }
             break;
@@ -210,7 +204,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             // clear previous shapes details and start a new one
             shape = Shape();
             shape.start = QPoint(x, y);
-            makeTempLayer();
+            document->makeTempLayer();
             break;
         }
         }
@@ -286,7 +280,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     // draw a preview of copied selection when pasting
     if(isPasting){
         if(selection.isEmpty(selection)) return;
-        clear();
+        document->clear();
         selection.movePosition = QPoint(event->position().x()/pixelSize, event->position().y()/pixelSize);
         for (int py = 0; py < selection.height+1; py++){
             for (int px = 0; px < selection.width+1; px++){
@@ -338,7 +332,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             // draw a preview of where the moved selection is
             if(selection.isEmpty(selection) || !selection.canMove) return;
 
-            clear();
+            document->clear();
             selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.topLeft.x(), selection.topLeft.y());
             for (int my = 0; my < selection.height+1; my++){
                 for (int mx = 0; mx < selection.width+1; mx++){
@@ -356,7 +350,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         }
         case Tool::Shape:{
             // draw a preview of how the shape will look
-            clear();
+            document->clear();
             shape.end = event->pos()/pixelSize;
             QPoint topLeft(std::min(shape.start.x(), shape.end.x()), std::min(shape.start.y(), shape.end.y()));
             QPoint bottomRight(std::max(shape.start.x(), shape.end.x()), std::max(shape.start.y(),shape.end.y()));
@@ -435,7 +429,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     case Tool::Shape:
     {
         // remove the temp layer for previews
-        removeTempLayer();
+        document->removeTempLayer();
         // make sure shape isnt just a point (creates other problems)
         if(shape.end == QPoint(0,0) && shape.start == QPoint(0,0)){
             update();
@@ -593,17 +587,6 @@ void PixelCanvas::drawLine(QPoint start, QPoint end, bool recordUndo)
         }
     }
 }
-// reset the canvas to its initial state
-void PixelCanvas::resetCanvas()
-{
-    document->resetCanvas();
-}
-// clear the current layer
-void PixelCanvas::clear()
-{
-    // only clear if its a pixel layer
-    document->clear();
-}
 void PixelCanvas::floodFill(int startX, int startY){
     QColor target = document->activeLayer_().at(startX, startY);
     QColor fill = currentColor;
@@ -637,7 +620,7 @@ void PixelCanvas::floodFill(int startX, int startY){
     }
 }
 void PixelCanvas::commitMove(){
-    removeTempLayer();
+    document->removeTempLayer();
     // make a rectangle of where you will put the selection
     // this will be checked later to ensure we dont erase what we just put down
     QRect destRect(selection.selectionOffset.x(), selection.selectionOffset.y(),
@@ -687,7 +670,7 @@ void PixelCanvas::commitMove(){
 }
 void PixelCanvas::cancelMove(){
     if (!selection.moveFloating) return;
-    removeTempLayer();
+    document->removeTempLayer();
     selection.moveFloating = false;
     selection.dragging = false;
     update();
@@ -699,12 +682,12 @@ void PixelCanvas::copyPixels(){
 }
 void PixelCanvas::pastePixels(){
     isPasting = true;
-    makeTempLayer();
+    document->makeTempLayer();
 }
 // confirm paste
 void PixelCanvas::commitPaste(){
     // almost the exact same process as confirm move. except we dont remove the pixels from old location
-    removeTempLayer();
+    document->removeTempLayer();
     currentAction.clear();
     for (int py = 0; py < selection.height+1; py++){
         for (int px = 0; px < selection.width+1; px++){
@@ -730,17 +713,9 @@ void PixelCanvas::commitPaste(){
 }
 void PixelCanvas::cancelPaste(){
     if(!isPasting) return;
-    removeTempLayer();
+    document->removeTempLayer();
     isPasting = false;
     update();
-}
-// layer methods
-void PixelCanvas::makeTempLayer(){
-    // this is the same as a normal layer just lower opacity, doesnt show in layer panel and is deleted immediately after use
-    document->makeTempLayer();
-}
-void PixelCanvas::removeTempLayer(){
-    document->removeTempLayer();
 }
 // ########## add comments for the rest
 void PixelCanvas::flipHorizontal()
@@ -788,27 +763,6 @@ void PixelCanvas::flipVertical()
     action.after = document->currentFrame_().layers;
     document->pushUndoAction(action);
     update();
-}
-
-void PixelCanvas::addLayer(){
-    document->addLayer();
-}
-void PixelCanvas::removeLayer(int index){
-    document->removeLayer(index);
-}
-void PixelCanvas::renameLayer(int index, const QString &name){
-    document->renameLayer(index, name);
-}
-void PixelCanvas::moveLayerUp(int index)
-{
-    document->moveLayerUp(index);
-}
-void PixelCanvas::moveLayerDown(int index)
-{
-    document->moveLayerDown(index);
-}
-int PixelCanvas::getActiveLayer() const{
-    return document->getActiveLayer();
 }
 // File manipulation
 void PixelCanvas::saveImage()
@@ -944,7 +898,7 @@ void PixelCanvas::loadFromJson(QJsonObject root)
     }
     document->loadFrames(loadedFrames);
     updateCanvasSize();
-    resizeCanvas(width, height);
+    document->resizeCanvas(width, height);
     document->buildPalette();
     update();
 }
@@ -968,7 +922,7 @@ void PixelCanvas::pictureToPixel(){
     else {
         image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
     }
-    resizeCanvas(document->getCanvasWidth(), document->getCanvasHeight());
+    document->resizeCanvas(image.width(), image.height());
     updateCanvasSize();
     auto palette = medianCut.medianCut(image, paletteSize);
     layer.pixels.resize(document->getCanvasWidth() * document->getCanvasHeight());
@@ -989,7 +943,7 @@ void PixelCanvas::saveSpriteSheet(const QString &path, int cols, int scale){
     QPainter painter(&spriteSheet);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
     for(int i = 0; i<document->getFrameSize(); i++){
-        QImage frame = renderFrame(i);
+        QImage frame = document->renderFrame(i);
         if(scale > 1){
             frame = frame.scaled(frameWidth, frameHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
         }
@@ -1007,14 +961,14 @@ void PixelCanvas::saveGIF(const QString &path, int scale){
     int imageHeight = document->getCanvasHeight() *scale;
     int maxScale = qMin(64, 8192/qMax(document->getCanvasWidth(), document->getCanvasHeight()));
     scale = qBound(1,scale,maxScale);
-    QImage firstImage = renderFrame(0).convertToFormat(QImage::Format_RGBA8888);
+    QImage firstImage = document->renderFrame(0).convertToFormat(QImage::Format_RGBA8888);
     if(scale >1) firstImage = firstImage.scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
     if(!GifBegin(&writer, filePath.constData(), firstImage.width(), firstImage.height(), document->getThisFrameDuration(0)/10)){
         qDebug()<< "Gif Begin failed";
         return;
     }
     for(int i = 0; i < document->getFrameSize(); i++){
-    QImage image = renderFrame(i).convertToFormat(QImage::Format_RGBA8888);
+    QImage image = document->renderFrame(i).convertToFormat(QImage::Format_RGBA8888);
     if(scale >1) image = image.scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
         if(!GifWriteFrame(&writer, image.constBits(), image.width(), image.height(), document->getThisFrameDuration(i)/10)){
             qDebug() << "Gif write faile on frame" << i;
@@ -1025,27 +979,12 @@ void PixelCanvas::saveGIF(const QString &path, int scale){
     }
     GifEnd(&writer);
 }
-// undo and redo
-void PixelCanvas::undo()
-{
-    document->undo();
-}
-void PixelCanvas::redo()
-{
-    document->redo();
-}
 // getters
 QColor PixelCanvas::getColor(){
     return currentColor;
 }
 int PixelCanvas::getZoom(){
     return pixelSize;
-}
-QStringList PixelCanvas::getLayerNames(){
-    return document->getLayerNames();
-}
-float PixelCanvas::getLayerOpacity(int index) const{
-    return document->getLayerOpacity(index);
 }
 // setters
 
@@ -1062,28 +1001,6 @@ void PixelCanvas::setZoom(int zoom){
     updateCanvasSize();
     update();
 }
-void PixelCanvas::setActiveLayer(int index){
-    document->setActiveLayer(index);
-}
-void PixelCanvas::setLayerOpacity(int index, float opacity){
-    document->setLayerOpacity(index, opacity);
-}
-// frame methods
-void PixelCanvas::duplicateFrame(){
-    document->duplicateFrame();
-}
-void PixelCanvas::copyFrame(){
-    document->copyFrame();
-}
-void PixelCanvas::pasteFrame(){
-    document->pasteFrame();
-}
-void PixelCanvas::addFrame(){
-    document->addFrame();
-}
-void PixelCanvas::deleteFrame(int index){
-    document->deleteFrame(index);
-}
 void PixelCanvas::switchFrame(int index){
     if (index < 0 || index >= document->getFrameSize()) return;
     cancelPaste();
@@ -1096,21 +1013,6 @@ void PixelCanvas::switchFrame(int index){
         document->pushUndoAction(action);
     }
     document->switchFrame(index);
-}
-int PixelCanvas::getCurrentFrame(){
-    return document->getCurrentFrame();
-}
-int PixelCanvas::getFrameSize(){
-    return document->getFrameSize();
-}
-int PixelCanvas::getFrameDuration(){
-    return document->getFrameDuration();
-}
-void PixelCanvas::setFrameDuration(int value){
-    document->setFrameDuration(value);
-}
-QImage PixelCanvas::renderFrame(int frameIndex){
-    return document->renderFrame(frameIndex);
 }
 void PixelCanvas::setTool(Tool tool){
     if(selection.moveFloating){
