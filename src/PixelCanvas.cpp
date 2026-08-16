@@ -1024,6 +1024,8 @@ void PixelCanvas::GIFToPixel(){
     postFrames.append(frame);
     if(!reader.jumpToNextFrame()) break;
     }
+    document->loadFrames(postFrames);
+    document->buildPalette();
     update();
 }
 // getters
