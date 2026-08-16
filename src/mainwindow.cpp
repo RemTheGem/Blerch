@@ -176,7 +176,7 @@ MainWindow::MainWindow(QWidget *parent)
     paletteContainer->setFixedWidth(190);
     // menus
     QMenu *fileMenu = menuBar()->addMenu("File");
-    QMenu *picToPixMenu = menuBar()->addMenu("Picture to Pixel");
+    QMenu *picToPixMenu = menuBar()->addMenu("To Pixel");
     QMenu *canvasMenu = menuBar()->addMenu("Canvas");
     QMenu *exportMenu = menuBar()->addMenu("Export");
     QMenu *helpMenu = menuBar()->addMenu("Help");
@@ -232,7 +232,8 @@ MainWindow::MainWindow(QWidget *parent)
     recentFilesMenu = fileMenu->addMenu("Recent Files");
     QAction *loadPalette = fileMenu->addAction("Import Palette");
     QAction *shortcutsAction = helpMenu->addAction("Keyboard Shortcuts");
-    QAction *openPicture = picToPixMenu->addAction("Open Picture");
+    QAction *openPicture = picToPixMenu->addAction("Picture to Pixel");
+    QAction *GIFToPixelAction = picToPixMenu->addAction("GIF to Pixel");
     QAction *flipHorizontal = canvasMenu->addAction("Flip Horizontal");
     QAction *flipVertical = canvasMenu->addAction("Flip Vertical");
     QAction *resizeCanvas = canvasMenu->addAction("Resize Canvas");
@@ -454,6 +455,9 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->clear();
         layerList->addItems(document->getLayerNames());
         layerList->setCurrentRow(layerList->count() - 1);
+    });
+    connect(GIFToPixelAction, &QAction::triggered, [=](){
+        canvas->GIFToPixel();
     });
     connect(loadPalette, &QAction::triggered, this, [=]{
         QString fileName = QFileDialog::getOpenFileName(this, "Open Palette", "", "GPL File (*.gpl)");

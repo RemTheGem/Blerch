@@ -60,6 +60,7 @@ void CanvasDocument::clear(){
 }
 void CanvasDocument::buildPalette(){
     colorFrequency.clear();
+    if(frames[currentFrameIndex].layers.isEmpty()) return;
     for(const auto &layer : frames[currentFrameIndex].layers){
         if(layer.type != LayerType::Pixel) continue;
         for(const QColor &color : layer.pixels){
@@ -140,6 +141,8 @@ float CanvasDocument::getLayerOpacity(int index ) const{
 }
 QStringList CanvasDocument::getLayerNames() const {
     QStringList names;
+    if(frames.isEmpty()) return names;
+    if(currentFrameIndex < 0 || currentFrameIndex >= frames.size()) return names;
     for(const auto &layer :frames[currentFrameIndex].layers){
         names.append(layer.name);
     }

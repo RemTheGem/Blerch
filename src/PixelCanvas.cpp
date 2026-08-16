@@ -988,7 +988,6 @@ void PixelCanvas::GIFToPixel(){
     // mayhe add warning here later
         return;
     }
-    QVector<QImage> preFrames;
     int totalFrames = reader.imageCount();
     QVector<Frame> postFrames;
     MedianCut medianCut;
@@ -996,33 +995,40 @@ void PixelCanvas::GIFToPixel(){
     if(dialog.exec() != QDialog::Accepted)
         return;
     for(int x=0; x < totalFrames; x++){
-    Frame frame;
-    Layer layer;
-    layer.type = LayerType::Pixel;
-    int targetWidth = dialog.width();
-    int targetHeight = dialog.height();
-    int paletteSize = dialog.colors();
-    QImage image = reader.read();
-    if(image.isNull()) continue;
-    if(dialog.keepAspect()){
-        image = image.scaled(targetWidth, targetHeight, Qt::KeepAspectRatio, Qt::FastTransformation);
-    }
-    else {
-        image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-    }
-    document->resizeCanvas(image.width(), image.height());
-    updateCanvasSize();
-    auto palette = medianCut.medianCut(image, paletteSize);
-    layer.pixels.resize(document->getCanvasWidth() * document->getCanvasHeight());
-    for (int y = 0; y < document->getCanvasHeight(); y++) {
-        for (int x = 0; x < document->getCanvasWidth(); x++) {
-            QColor mapped = medianCut.nearestColor(image.pixelColor(x, y), palette);
-            document->activeLayer_().at(x, y) = mapped;
+        // if(!reader.jumpToImage(x)) break;
+        Frame frame;
+        Layer layer;
+        layer.type = LayerType::Pixel;
+        int targetWidth = dialog.width();
+        int targetHeight = dialog.height();
+        int paletteSize = dialog.colors();
+        QImage image = reader.read();
+        if(image.isNull()) continue;
+        if(dialog.keepAspect()){
+            image = image.scaled(targetWidth, targetHeight, Qt::KeepAspectRatio, Qt::FastTransformation);
         }
-    }
-    frame.append(layer);
-    postFrames.append(frame);
-    if(!reader.jumpToNextFrame()) break;
+        else {
+            image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        }
+        layer.width = image.width();
+        layer.height = image.height();
+        layer.name = QFileInfo(file).baseName();
+        document->resizeCanvas(image.width() , image.height());
+        updateCanvasSize();
+        auto palette = medianCut.medianCut(image, paletteSize);
+        layer.pixels.resize(image.width() * image.height());
+        for (int y = 0; y < document->getCanvasHeight(); y++) {
+            for (int x = 0; x < document->getCanvasWidth(); x++) {
+                QColor mapped = medianCut.nearestColor(image.pixelColor(x, y), palette);
+                layer.at(x, y) = mapped;
+                qDebug() << "drew";
+            }
+        }
+        frame.layers.push_back(layer);
+        qDebug() << "added layer";
+        postFrames.append(frame);
+        qDebug() << "added frame";
+
     }
     document->loadFrames(postFrames);
     document->buildPalette();
