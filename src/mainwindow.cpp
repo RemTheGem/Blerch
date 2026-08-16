@@ -76,12 +76,14 @@ MainWindow::MainWindow(QWidget *parent)
     durationSpinBox->setRange(1, 60000);
     durationSpinBox->setValue(100);
     durationSpinBox->setSuffix(" ms");
+    QPushButton *changeAllDurations = new QPushButton("Apply to all");
     controlsLayout->addWidget(addFrameButton);
     controlsLayout->addWidget(duplicateFrameButton);
     controlsLayout->addWidget(playAnimationButton);
     controlsLayout->addWidget(pauseAnimationButton);
     controlsLayout->addWidget(deleteFrameButton);
     controlsLayout->addWidget(durationSpinBox);
+    controlsLayout->addWidget(changeAllDurations);
     frameScroll->setWidget(frameButtonsContainer);
     frameLayout->addWidget(frameScroll);
     frameLayout->addLayout(controlsLayout);
@@ -657,6 +659,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(durationSpinBox, &QSpinBox::valueChanged, this, [=](int value){
                 document->setFrameDuration(value);
+    });
+    connect(changeAllDurations, &QPushButton::clicked, [=](){
+        document->setAllFrameDurations(durationSpinBox->value());
     });
 }
 void MainWindow::playAnimation(){

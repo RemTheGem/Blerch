@@ -979,6 +979,7 @@ void PixelCanvas::saveGIF(const QString &path, int scale){
     qDebug()<<"Gif write successful";
     }
     GifEnd(&writer);
+    qDebug() << "finished";
 }
 void PixelCanvas::GIFToPixel(){
     QString file = QFileDialog::getOpenFileName(this, "Import GIF", "", "GIF (*.gif)");
@@ -1021,13 +1022,10 @@ void PixelCanvas::GIFToPixel(){
             for (int x = 0; x < document->getCanvasWidth(); x++) {
                 QColor mapped = medianCut.nearestColor(image.pixelColor(x, y), palette);
                 layer.at(x, y) = mapped;
-                qDebug() << "drew";
             }
         }
         frame.layers.push_back(layer);
-        qDebug() << "added layer";
         postFrames.append(frame);
-        qDebug() << "added frame";
 
     }
     document->loadFrames(postFrames);

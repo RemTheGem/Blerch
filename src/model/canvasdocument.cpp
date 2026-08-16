@@ -234,6 +234,12 @@ int CanvasDocument::getFrameDuration() const {return frames[currentFrameIndex].d
 int CanvasDocument::getThisFrameDuration(int index) const {return frames[index].duration;}
 void CanvasDocument::setFrameDuration(int value){frames[currentFrameIndex].duration = value;}
 
+void CanvasDocument::setAllFrameDurations(int value){
+    for(auto &frame: frames){
+        frame.duration = value;
+    }
+    emit documentMutated();
+}
 QImage CanvasDocument::renderFrame(int frameIndex) const {
     QImage image(canvasWidth, canvasHeight, QImage::Format_ARGB32);
     image.fill(Qt::transparent);

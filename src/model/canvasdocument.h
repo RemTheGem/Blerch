@@ -52,6 +52,7 @@ public:
     int getFrameDuration() const;
     int getThisFrameDuration(int index) const;
     void setFrameDuration(int value);
+    void setAllFrameDurations(int value);
     QImage renderFrame(int frameIndex) const;
     const QList<Frame> &allFrames() const {return frames;}
     void loadFrames(const QList<Frame> &newFrames);
