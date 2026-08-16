@@ -60,6 +60,7 @@ public:
     void undo(); // undo method
     void redo(); // redo method
     void pictureToPixel(); // turn imported picture into pixel art
+    void gifToPixel();
     void copyPixels(); // copy pixels
     void pastePixels(); // paste copied pixels
     void flipHorizontal();
