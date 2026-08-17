@@ -96,7 +96,6 @@ MainWindow::MainWindow(QWidget *parent)
     shapeMenu->addAction("Rectangle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Rectangle);
-        shapeButton->setChecked(true);
     });
     shapeMenu->addAction("Circle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);

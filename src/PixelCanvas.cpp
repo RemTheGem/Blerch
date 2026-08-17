@@ -40,15 +40,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     // draw the checkered background
-    for (int y = 0; y < height(); y += pixelSize) {
-        for (int x = 0; x < width(); x += pixelSize) {
-            bool dark = ((x / pixelSize) + (y / pixelSize)) % 2;
-            if (dark)
-                painter.fillRect(x, y, pixelSize, pixelSize, QColor(224, 224, 224));
-            else
-                painter.fillRect(x, y, pixelSize, pixelSize, QColor(176, 176, 176));
-        }
-    }
+    drawChecker(painter);
     // draw all layers
     for (const auto &layer : document->currentFrame_().layers)
     {
@@ -84,19 +76,22 @@ void PixelCanvas::paintEvent(QPaintEvent *)
 
         painter.restore();
     }
-    // if we are using move or select then draw the outline for selection
-    if((currentTool == Tool::Move || currentTool == Tool::Select) && selection.canMove){
-    QPen pen;
-    pen.setWidth(3);
-    pen.setStyle(Qt::DashLine);
-    painter.setPen(pen);
-    QPoint topLeft(std::min(selection.dragStart.x(), selection.previewEnd.x()),
-                   std::min(selection.dragStart.y(), selection.previewEnd.y()));
-    QPoint bottomRight(std::max(selection.dragStart.x(), selection.previewEnd.x()),
-                       std::max(selection.dragStart.y(), selection.previewEnd.y()));
-    QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
-    painter.drawRect(selectionRect);
+    // draw onion frames
+    int current  = document->getCurrentFrame();
+    for(int i = 1; i<=document->getOnionPreviousFrames(); i++){
+        int frame = current -i;
+        if(frame < 0) break;
+        float opacity = 0.25;
+        drawOnionFrame(painter, frame, opacity);
     }
+    for(int i = 1; i<=document->getOnionNextFrames(); i++){
+        int frame = current +i;
+        if(frame >= document->getFrameSize()) break;
+        float opacity = 0.25;
+        drawOnionFrame(painter, frame, opacity);
+    }
+    // if we are using move or select then draw the outline for selection
+    drawSelectionPreview(painter);
     // build color palette according to the colors used
     document->buildPalette();
 }
@@ -131,6 +126,40 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
                 draw(mirrorX, mirrorY);
         }
     }
+}
+void PixelCanvas::drawChecker(QPainter &painter){
+    for (int y = 0; y < height(); y += pixelSize) {
+        for (int x = 0; x < width(); x += pixelSize) {
+            bool dark = ((x / pixelSize) + (y / pixelSize)) % 2;
+            if (dark)
+                painter.fillRect(x, y, pixelSize, pixelSize, QColor(224, 224, 224));
+            else
+                painter.fillRect(x, y, pixelSize, pixelSize, QColor(176, 176, 176));
+        }
+    }
+}
+void PixelCanvas::drawSelectionPreview(QPainter &painter){
+    if((currentTool == Tool::Move || currentTool == Tool::Select) && selection.canMove){
+        QPen pen;
+        pen.setWidth(3);
+        pen.setStyle(Qt::DashLine);
+        painter.setPen(pen);
+        QPoint topLeft(std::min(selection.dragStart.x(), selection.previewEnd.x()),
+                       std::min(selection.dragStart.y(), selection.previewEnd.y()));
+        QPoint bottomRight(std::max(selection.dragStart.x(), selection.previewEnd.x()),
+                           std::max(selection.dragStart.y(), selection.previewEnd.y()));
+        QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
+        painter.drawRect(selectionRect);
+    }
+}
+void PixelCanvas::drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity){
+    if(frameIndex < 0 || frameIndex >= document->getFrameSize()) return;
+    QImage image = document->renderFrame(frameIndex);
+    QRect rect(0, 0, image.width()*pixelSize, image.height()*pixelSize);
+    painter.save();
+    painter.setOpacity(onionOpacity);
+    painter.drawImage(rect, image);
+    painter.restore();
 }
 // canvas methods
 void PixelCanvas::updateCanvasSize()

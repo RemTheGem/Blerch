@@ -264,6 +264,18 @@ void CanvasDocument::loadFrames(const QList<Frame> &newFrames){
     emit frameChanged();
     emit layerChanged();
 }
+
+int CanvasDocument::getOnionPreviousFrames() const {
+    if(frames.size() >0) return 1;
+    else return 0;
+}
+int CanvasDocument::getOnionNextFrames() const {
+    if(frames.size() >0) return 1;
+    else return 0;
+}
+
+
+
 void CanvasDocument::pushUndoAction(const UndoAction &action){
     frames[currentFrameIndex].undoStack.push_back(action);
     frames[currentFrameIndex].redoStack.clear();

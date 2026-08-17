@@ -122,6 +122,9 @@ public:
     void cancelMove(); // cancel move
     void commitPaste(); // confirm paste
     void cancelPaste(); // cancel paste
+    void drawChecker(QPainter &painter); // draw the checkerboard in the background
+    void drawSelectionPreview(QPainter &painter); // draws the dotted line that shows selection
+    void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     // frame methods
     void duplicateFrame();
     void addFrame();
