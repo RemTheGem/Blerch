@@ -19,6 +19,7 @@ struct Layer {
     float scale = 1.0f;
     bool visible = true;
     bool locked = false;
+    bool isTempLayer = false;
     LayerType type = LayerType::Pixel;
     QString name;
     QVector<QColor> pixels;

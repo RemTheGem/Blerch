@@ -93,16 +93,13 @@ void CanvasDocument::addLayer(){
     frames[currentFrameIndex].layers.push_back(layer);
     activeLayerIndex = frames[currentFrameIndex].layers.size()-1;
     buildPalette();
-    if(!isTempLayer) emit layerChanged();
+    emit layerChanged();
 }
 void CanvasDocument::removeLayer(int index){
     if(frames[currentFrameIndex].layers.size() <=1) return;
     frames[currentFrameIndex].layers.erase(frames[currentFrameIndex].layers.begin() + index);
     activeLayerIndex = std::clamp(activeLayerIndex, 0, (int)frames[currentFrameIndex].layers.size() -1);
-    if(!isTempLayer) {
-        emit layerChanged();
-    }
-    isTempLayer = false;
+    emit layerChanged();
 }
 void CanvasDocument::setActiveLayer(int index){
     if(index< 0|| index>= frames[currentFrameIndex].layers.size()) return;
@@ -144,19 +141,21 @@ QStringList CanvasDocument::getLayerNames() const {
     if(frames.isEmpty()) return names;
     if(currentFrameIndex < 0 || currentFrameIndex >= frames.size()) return names;
     for(const auto &layer :frames[currentFrameIndex].layers){
-        names.append(layer.name);
+        if(!layer.isTempLayer) names.append(layer.name);
     }
     return names;
 }
 int CanvasDocument::getActiveLayer() const {return activeLayerIndex;}
 
 void CanvasDocument::makeTempLayer(){
-    isTempLayer = true;
     addLayer();
     setActiveLayer(frames[currentFrameIndex].layers.size()-1);
+    frames[currentFrameIndex].layers[activeLayerIndex].isTempLayer = true;
     frames[currentFrameIndex].layers[activeLayerIndex].opacity = 0.5f;
     frames[currentFrameIndex].layers[activeLayerIndex].width = canvasWidth;
     frames[currentFrameIndex].layers[activeLayerIndex].height = canvasHeight;
+    frames[currentFrameIndex].layers[activeLayerIndex].name = "Preview";
+    emit layerChanged();
 }
 void CanvasDocument::removeTempLayer(){
     removeLayer(frames[currentFrameIndex].layers.size()-1);
