@@ -152,14 +152,43 @@ void PixelCanvas::drawSelectionPreview(QPainter &painter){
         painter.drawRect(selectionRect);
     }
 }
-void PixelCanvas::drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity){
+void PixelCanvas::drawOnionFrame(QPainter &painter, int frameIndex,  float onionOpacity){
     if(frameIndex < 0 || frameIndex >= document->getFrameSize()) return;
     QImage image = document->renderFrame(frameIndex);
-    QRect rect(0, 0, image.width()*pixelSize, image.height()*pixelSize);
+    QImage imageAfter;
+    QColor tintColor;
+    if(frameIndex < document->getCurrentFrame()){
+        tintColor = Qt::red;
+        imageAfter = document->renderFrame(document->getCurrentFrame()-1);
+    }
+    else if (frameIndex > document->getCurrentFrame()){
+        tintColor = Qt::green;
+        imageAfter = document->renderFrame(document->getCurrentFrame()+1);
+    }
+    QImage imageTinted = tintOnionFrame(image, imageAfter,  tintColor);
+    QRect rect(0, 0, imageTinted.width()*pixelSize, imageTinted.height()*pixelSize);
     painter.save();
     painter.setOpacity(onionOpacity);
-    painter.drawImage(rect, image);
+    painter.drawImage(rect, imageTinted);
     painter.restore();
+}
+QImage PixelCanvas::tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint){
+    QImage original = imageBefore.convertToFormat(QImage::Format_ARGB32);
+    QImage result = imageAfter.convertToFormat(QImage::Format_ARGB32);
+    for(int y = 0; y < result.height(); y++){
+        for(int x = 0; x < result.width(); x++){
+            QColor pixel = result.pixelColor(x, y);
+            QColor pixelOriginal = original.pixelColor(x, y);
+            if(pixel.alpha() == 0) continue;
+            if(pixel == pixelOriginal) continue;
+            pixel.setRed(pixel.red() + tint.red() /2);
+            pixel.setBlue(pixel.blue() + tint.blue() / 2);
+            pixel.setGreen(pixel.green() + tint.green() /2);
+
+            result.setPixelColor(x, y, pixel);
+        }
+    }
+    return result;
 }
 // canvas methods
 void PixelCanvas::updateCanvasSize()

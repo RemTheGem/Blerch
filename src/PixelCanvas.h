@@ -125,6 +125,7 @@ public:
     void drawChecker(QPainter &painter); // draw the checkerboard in the background
     void drawSelectionPreview(QPainter &painter); // draws the dotted line that shows selection
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
+    QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
     // frame methods
     void duplicateFrame();
     void addFrame();
