@@ -103,6 +103,12 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
     auto draw = [&](int px, int py){
         if (px >= 0 && px < document->activeLayer_().width &&
             py >= 0 && py < document->activeLayer_().height && document->activeLayer_().at(px, py) != color){
+            if(brushApplication == BrushApplication::OnePassPerStroke){
+                QPair<int, int> key(px, py);
+                if(affectedPixels.contains(key))
+                    return;
+                affectedPixels.insert(key);
+            }
             if(recordUndo){
                 int layer = document->getActiveLayer();
                 QColor oldColor = document->activeLayer_().at(px, py);
@@ -243,6 +249,7 @@ void PixelCanvas::setNextFrames(int value){
 // shade methods
 void PixelCanvas::setBrushMode(BrushMode mode){
     brushMode = mode;
+    emit brushModeChanged(mode);
 }
 void PixelCanvas::setBrushAmount(float amount){
     brushAmount = amount;
@@ -283,6 +290,9 @@ QColor PixelCanvas::blendPixel(const QColor &color, const QColor &blendColor){
     int b = color.blue() + (blendColor.blue() - color.blue()) * brushAmount;
     return QColor(std::clamp(r, 0, 255), std::clamp(g, 0, 255), std::clamp(b, 0, 255));
 }
+void PixelCanvas::setBrushApplication(BrushApplication type){
+    brushApplication = type;
+}
 // canvas methods
 void PixelCanvas::updateCanvasSize()
 {
@@ -306,7 +316,8 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     // dont think we need an else statement here ###### check and fix
     else{
     if(event->button() == Qt::LeftButton){
-    isDrawing = true;
+        isDrawing = true;
+        affectedPixels.clear();
     // coordinates of the cursor with respect to our canvas
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
@@ -619,6 +630,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 
         document->pushUndoAction(action);
     }
+    affectedPixels.clear();
 }
 // key press events
 void PixelCanvas::keyPressEvent(QKeyEvent *event){

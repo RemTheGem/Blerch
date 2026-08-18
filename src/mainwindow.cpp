@@ -15,6 +15,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QActionGroup>
+#include <QButtonGroup>
 #include <QInputDialog>
 #include <QScrollArea>
 #include <QIcon>
@@ -143,12 +144,17 @@ MainWindow::MainWindow(QWidget *parent)
     // palette and symmetry buttons setup
     QWidget *paletteContainer = new QWidget(this);
     QVBoxLayout *paletteLayout = new QVBoxLayout(paletteContainer);
+    QScrollArea *paletteScroll= new QScrollArea(this);
+    paletteScroll->setWidget(paletteContainer);
+    paletteScroll->setWidgetResizable(true);
+    paletteScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     paletteWidget *paletteW = new paletteWidget;
     CustomPalette *customPalette = new CustomPalette;
     QSlider *brushSizeSlider = new QSlider(Qt::Horizontal);
     QLabel *brushSizeLabel = new QLabel("Brush Size");
     QSlider *brushAmountSlider = new QSlider(Qt::Horizontal);
     QLabel *brushAmountLabel = new QLabel("Brush Intensity");
+    QLabel *brushApplicationLabel = new QLabel("Brush Application type");
     QLabel *paletteLabel = new QLabel("Frequent Colors");
     QLabel *customPaletteLabel = new QLabel("Palette");
     QComboBox *paletteSelector = new QComboBox(this);
@@ -165,7 +171,10 @@ MainWindow::MainWindow(QWidget *parent)
     brushAmountSlider->setValue(10);
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
     QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
-    // QWidget *onionOptions = new QWidget;
+    QGroupBox *brushGroup = new QGroupBox("Brush Options");
+    QVBoxLayout *brushLayout = new QVBoxLayout();
+    QPushButton *brushContinousButton = new QPushButton("Continuous");
+    QPushButton *brushOnePassButton = new QPushButton("One Pass Per Stroke");
     QVBoxLayout *onionLayout = new QVBoxLayout();
     QGroupBox *onionOptions = new QGroupBox("Onion Skin");
     onionSkinActivationButton = new QPushButton("Onion Skin");
@@ -190,13 +199,28 @@ MainWindow::MainWindow(QWidget *parent)
 
     paletteLayout->addWidget(brushSizeLabel);
     paletteLayout->addWidget(brushSizeSlider);
-    paletteLayout->addWidget(brushAmountLabel);
-    paletteLayout->addWidget(brushAmountSlider);
+    brushLayout->addWidget(brushAmountLabel);
+    brushLayout->addWidget(brushAmountSlider);
+    brushLayout->addWidget(brushApplicationLabel);
+    brushLayout->addWidget(brushContinousButton);
+    brushLayout->addWidget(brushOnePassButton);
+    brushGroup->setVisible(false);
+    brushGroup->setLayout(brushLayout);
+    paletteLayout->addWidget(brushGroup);
+    QLabel *symmetryLabel = new QLabel("Symmetry");
+    paletteLayout->addWidget(symmetryLabel);
     paletteLayout->addWidget(horizontalSymmetryButton);
     paletteLayout->addWidget(verticalSymmetryButton);
 
     horizontalSymmetryButton->setCheckable(true);
     verticalSymmetryButton->setCheckable(true);
+    brushContinousButton->setCheckable(true);
+    brushOnePassButton->setCheckable(true);
+    brushOnePassButton->setChecked(true);
+    QButtonGroup *brushApplicationGroup = new QButtonGroup(this);
+    brushApplicationGroup->setExclusive(true);
+    brushApplicationGroup->addButton(brushContinousButton);
+    brushApplicationGroup->addButton(brushOnePassButton);
     paletteLayout->addWidget(onionSkinActivationButton);
     paletteLayout->addWidget(onionOptions);
     paletteLayout->addWidget(customPaletteLabel);
@@ -211,7 +235,7 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     layerPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     layerPanel->setMinimumWidth(100);
-    paletteContainer->setFixedWidth(190);
+    paletteScroll->setFixedWidth(220);
     // menus
     QMenu *fileMenu = menuBar()->addMenu("File");
     QMenu *picToPixMenu = menuBar()->addMenu("To Pixel");
@@ -226,7 +250,7 @@ MainWindow::MainWindow(QWidget *parent)
     canvasSplitter->setStretchFactor(1,0);
     canvasSplitter->setSizes({600, 100});
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
-    splitter->addWidget(paletteContainer);
+    splitter->addWidget(paletteScroll);
     splitter->addWidget(canvasSplitter);
     splitter->addWidget(layerPanel);
     splitter->setSizes({190, 1100, 200});
@@ -733,6 +757,19 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(brushAmountSlider, &QSlider::valueChanged, [=](int value){
         canvas->setBrushAmount(brushAmountSlider->value()/100.0f);
+    });
+    connect(brushContinousButton, &QPushButton::toggled, [=](){
+        if(brushContinousButton->isChecked()){
+            canvas->setBrushApplication(PixelCanvas::BrushApplication::Continuous);
+        }
+    });
+    connect(canvas, &PixelCanvas::brushModeChanged, [=](PixelCanvas::BrushMode mode){
+        brushGroup->setVisible(mode != PixelCanvas::BrushMode::Normal);
+    });
+    connect(brushOnePassButton, &QPushButton::toggled, [=](){
+        if(brushOnePassButton->isChecked()){
+            canvas->setBrushApplication(PixelCanvas::BrushApplication::OnePassPerStroke);
+        }
     });
     connect(canvas, &PixelCanvas::mousePositionChanged, this, [=](int x, int y){
         positionLabel->setText(QString("X: %1 Y: %2 ").arg(x).arg(y));

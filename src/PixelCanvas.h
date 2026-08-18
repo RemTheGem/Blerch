@@ -88,6 +88,10 @@ public:
         Lighten,
         Blend
     };
+    enum class BrushApplication{
+        Continuous,
+        OnePassPerStroke
+    };
 
     struct Shape{
         QPoint start;
@@ -146,6 +150,7 @@ public:
     QColor shadePixel(const QColor &color);
     QColor lightenPixel(const QColor &color);
     QColor blendPixel(const QColor &color, const QColor &blendColor);
+    void setBrushApplication(BrushApplication type);
     // frame methods
     void duplicateFrame();
     void addFrame();
@@ -188,6 +193,8 @@ private:
     QColor nextFramesColor = Qt::green;
     BrushMode brushMode = BrushMode::Normal;
     float brushAmount = 0.1f;
+    BrushApplication brushApplication = BrushApplication::OnePassPerStroke;
+    QSet<QPair<int, int>> affectedPixels;
     // others
 
 
@@ -201,6 +208,7 @@ private:
 signals:
     void colorChanged(QColor color); // signal to change the selected color
     void mousePositionChanged(int x, int y); // signal to change current mouse position in status bar
+    void brushModeChanged(BrushMode mode);
 
 };
 
