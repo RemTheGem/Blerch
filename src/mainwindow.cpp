@@ -670,9 +670,11 @@ MainWindow::MainWindow(QWidget *parent)
 }
 void MainWindow::playAnimation(){
     animationTimer->start(document->getFrameDuration());
+    canvas->setOnionOn(false);
 }
 void MainWindow::pauseAnimation(){
     animationTimer->stop();
+    canvas->setOnionOn(true);
 }
 void MainWindow::updateTimeline(){
     while (QLayoutItem *item = frameButtonsLayout->takeAt(0)){

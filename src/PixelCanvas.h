@@ -127,6 +127,7 @@ public:
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
     void changeOnionSettings();
+    void setOnionOn(bool value);
     // frame methods
     void duplicateFrame();
     void addFrame();

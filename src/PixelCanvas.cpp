@@ -42,6 +42,20 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     QPainter painter(this);
     // draw the checkered background
     drawChecker(painter);
+    // draw onion frames
+    if(onionOn){
+        int current  = document->getCurrentFrame();
+        for(int i = 1; i<=previousFrames; i++){
+            int frame = current -i;
+            if(frame < 0) break;
+            drawOnionFrame(painter, frame, onionOpacity);
+        }
+        for(int i = 1; i<=nextFrames; i++){
+            int frame = current +i;
+            if(frame >= document->getFrameSize()) break;
+            drawOnionFrame(painter, frame, onionOpacity);
+        }
+    }
     // draw all layers
     for (const auto &layer : document->currentFrame_().layers)
     {
@@ -76,20 +90,6 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         }
 
         painter.restore();
-    }
-    // draw onion frames
-    if(onionOn){
-        int current  = document->getCurrentFrame();
-        for(int i = 1; i<=previousFrames; i++){
-            int frame = current -i;
-            if(frame < 0) break;
-            drawOnionFrame(painter, frame, onionOpacity);
-        }
-        for(int i = 1; i<=nextFrames; i++){
-            int frame = current +i;
-            if(frame >= document->getFrameSize()) break;
-            drawOnionFrame(painter, frame, onionOpacity);
-        }
     }
     // if we are using move or select then draw the outline for selection
     drawSelectionPreview(painter);
@@ -203,6 +203,9 @@ void PixelCanvas::changeOnionSettings(){
     onionOpacity = dialog.onionOpacity();
     onionOn = dialog.onionOn();
     update();
+}
+void PixelCanvas::setOnionOn(bool value){
+    onionOn = value;
 }
 // canvas methods
 void PixelCanvas::updateCanvasSize()
