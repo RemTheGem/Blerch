@@ -126,6 +126,7 @@ public:
     void drawSelectionPreview(QPainter &painter); // draws the dotted line that shows selection
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
+    void changeOnionSettings();
     // frame methods
     void duplicateFrame();
     void addFrame();
@@ -160,6 +161,10 @@ private:
     bool isUndoing = false; // bool to check if user is undoing
     bool isErasing = false; // bool to check if user is erasing
     bool isPasting = false;
+    int previousFrames = 1;
+    int nextFrames = 1;
+    float onionOpacity = 0.25;
+    bool onionOn = true;
     // others
 
 

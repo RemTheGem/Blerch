@@ -238,6 +238,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *GIFToPixelAction = picToPixMenu->addAction("GIF to Pixel");
     QAction *flipHorizontal = canvasMenu->addAction("Flip Horizontal");
     QAction *flipVertical = canvasMenu->addAction("Flip Vertical");
+    QAction *onionSkinning = canvasMenu->addAction("Onion Skin");
     QAction *resizeCanvas = canvasMenu->addAction("Resize Canvas");
     QAction *eraseBoard = canvasMenu->addAction("Clear Canvas");
     QAction *saveDrawing = exportMenu->addAction("Export PNG");
@@ -326,6 +327,9 @@ MainWindow::MainWindow(QWidget *parent)
         if(!okHeight)
             return;
         document->resizeCanvas(width, height);
+    });
+    connect(onionSkinning, &QAction::triggered, [=](){
+        canvas->changeOnionSettings();
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
         canvas->saveImage();

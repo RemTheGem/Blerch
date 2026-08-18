@@ -1,7 +1,9 @@
 #include "CanvasDocument.h"
+#include "../dialogs/onionskindialog.h"
 #include <QPainter>
 #include <algorithm>
 #include <QDebug>
+#include <QDialog>
 
 CanvasDocument::CanvasDocument(QObject *parent) : QObject(parent) {
     Frame initialFrame;
@@ -264,16 +266,6 @@ void CanvasDocument::loadFrames(const QList<Frame> &newFrames){
     emit frameChanged();
     emit layerChanged();
 }
-
-int CanvasDocument::getOnionPreviousFrames() const {
-    if(frames.size() >0) return 1;
-    else return 0;
-}
-int CanvasDocument::getOnionNextFrames() const {
-    if(frames.size() >0) return 1;
-    else return 0;
-}
-
 
 
 void CanvasDocument::pushUndoAction(const UndoAction &action){

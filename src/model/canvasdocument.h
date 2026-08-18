@@ -57,9 +57,6 @@ public:
     const QList<Frame> &allFrames() const {return frames;}
     void loadFrames(const QList<Frame> &newFrames);
 
-    int getOnionPreviousFrames() const;
-    int getOnionNextFrames() const;
-
     void undo();
     void redo();
     void pushUndoAction(const UndoAction& action);

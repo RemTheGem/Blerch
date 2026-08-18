@@ -1,6 +1,7 @@
 #include "PixelCanvas.h"
 #include "tools/mediancut.h"
 #include "dialogs/pictureimportdialog.h"
+#include "dialogs/onionskindialog.h"
 #include "../thirdParty/gif-h/gif.h"
 #include <QPainter>
 #include <QMouseEvent>
@@ -77,18 +78,18 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         painter.restore();
     }
     // draw onion frames
-    int current  = document->getCurrentFrame();
-    for(int i = 1; i<=document->getOnionPreviousFrames(); i++){
-        int frame = current -i;
-        if(frame < 0) break;
-        float opacity = 0.25;
-        drawOnionFrame(painter, frame, opacity);
-    }
-    for(int i = 1; i<=document->getOnionNextFrames(); i++){
-        int frame = current +i;
-        if(frame >= document->getFrameSize()) break;
-        float opacity = 0.25;
-        drawOnionFrame(painter, frame, opacity);
+    if(onionOn){
+        int current  = document->getCurrentFrame();
+        for(int i = 1; i<=previousFrames; i++){
+            int frame = current -i;
+            if(frame < 0) break;
+            drawOnionFrame(painter, frame, onionOpacity);
+        }
+        for(int i = 1; i<=nextFrames; i++){
+            int frame = current +i;
+            if(frame >= document->getFrameSize()) break;
+            drawOnionFrame(painter, frame, onionOpacity);
+        }
     }
     // if we are using move or select then draw the outline for selection
     drawSelectionPreview(painter);
@@ -182,14 +183,26 @@ QImage PixelCanvas::tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor
             QColor pixelOriginal = original.pixelColor(x, y);
             if(pixel.alpha() == 0) continue;
             if(pixel == pixelOriginal) continue;
-            pixel.setRed((pixel.red() + tint.red()) /2);
-            pixel.setBlue((pixel.blue() + tint.blue()) / 2);
-            pixel.setGreen((pixel.green() + tint.green()) /2);
+            pixel.setRed(pixel.red() + (tint.red() /2));
+            pixel.setBlue(pixel.blue() + (tint.blue() / 2));
+            pixel.setGreen(pixel.green() + (tint.green() /2));
 
             result.setPixelColor(x, y, pixel);
         }
     }
     return result;
+}
+void PixelCanvas::changeOnionSettings(){
+
+    OnionSkinDialog dialog(this);
+    if(dialog.exec() != QDialog::Accepted){
+        return;
+    }
+    previousFrames = dialog.previousFrames();
+    nextFrames = dialog.nextFrames();
+    onionOpacity = dialog.onionOpacity();
+    onionOn = dialog.onionOn();
+    update();
 }
 // canvas methods
 void PixelCanvas::updateCanvasSize()
