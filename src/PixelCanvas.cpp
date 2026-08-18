@@ -42,20 +42,6 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     QPainter painter(this);
     // draw the checkered background
     drawChecker(painter);
-    // draw onion frames
-    if(onionOn){
-        int current  = document->getCurrentFrame();
-        for(int i = 1; i<=previousFrames; i++){
-            int frame = current -i;
-            if(frame < 0) break;
-            drawOnionFrame(painter, frame, onionOpacity);
-        }
-        for(int i = 1; i<=nextFrames; i++){
-            int frame = current +i;
-            if(frame >= document->getFrameSize()) break;
-            drawOnionFrame(painter, frame, onionOpacity);
-        }
-    }
     // draw all layers
     for (const auto &layer : document->currentFrame_().layers)
     {
@@ -90,6 +76,20 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         }
 
         painter.restore();
+    }
+    // draw onion frames
+    if(onionOn){
+        int current  = document->getCurrentFrame();
+        for(int i = 1; i<=previousFrames; i++){
+            int frame = current -i;
+            if(frame < 0) break;
+            drawOnionFrame(painter, frame, onionOpacity);
+        }
+        for(int i = 1; i<=nextFrames; i++){
+            int frame = current +i;
+            if(frame >= document->getFrameSize()) break;
+            drawOnionFrame(painter, frame, onionOpacity);
+        }
     }
     // if we are using move or select then draw the outline for selection
     drawSelectionPreview(painter);
@@ -160,25 +160,25 @@ void PixelCanvas::drawOnionFrame(QPainter &painter, int frameIndex,  float onion
     QImage onionFrame;
     QColor tintColor;
     if(frameIndex < currentFrame){
-        tintColor = Qt::red;
+        tintColor = previousFramesColor;
         onionFrame = document->renderFrame(frameIndex);
     }
     else if (frameIndex > currentFrame){
-        tintColor = Qt::green;
+        tintColor = nextFramesColor;
         onionFrame = document->renderFrame(frameIndex);
     }
     QImage imageTinted = tintOnionFrame(image, onionFrame,  tintColor);
     QRect rect(0, 0, imageTinted.width()*pixelSize, imageTinted.height()*pixelSize);
     painter.save();
-    painter.setOpacity(onionOpacity);
+    painter.setOpacity(onionOpacity / abs(frameIndex - currentFrame));
     painter.drawImage(rect, imageTinted);
     painter.restore();
 }
 QImage PixelCanvas::tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint){
     QImage original = imageBefore.convertToFormat(QImage::Format_ARGB32);
     QImage result = imageAfter.convertToFormat(QImage::Format_ARGB32);
-    for(int y = 0; y <= result.height(); y++){
-        for(int x = 0; x <= result.width(); x++){
+    for(int y = 0; y < result.height(); y++){
+        for(int x = 0; x < result.width(); x++){
             QColor pixel = result.pixelColor(x, y);
             QColor pixelOriginal = original.pixelColor(x, y);
             if(pixel.alpha() == 0) continue;
@@ -201,6 +201,8 @@ void PixelCanvas::changeOnionSettings(){
     previousFrames = dialog.previousFrames();
     nextFrames = dialog.nextFrames();
     onionOpacity = dialog.onionOpacity();
+    previousFramesColor = dialog.previousFrameColor();
+    nextFramesColor = dialog.nextFrameColor();
     onionOn = dialog.onionOn();
     update();
 }

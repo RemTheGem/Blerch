@@ -166,6 +166,8 @@ private:
     int nextFrames = 1;
     float onionOpacity = 0.25;
     bool onionOn = true;
+    QColor previousFramesColor = Qt::red;
+    QColor nextFramesColor = Qt::green;
     // others
 
 

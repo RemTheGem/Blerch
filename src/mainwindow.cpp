@@ -302,7 +302,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Connections (needs organizing -_-#)
     connect(pickColor, &QAction::triggered, [=]() {
-        QColor color = QColorDialog::getColor(Qt::white, this);
+        QColor color = QColorDialog::getColor(canvas->getColor(), this);
         if (color.isValid()) {
             canvas->setColor(color);
             colorPreview->selectedColor = canvas->getColor();
