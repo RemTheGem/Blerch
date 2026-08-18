@@ -30,10 +30,10 @@ OnionSkinDialog::OnionSkinDialog(QWidget *parent) : QDialog(parent) {
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(previousFrameColorButton, &QPushButton::clicked, [=](){
-       previousFramesColor = QColorDialog::getColor(Qt::red, this);
+       previousFramesColor = QColorDialog::getColor(previousFramesColor, this);
     });
     connect(nextFrameColorButton, &QPushButton::clicked, [=](){
-        nextFramesColor = QColorDialog::getColor(Qt::green, this);
+        nextFramesColor = QColorDialog::getColor(nextFramesColor, this);
     });
 }
 int OnionSkinDialog::previousFrames() const{

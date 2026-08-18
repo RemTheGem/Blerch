@@ -183,9 +183,9 @@ QImage PixelCanvas::tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor
             QColor pixelOriginal = original.pixelColor(x, y);
             if(pixel.alpha() == 0) continue;
             if(pixel == pixelOriginal) continue;
-            pixel.setRed(pixel.red() + (tint.red() /2));
-            pixel.setBlue(pixel.blue() + (tint.blue() / 2));
-            pixel.setGreen(pixel.green() + (tint.green() /2));
+            pixel.setRed((pixel.red() + tint.red()) /2);
+            pixel.setBlue((pixel.blue() + tint.blue()) / 2);
+            pixel.setGreen((pixel.green() + tint.green()) /2);
 
             result.setPixelColor(x, y, pixel);
         }
