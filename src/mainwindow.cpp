@@ -97,18 +97,22 @@ MainWindow::MainWindow(QWidget *parent)
     shapeMenu->addAction("Rectangle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Rectangle);
+        shapeButton->setChecked(true);
     });
     shapeMenu->addAction("Circle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Circle);
+        shapeButton->setChecked(true);
     });
     shapeMenu->addAction("Ellipse", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Ellipse);
+        shapeButton->setChecked(true);
     });
     shapeMenu->addAction("Line", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Line);
+        shapeButton->setChecked(true);
     });
     // Layer setup
     QWidget *layerPanel = new QWidget(this);
@@ -120,8 +124,8 @@ MainWindow::MainWindow(QWidget *parent)
     layerList->setCurrentRow(0);
     addLayerButton = new QPushButton("+", this);
     removeLayerButton = new QPushButton("-", this);
-    QPushButton *moveUpButton = new QPushButton("↑", this);
-    QPushButton *moveDownButton = new QPushButton("↓", this);
+    QPushButton *moveUpButton = new QPushButton("↓", this);
+    QPushButton *moveDownButton = new QPushButton("↑", this);
     QPushButton *renameLayerButton = new QPushButton("Rename", this);
     QSlider *opacitySlider = new QSlider(Qt::Horizontal);
     QLabel * opacityLabel = new QLabel("Opacity");
@@ -143,6 +147,8 @@ MainWindow::MainWindow(QWidget *parent)
     CustomPalette *customPalette = new CustomPalette;
     QSlider *brushSizeSlider = new QSlider(Qt::Horizontal);
     QLabel *brushSizeLabel = new QLabel("Brush Size");
+    QSlider *brushAmountSlider = new QSlider(Qt::Horizontal);
+    QLabel *brushAmountLabel = new QLabel("Brush Intensity");
     QLabel *paletteLabel = new QLabel("Frequent Colors");
     QLabel *customPaletteLabel = new QLabel("Palette");
     QComboBox *paletteSelector = new QComboBox(this);
@@ -155,6 +161,8 @@ MainWindow::MainWindow(QWidget *parent)
     paletteSelector->addItem("Resurrect 64", ":/palettes/resurrect-64.gpl");
     brushSizeSlider->setRange(1,16);
     brushSizeSlider->setValue(1);
+    brushAmountSlider->setRange(1, 100);
+    brushAmountSlider->setValue(10);
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
     QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
     // QWidget *onionOptions = new QWidget;
@@ -182,6 +190,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     paletteLayout->addWidget(brushSizeLabel);
     paletteLayout->addWidget(brushSizeSlider);
+    paletteLayout->addWidget(brushAmountLabel);
+    paletteLayout->addWidget(brushAmountSlider);
     paletteLayout->addWidget(horizontalSymmetryButton);
     paletteLayout->addWidget(verticalSymmetryButton);
 
@@ -227,7 +237,8 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(container);
     // Toolbar
     QToolBar *toolbar = addToolBar("Palette");
-    QAction *brushAction = toolbar->addAction("Brush");
+    QToolButton *brushButton = new QToolButton(this);
+    toolbar->addWidget(brushButton);
     QAction *eraserAction = toolbar->addAction("Eraser");
     QAction *eyeDropperAction = toolbar->addAction("Eye Dropper");
     QAction *fillAction = toolbar->addAction("Fill");
@@ -236,6 +247,31 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *copyPixels = new QAction("Copy", this);
     QAction *copyFrameAction = new QAction("Copy Frame", this);
     QAction *pasteFrameAction = new QAction("Paste Frame", this);
+    QAction *brushAction = new QAction("Brush");
+    brushButton->setDefaultAction(brushAction);
+    brushButton->setPopupMode(QToolButton::MenuButtonPopup);
+    QMenu *brushMenu = new QMenu(brushButton);
+    brushMenu->addAction("Normal", [=]{
+        canvas->setTool(PixelCanvas::Tool::Brush);
+        canvas->setBrushMode(PixelCanvas::BrushMode::Normal);
+        brushAction->setChecked(true);
+    });
+    brushMenu->addAction("Shade", [=]{
+        canvas->setTool(PixelCanvas::Tool::Brush);
+        canvas->setBrushMode(PixelCanvas::BrushMode::Shade);
+        brushAction->setChecked(true);
+    });
+    brushMenu->addAction("Lighten", [=]{
+        canvas->setTool(PixelCanvas::Tool::Brush);
+        canvas->setBrushMode(PixelCanvas::BrushMode::Lighten);
+        brushAction->setChecked(true);
+    });
+    brushMenu->addAction("Blend", [=]{
+        canvas->setTool(PixelCanvas::Tool::Brush);
+        canvas->setBrushMode(PixelCanvas::BrushMode::Blend);
+        brushAction->setChecked(true);
+    });
+    brushButton->setMenu(brushMenu);
     addAction(copyFrameAction);
     addAction(pasteFrameAction);
     addAction(copyPixels);
@@ -381,7 +417,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(brushAction, &QAction::triggered, [=](){
         canvas->setTool(PixelCanvas::Tool::Brush);
+        canvas->setBrushMode(PixelCanvas::BrushMode::Normal);
     });
+
     connect(eraserAction, &QAction::triggered, [=](){
         canvas->setTool(PixelCanvas::Tool::Eraser);
     });
@@ -470,8 +508,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(loadProjectAction, &QAction::triggered, [=](){
         loadProject();
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
-        layerList->setCurrentRow(0);
+        QStringList layers =document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
+        layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
         updateTimeline();
         statusBar()->showMessage("Project Loaded!", 4000);
     });
@@ -479,15 +519,19 @@ MainWindow::MainWindow(QWidget *parent)
 
         loadProject(lastProject);
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
-        layerList->setCurrentRow(0);
+        QStringList layers =document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
+        layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
         statusBar()->showMessage("Project Loaded!", 4000);
     });
     connect(document, &CanvasDocument::frameChanged, [=](){
         int previousLayer = document->getActiveLayer();
 
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
+        QStringList layers =document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
         if(layerList->count() >0){
             int newLayer = std::min(previousLayer, layerList->count() -1);
             layerList->setCurrentRow(newLayer);
@@ -498,14 +542,18 @@ MainWindow::MainWindow(QWidget *parent)
     connect(loadPicture, &QAction::triggered, [=](){
         canvas->loadPicture();
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
-        layerList->setCurrentRow(layerList->count() - 1);
+        QStringList layers =document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
+        layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
     });
     connect(openPicture, &QAction::triggered, [=](){
         canvas->pictureToPixel();
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
-        layerList->setCurrentRow(layerList->count() - 1);
+        QStringList layers =document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
+        layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
     });
     connect(GIFToPixelAction, &QAction::triggered, [=](){
         canvas->GIFToPixel();
@@ -543,8 +591,8 @@ MainWindow::MainWindow(QWidget *parent)
         int row = layerList->currentRow();
         if(row >= 0){
             canvas->cancelPaste();
-            document->removeLayer(row);
-            delete layerList->takeItem(row);
+            int documentIndex = uiToDocumentLayer(row);
+            document->removeLayer(documentIndex);
         }
     });
     connect(document, &CanvasDocument::clearLayerList, [=](){
@@ -556,14 +604,18 @@ MainWindow::MainWindow(QWidget *parent)
     connect(document, &CanvasDocument::reInitLayers, [=](){
         document->addLayer();
         layerList->addItem("Layer " + QString::number(layerList->count()+1));
-        layerList->setCurrentRow(layerList->count()-1);
+        int uiIndex = layerList->count() - 1 - document->getActiveLayer();
+        layerList->setCurrentRow(uiIndex);
     });
     connect(moveUpButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
         if(index <0 || index >= layerList->count()-1) return;
         document->moveLayerUp(index);
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
+        QStringList layers = document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
+        int uiIndex = layerList->count() - 1 - index ;
         layerList->setCurrentRow(index + 1);
     });
     connect(moveDownButton, &QPushButton::clicked, [=](){
@@ -571,35 +623,44 @@ MainWindow::MainWindow(QWidget *parent)
         if(index <=0 || index > layerList->count()-1) return;
         document->moveLayerDown(index);
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
+        QStringList layers = document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
         layerList->setCurrentRow(index - 1);
     });
     connect(renameLayerButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
+        int documentIndex = uiToDocumentLayer(index);
         if(index < 0) return;
         bool ok;
         QString name = QInputDialog::getText(this, "Rename Layer", "Layer name:",
                                             QLineEdit::Normal, layerList->currentItem()->text(),&ok);
         if(ok && !name.isEmpty())
         {
-            document->renameLayer(index, name);
+            document->renameLayer(documentIndex, name);
             layerList->item(index)->setText(name);
         }
     });
     connect(layerList, &QListWidget::currentRowChanged, [=](int row){
         if(row < 0) return;
-        document->setActiveLayer(row);
-        opacitySlider->setValue(document->getLayerOpacity(row)*100);
+        int documentIndex = uiToDocumentLayer(row);
+        document->setActiveLayer(documentIndex);
+        opacitySlider->setValue(document->getLayerOpacity(documentIndex)*100);
     });
     connect(opacitySlider, &QSlider::valueChanged, [=](int value){
-        document->setLayerOpacity(layerList->currentRow(), value / 100.0f);
+        int uiIndex = layerList->currentRow();
+        if(uiIndex <0) return;
+        int documentIndex = uiToDocumentLayer(uiIndex);
+        document->setLayerOpacity(documentIndex, value / 100.0f);
     });
     connect(document, &CanvasDocument::layerChanged, this, [=]() {
         layerList->clear();
-        layerList->addItems(document->getLayerNames());
+        QStringList layers = document->getLayerNames();
+        std::reverse(layers.begin(), layers.end());
+        layerList->addItems(layers);
 
         if (layerList->count() > 0)
-            layerList->setCurrentRow(document->getActiveLayer());
+            layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
     });
     connect(shortcutsAction, &QAction::triggered, [=](){
 
@@ -669,6 +730,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
     connect(brushSizeSlider, &QSlider::valueChanged, [=](int value){
         canvas->setBrushSize(value);
+    });
+    connect(brushAmountSlider, &QSlider::valueChanged, [=](int value){
+        canvas->setBrushAmount(brushAmountSlider->value()/100.0f);
     });
     connect(canvas, &PixelCanvas::mousePositionChanged, this, [=](int x, int y){
         positionLabel->setText(QString("X: %1 Y: %2 ").arg(x).arg(y));
@@ -808,6 +872,12 @@ void MainWindow::updateRecentFiles(){
             statusBar()->showMessage("Project Loaded!", 4000);
         });
     }
+}
+int MainWindow::uiToDocumentLayer(int uiIndex){
+    return layerList->count() - 1 - uiIndex;
+}
+int MainWindow::documentToUiLayer(int documentIndex){
+    return layerList->count() - 1 - documentIndex;
 }
 MainWindow::~MainWindow()
 {

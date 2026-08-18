@@ -31,6 +31,8 @@ public:
     void playAnimation();
     void pauseAnimation();
     void updateTimeline();
+    int uiToDocumentLayer(int uiIndex);
+    int documentToUiLayer(int documentIndex);
 
 
 

@@ -104,7 +104,18 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
         if (px >= 0 && px < document->activeLayer_().width &&
             py >= 0 && py < document->activeLayer_().height && document->activeLayer_().at(px, py) != color){
             if(recordUndo){
-                currentAction.push_back({document->getActiveLayer(), px, py, document->activeLayer_().at(px, py), color});
+                int layer = document->getActiveLayer();
+                QColor oldColor = document->activeLayer_().at(px, py);
+                bool alreadyRecorded = false;
+                for(const auto &change : currentAction){
+                    if(change.layer == layer && change.x == px && change.y == py){
+                        alreadyRecorded = true;
+                        break;
+                    }
+                }
+                if(!alreadyRecorded){
+                    currentAction.push_back({layer, px, py, oldColor, color});
+                }
             }
             document->activeLayer_().at(px, py) = color;
         }
@@ -127,6 +138,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
                 draw(mirrorX, mirrorY);
         }
     }
+
 }
 void PixelCanvas::drawChecker(QPainter &painter){
     for (int y = 0; y < height(); y += pixelSize) {
@@ -228,6 +240,49 @@ void PixelCanvas::setNextFrames(int value){
     nextFrames = value;
     update();
 }
+// shade methods
+void PixelCanvas::setBrushMode(BrushMode mode){
+    brushMode = mode;
+}
+void PixelCanvas::setBrushAmount(float amount){
+    brushAmount = amount;
+}
+QColor PixelCanvas::getBrushColor(const QColor &pixel){
+    switch (brushMode) {
+    case BrushMode::Normal:
+        return currentColor;
+    case BrushMode::Shade:
+        return shadePixel(pixel);
+    case BrushMode::Lighten:
+        return lightenPixel(pixel);
+    case BrushMode::Blend:
+        return blendPixel(pixel, currentColor);
+    }
+    return currentColor;
+}
+QColor PixelCanvas::shadePixel(const QColor &color){
+    if(color == Qt::transparent) return color;
+    int h, s, v, a;
+    color.getHsv(&h, &s, &v, &a);
+    v -= static_cast<int>(v * brushAmount);
+    v = std::clamp(v, 0, 255);
+    return QColor::fromHsv(h, s, v, a);
+}
+QColor PixelCanvas::lightenPixel(const QColor &color){
+    if(color == Qt::transparent) return color;
+    int h, s, v, a;
+    color.getHsv(&h, &s, &v, &a);
+    v += static_cast<int>(255*brushAmount);
+    v = std::clamp(v, 0, 255);
+    return QColor::fromHsv(h, s, v, a);
+}
+QColor PixelCanvas::blendPixel(const QColor &color, const QColor &blendColor){
+    if(color == Qt::transparent) return color;
+    int r = color.red() + (blendColor.red() - color.red()) * brushAmount;
+    int g = color.green() + (blendColor.green() - color.green()) * brushAmount;
+    int b = color.blue() + (blendColor.blue() - color.blue()) * brushAmount;
+    return QColor(std::clamp(r, 0, 255), std::clamp(g, 0, 255), std::clamp(b, 0, 255));
+}
 // canvas methods
 void PixelCanvas::updateCanvasSize()
 {
@@ -252,12 +307,6 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     else{
     if(event->button() == Qt::LeftButton){
     isDrawing = true;
-    // make sure you don't overwrite on the old canvas. if you do, it leads to both actions being on the same canvas and any subsequent undos undoes both.
-    //if(isUndoing){
-    //    undoStack.push_back(currentAction);
-    //    isUndoing = false;
-    //}
-
     // coordinates of the cursor with respect to our canvas
     int x = event->position().x() / pixelSize;
     int y = event->position().y() / pixelSize;
@@ -265,7 +314,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     if (x >= 0 && x < document->activeLayer_().width && y >= 0 && y < document->activeLayer_().height) {
         switch(currentTool){
         case Tool::Brush:
-            paintColor(x, y, currentColor);
+            paintColor(x, y, getBrushColor(document->activeLayer_().at(x, y)));
             break;
         case Tool::Eraser:
             paintColor(x, y, Qt::transparent);
@@ -401,12 +450,16 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     if (x >= 0 && x < document->activeLayer_().width && y >= 0 && y < document->activeLayer_().height) {
         switch(currentTool){
         case Tool::Brush:
-            if(document->activeLayer_().at(x, y) != currentColor)
+        {
+            QColor oldColor = document->activeLayer_().at(x, y);
+            QColor newColor = getBrushColor(oldColor);
+            if(oldColor != newColor)
             {
-                paintColor(x, y, currentColor);
+                paintColor(x, y, newColor);
                 changed = true;
             }
             break;
+        }
         case Tool::Eraser:
             if(document->activeLayer_().at(x, y) != Qt::transparent)
             {

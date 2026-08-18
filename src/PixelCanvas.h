@@ -82,6 +82,13 @@ public:
         Ellipse,
         Line
     };
+    enum class BrushMode{
+        Normal,
+        Shade,
+        Lighten,
+        Blend
+    };
+
     struct Shape{
         QPoint start;
         QPoint end;
@@ -124,6 +131,7 @@ public:
     void cancelPaste(); // cancel paste
     void drawChecker(QPainter &painter); // draw the checkerboard in the background
     void drawSelectionPreview(QPainter &painter); // draws the dotted line that shows selection
+    // onion methods
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
     void changeOnionSettings();
@@ -131,6 +139,13 @@ public:
     void setOnionOpacity(float value);
     void setPreviousFrames(int value);
     void setNextFrames(int value);
+    // shade methods
+    void setBrushMode(BrushMode mode);
+    void setBrushAmount(float amount);
+    QColor getBrushColor(const QColor &pixel);
+    QColor shadePixel(const QColor &color);
+    QColor lightenPixel(const QColor &color);
+    QColor blendPixel(const QColor &color, const QColor &blendColor);
     // frame methods
     void duplicateFrame();
     void addFrame();
@@ -171,6 +186,8 @@ private:
     bool onionOn = true;
     QColor previousFramesColor = Qt::red;
     QColor nextFramesColor = Qt::green;
+    BrushMode brushMode = BrushMode::Normal;
+    float brushAmount = 0.1f;
     // others
 
 
