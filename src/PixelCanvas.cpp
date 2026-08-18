@@ -154,18 +154,19 @@ void PixelCanvas::drawSelectionPreview(QPainter &painter){
 }
 void PixelCanvas::drawOnionFrame(QPainter &painter, int frameIndex,  float onionOpacity){
     if(frameIndex < 0 || frameIndex >= document->getFrameSize()) return;
-    QImage image = document->renderFrame(frameIndex);
-    QImage imageAfter;
+    int currentFrame = document->getCurrentFrame();
+    QImage image = document->renderFrame(currentFrame);
+    QImage onionFrame;
     QColor tintColor;
-    if(frameIndex < document->getCurrentFrame()){
+    if(frameIndex < currentFrame){
         tintColor = Qt::red;
-        imageAfter = document->renderFrame(document->getCurrentFrame()-1);
+        onionFrame = document->renderFrame(frameIndex);
     }
-    else if (frameIndex > document->getCurrentFrame()){
+    else if (frameIndex > currentFrame){
         tintColor = Qt::green;
-        imageAfter = document->renderFrame(document->getCurrentFrame()+1);
+        onionFrame = document->renderFrame(frameIndex);
     }
-    QImage imageTinted = tintOnionFrame(image, imageAfter,  tintColor);
+    QImage imageTinted = tintOnionFrame(image, onionFrame,  tintColor);
     QRect rect(0, 0, imageTinted.width()*pixelSize, imageTinted.height()*pixelSize);
     painter.save();
     painter.setOpacity(onionOpacity);
@@ -175,15 +176,15 @@ void PixelCanvas::drawOnionFrame(QPainter &painter, int frameIndex,  float onion
 QImage PixelCanvas::tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint){
     QImage original = imageBefore.convertToFormat(QImage::Format_ARGB32);
     QImage result = imageAfter.convertToFormat(QImage::Format_ARGB32);
-    for(int y = 0; y < result.height(); y++){
-        for(int x = 0; x < result.width(); x++){
+    for(int y = 0; y <= result.height(); y++){
+        for(int x = 0; x <= result.width(); x++){
             QColor pixel = result.pixelColor(x, y);
             QColor pixelOriginal = original.pixelColor(x, y);
             if(pixel.alpha() == 0) continue;
             if(pixel == pixelOriginal) continue;
-            pixel.setRed(pixel.red() + tint.red() /2);
-            pixel.setBlue(pixel.blue() + tint.blue() / 2);
-            pixel.setGreen(pixel.green() + tint.green() /2);
+            pixel.setRed((pixel.red() + tint.red()) /2);
+            pixel.setBlue((pixel.blue() + tint.blue()) / 2);
+            pixel.setGreen((pixel.green() + tint.green()) /2);
 
             result.setPixelColor(x, y, pixel);
         }
