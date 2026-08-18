@@ -128,6 +128,9 @@ public:
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
     void changeOnionSettings();
     void setOnionOn(bool value);
+    void setOnionOpacity(float value);
+    void setPreviousFrames(int value);
+    void setNextFrames(int value);
     // frame methods
     void duplicateFrame();
     void addFrame();
@@ -164,7 +167,7 @@ private:
     bool isPasting = false;
     int previousFrames = 1;
     int nextFrames = 1;
-    float onionOpacity = 0.25;
+    float onionOpacity = 0.15;
     bool onionOn = true;
     QColor previousFramesColor = Qt::red;
     QColor nextFramesColor = Qt::green;

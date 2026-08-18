@@ -32,6 +32,7 @@
 #include <QJsonObject>
 #include <QTimer>
 #include <QFormLayout>
+#include <QGroupBox>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -156,13 +157,38 @@ MainWindow::MainWindow(QWidget *parent)
     brushSizeSlider->setValue(1);
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
     QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
+    // QWidget *onionOptions = new QWidget;
+    QVBoxLayout *onionLayout = new QVBoxLayout();
+    QGroupBox *onionOptions = new QGroupBox("Onion Skin");
+    onionSkinActivationButton = new QPushButton("Onion Skin");
+    onionSkinActivationButton->setCheckable(true);
+    onionSkinActivationButton->setChecked(true);
+    QLabel *previousFramesLabel = new QLabel("Previous Frames: ");
+    QSpinBox *previousFramesSpinBox = new QSpinBox();
+    previousFramesSpinBox->setValue(1);
+    QLabel *nextFramesLabel = new QLabel("Next Frames: ");
+    QSpinBox *nextFramesSpinBox = new QSpinBox();
+    nextFramesSpinBox->setValue(1);
+    QSlider *onionOpacitySlider = new QSlider(Qt::Horizontal);
+    onionOpacitySlider->setRange(1, 100);
+    onionOpacitySlider->setValue(15);
+    onionLayout->addWidget(previousFramesLabel);
+    onionLayout->addWidget(previousFramesSpinBox);
+    onionLayout->addWidget(nextFramesLabel);
+    onionLayout->addWidget(nextFramesSpinBox);
+    onionLayout->addWidget(onionOpacitySlider);
+    onionOptions->setVisible(true);
+    onionOptions->setLayout(onionLayout);
 
     paletteLayout->addWidget(brushSizeLabel);
     paletteLayout->addWidget(brushSizeSlider);
     paletteLayout->addWidget(horizontalSymmetryButton);
     paletteLayout->addWidget(verticalSymmetryButton);
+
     horizontalSymmetryButton->setCheckable(true);
     verticalSymmetryButton->setCheckable(true);
+    paletteLayout->addWidget(onionSkinActivationButton);
+    paletteLayout->addWidget(onionOptions);
     paletteLayout->addWidget(customPaletteLabel);
     paletteLayout->addWidget(paletteSelector);
     paletteLayout->addWidget(customPalette);
@@ -330,6 +356,25 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(onionSkinning, &QAction::triggered, [=](){
         canvas->changeOnionSettings();
+    });
+    connect(onionSkinActivationButton, &QPushButton::clicked, [=](){
+        if(onionSkinActivationButton->isChecked()){
+            onionOptions->setVisible(true);
+            canvas->setOnionOn(true);
+        }
+        else{
+            onionOptions->setVisible(false);
+            canvas->setOnionOn(false);
+        }
+    });
+    connect(onionOpacitySlider, &QSlider::valueChanged, [=](int value){
+        canvas->setOnionOpacity(onionOpacitySlider->value()/100.0f);
+    });
+    connect(previousFramesSpinBox, &QSpinBox::valueChanged, [=](int value){
+        canvas->setPreviousFrames(value);
+    });
+    connect(nextFramesSpinBox, &QSpinBox::valueChanged, [=](int value){
+        canvas->setNextFrames(value);
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
         canvas->saveImage();
@@ -674,7 +719,7 @@ void MainWindow::playAnimation(){
 }
 void MainWindow::pauseAnimation(){
     animationTimer->stop();
-    canvas->setOnionOn(true);
+    canvas->setOnionOn(onionSkinActivationButton->isChecked());
 }
 void MainWindow::updateTimeline(){
     while (QLayoutItem *item = frameButtonsLayout->takeAt(0)){

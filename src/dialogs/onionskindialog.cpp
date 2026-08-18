@@ -12,7 +12,7 @@ OnionSkinDialog::OnionSkinDialog(QWidget *parent) : QDialog(parent) {
     onionOnCheckBox = new QCheckBox(this);
     previousFramesSpinBox->setValue(1);
     nextFramesSpinBox->setValue(1);
-    onionOpacitySpinBox->setValue(0.25f);
+    onionOpacitySpinBox->setValue(0.15f);
     onionOpacitySpinBox->setRange(0.01, 1.0);
     onionOnCheckBox->setCheckState(Qt::Checked);
 

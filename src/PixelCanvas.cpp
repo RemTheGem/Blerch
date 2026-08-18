@@ -181,8 +181,14 @@ QImage PixelCanvas::tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor
         for(int x = 0; x < result.width(); x++){
             QColor pixel = result.pixelColor(x, y);
             QColor pixelOriginal = original.pixelColor(x, y);
-            if(pixel.alpha() == 0) continue;
-            if(pixel == pixelOriginal) continue;
+            if(pixel.alpha() == 0) {
+                result.setPixelColor(x, y, Qt::transparent);
+                continue;
+            }
+            if(pixel == pixelOriginal){
+                result.setPixelColor(x,y, Qt::transparent);
+                continue;
+            }
             pixel.setRed((pixel.red() + tint.red()) /2);
             pixel.setBlue((pixel.blue() + tint.blue()) / 2);
             pixel.setGreen((pixel.green() + tint.green()) /2);
@@ -208,6 +214,19 @@ void PixelCanvas::changeOnionSettings(){
 }
 void PixelCanvas::setOnionOn(bool value){
     onionOn = value;
+    update();
+}
+void PixelCanvas::setOnionOpacity(float value){
+    onionOpacity = value;
+    update();
+}
+void PixelCanvas::setPreviousFrames(int value){
+    previousFrames = value;
+    update();
+}
+void PixelCanvas::setNextFrames(int value){
+    nextFrames = value;
+    update();
 }
 // canvas methods
 void PixelCanvas::updateCanvasSize()

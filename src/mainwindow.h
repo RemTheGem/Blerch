@@ -47,6 +47,7 @@ private:
     QVBoxLayout *frameLayout;
     QHBoxLayout *frameButtonsLayout;
     QSpinBox *durationSpinBox;
+    QPushButton *onionSkinActivationButton;
 
     void updateRecentFiles();
 };
