@@ -103,7 +103,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
     auto draw = [&](int px, int py){
         if (px >= 0 && px < document->activeLayer_().width &&
             py >= 0 && py < document->activeLayer_().height && document->activeLayer_().at(px, py) != color){
-            if(brushApplication == BrushApplication::OnePassPerStroke){
+            if(brushApplication == BrushApplication::OnePassPerStroke && recordUndo && currentTool == Tool::Brush){
                 QPair<int, int> key(px, py);
                 if(affectedPixels.contains(key))
                     return;
