@@ -54,13 +54,13 @@ std::pair<ColorBox, ColorBox> MedianCut::splitBox(ColorBox box)
         total += c.count;
     int half = total/2;
     int accumulated = 0;
-    int splitIndex = 0;
+    int splitIndex = 1;
     // find the actual middle based on count of each color
-    for(int i= 0; i<box.colors.size(); i++){
+    for(int i= 0; i<box.colors.size()-1; i++){
         accumulated+= box.colors[i].count;
         if(accumulated >= half){
             // middle found
-            splitIndex = i;
+            splitIndex = i+1;
             break;
         }
     }
@@ -98,6 +98,7 @@ std::vector<QColor> MedianCut::medianCut(const QImage& image, int paletteSize)
     std::map<std::tuple<int,int,int>,int> colorFrequency;
     for (int y = 0; y < image.height(); y++){
         for (int x = 0; x < image.width(); x++){
+            if(image.pixelColor(x,y) == Qt::transparent) continue;
             QColor c = image.pixelColor(x, y);
             auto key = std::make_tuple(c.red(), c.green(), c.blue());
             colorFrequency[key]++;
@@ -109,6 +110,7 @@ std::vector<QColor> MedianCut::medianCut(const QImage& image, int paletteSize)
         auto [r, g, b] = pair.first;
         first.colors.push_back({r,g,b,pair.second});
     }
+    if(first.colors.empty()) return {};
     std::vector<ColorBox> boxes;
     boxes.push_back(first);
     while ((int)boxes.size() < paletteSize){
@@ -119,8 +121,11 @@ std::vector<QColor> MedianCut::medianCut(const QImage& image, int paletteSize)
             // to ensure we dont waste palette slots, we return the box with the bigger color range
             return boxA < boxB;
     });
+        if(largest == boxes.end() || largest->colors.size() <=1)
+            break;
         // keep splitting the box into smaller boxes until we have our desired palette size (16 rn. will make it user input later)
         auto split = splitBox(*largest);
+        if(split.second.colors.empty()) break;
         boxes.erase(largest);
         boxes.push_back(split.first);
         boxes.push_back(split.second);

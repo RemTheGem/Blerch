@@ -1090,8 +1090,12 @@ void PixelCanvas::pictureToPixel(){
     layer.pixels.resize(document->getCanvasWidth() * document->getCanvasHeight());
     for (int y = 0; y < document->getCanvasHeight(); y++) {
         for (int x = 0; x < document->getCanvasWidth(); x++) {
+            QColor original = image.pixelColor(x, y);
+            if(original.alpha() == 0) document->activeLayer_().at(x, y) = original;
+            else{
             QColor mapped = medianCut.nearestColor(image.pixelColor(x, y), palette);
             document->activeLayer_().at(x, y) = mapped;
+            }
         }
     }
     update();
