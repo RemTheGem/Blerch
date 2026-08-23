@@ -787,6 +787,21 @@ void PixelCanvas::commitMove(){
     // this will be checked later to ensure we dont erase what we just put down
     QRect destRect(selection.selectionOffset.x(), selection.selectionOffset.y(),
                    selection.width+1, selection.height+1);
+    // erase the pixels from old location
+    for (int my = 0; my < selection.height+1; my++){
+        for (int mx = 0; mx < selection.width+1; mx++){
+            int oldX = selection.topLeft.x() + mx;
+            int oldY = selection.topLeft.y() + my;
+            int index = (selection.width+1) * my + mx;
+            if (index >= selection.colors.size()) continue;
+            if (oldX < 0 || oldX >= document->activeLayer_().width) continue;
+            if (oldY < 0 || oldY >= document->activeLayer_().height) continue;
+            // if(selection.colors.at(index) == Qt::transparent) continue;
+            // make sure we dont overwrite what we just put down
+            // if(destRect.contains(oldX, oldY)) continue;
+            paintColor(oldX,oldY,Qt::transparent);
+        }
+    }
     // draw the pixels in new location
     for (int my = 0; my < selection.height+1; my++){
         for (int mx = 0; mx < selection.width+1; mx++){
@@ -802,21 +817,6 @@ void PixelCanvas::commitMove(){
             selection.previewEnd = QPoint(canvasX, canvasY);
         }
     }
-    // erase the pixels from old location
-    for (int my = 0; my < selection.height+1; my++){
-        for (int mx = 0; mx < selection.width+1; mx++){
-            int oldX = selection.topLeft.x() + mx;
-            int oldY = selection.topLeft.y() + my;
-            int index = (selection.width+1) * my + mx;
-            if (index >= selection.colors.size()) continue;
-            if (oldX < 0 || oldX >= document->activeLayer_().width) continue;
-            if (oldY < 0 || oldY >= document->activeLayer_().height) continue;
-            if(selection.colors.at(index) == Qt::transparent) continue;
-            // make sure we dont overwrite what we just put down
-            if(destRect.contains(oldX, oldY)) continue;
-            paintColor(oldX,oldY,Qt::transparent);
-        }
-    }
     selection.dragging = false;
     selection.moveFloating = false;
     selection.setValues(selection);
@@ -827,7 +827,8 @@ void PixelCanvas::commitMove(){
         action.changes = currentAction;
         document->pushUndoAction(action);
     }
-
+    selection = Selection();
+    emit switchBackToSelect();
     update();
 }
 void PixelCanvas::cancelMove(){

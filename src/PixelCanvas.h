@@ -209,6 +209,7 @@ signals:
     void colorChanged(QColor color); // signal to change the selected color
     void mousePositionChanged(int x, int y); // signal to change current mouse position in status bar
     void brushModeChanged(BrushMode mode);
+    void switchBackToSelect();
 
 };
 

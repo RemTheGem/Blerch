@@ -563,6 +563,9 @@ MainWindow::MainWindow(QWidget *parent)
         }
         updateTimeline();
     });
+    connect(canvas, &PixelCanvas::switchBackToSelect, [=](){
+        selectAction->trigger();
+    });
     connect(loadPicture, &QAction::triggered, [=](){
         canvas->loadPicture();
         layerList->clear();
