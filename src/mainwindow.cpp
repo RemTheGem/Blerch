@@ -5,6 +5,7 @@
 #include "tools/custompalette.h"
 #include "tools/colorpreviewwidget.h"
 #include "model/canvasdocument.h"
+#include "dialogs/pictureimportdialog.h"
 #include "../include/settingsmanager.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
@@ -45,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
     // main setup
     canvas = new PixelCanvas(this);
     document = canvas->getDocument();
+    fileHandling = new FileHandling(document, canvas);
     auto colorPreview = new ColorPreviewWidget(this);
     QToolButton *shapeButton = new QToolButton(this);
     setFocusPolicy(Qt::StrongFocus);
@@ -437,7 +439,13 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->setNextFrames(value);
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
-        canvas->saveImage();
+        QString fileName = QFileDialog::getSaveFileName(this,"Save Image","","PNG Files (*.png)");
+        if(!fileName.isEmpty())
+        {
+            if(!fileName.endsWith(".png"))
+                fileName += ".png";
+            fileHandling->saveImage(fileName);
+        }
     });
     connect(brushAction, &QAction::triggered, [=](){
         canvas->setTool(PixelCanvas::Tool::Brush);
@@ -567,7 +575,9 @@ MainWindow::MainWindow(QWidget *parent)
         selectAction->trigger();
     });
     connect(loadPicture, &QAction::triggered, [=](){
-        canvas->loadPicture();
+        QString file = QFileDialog::getOpenFileName(this, "Import Reference", "", "Images (*.png *.jpg *.jpeg *.bmp)");
+        if(file.isEmpty()) return;
+        fileHandling->loadPicture(file);
         layerList->clear();
         QStringList layers =document->getLayerNames();
         std::reverse(layers.begin(), layers.end());
@@ -575,7 +585,12 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
     });
     connect(openPicture, &QAction::triggered, [=](){
-        canvas->pictureToPixel();
+        QString file = QFileDialog::getOpenFileName(this, "Import Picture", "", "Images (*.png *.jpg *.jpeg *.bmp)");
+        if(file.isEmpty()) return;
+        PictureImportDialog dialog(this);
+        if(dialog.exec() != QDialog::Accepted)
+            return;
+        fileHandling->pictureToPixel(file, dialog);
         layerList->clear();
         QStringList layers =document->getLayerNames();
         std::reverse(layers.begin(), layers.end());
@@ -583,7 +598,12 @@ MainWindow::MainWindow(QWidget *parent)
         layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
     });
     connect(GIFToPixelAction, &QAction::triggered, [=](){
-        canvas->GIFToPixel();
+        QString file = QFileDialog::getOpenFileName(this, "Import GIF", "", "GIF (*.gif)");
+        if(file.isEmpty()) return;
+        PictureImportDialog dialog(this);
+        if(dialog.exec() != QDialog::Accepted)
+            return;
+        fileHandling->GIFToPixel(file, dialog);
     });
     connect(loadPalette, &QAction::triggered, this, [=]{
         QString fileName = QFileDialog::getOpenFileName(this, "Open Palette", "", "GPL File (*.gpl)");
@@ -604,6 +624,7 @@ MainWindow::MainWindow(QWidget *parent)
             SettingsManager::instance().setCustomPalette(fileName);
         }
     });
+    connect(fileHandling, &FileHandling::documentUpdated, this, [this]{canvas->update();});
     connect(zoomIn, &QAction::triggered, [=](){
         canvas->setZoom(canvas->getZoom() + 2);
     });
@@ -852,7 +873,7 @@ void MainWindow::loadProject(const QString &filePath){
     if(!file.open(QIODevice::ReadOnly)) return;
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 
-    canvas->loadFromJson(doc.object());
+    fileHandling->loadFromJson(doc.object());
 
     SettingsManager::instance().setLastProject(path);
     SettingsManager::instance().addRecentFile(path);
@@ -866,7 +887,7 @@ void MainWindow::saveProject(const QString &filePath){
     }
     if(!path.endsWith(".json")) path += ".json";
     SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
-    canvas->saveProject(path);
+    fileHandling->saveProject(path);
     SettingsManager::instance().setLastProject(path);
     SettingsManager::instance().addRecentFile(path);
 }
@@ -878,7 +899,7 @@ void MainWindow::saveSpriteSheet(const QString &filePath, int columns, int scale
     }
     if(!path.isEmpty()){
         SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
-        canvas->saveSpriteSheet(path, columns, scale);
+        fileHandling->saveSpriteSheet(path, columns, scale);
     }
 }
 void MainWindow::saveGIF(const QString &filePath, int scale){
@@ -889,7 +910,7 @@ void MainWindow::saveGIF(const QString &filePath, int scale){
     }
     if(!path.isEmpty()){
         SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
-        canvas->saveGIF(path, scale);
+        fileHandling->saveGIF(path, scale);
     }
 }
 void MainWindow::updateRecentFiles(){

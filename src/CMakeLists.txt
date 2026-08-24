@@ -40,6 +40,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         model/canvasdocument.h model/canvasdocument.cpp
         model/CanvasTypes.h
         dialogs/onionskindialog.h dialogs/onionskindialog.cpp
+        "File IO/filehandling.h" "File IO/filehandling.cpp"
 
 
 

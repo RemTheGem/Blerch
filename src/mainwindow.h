@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "PixelCanvas.h"
+#include "File IO/filehandling.h"
 #include <QMainWindow>
 #include <QMouseEvent>
 #include <QMessageBox>
@@ -44,6 +45,7 @@ private:
     QPushButton *removeLayerButton;
     CanvasDocument *document;
     PixelCanvas *canvas;
+    FileHandling *fileHandling;
     QMenu *recentFilesMenu;
     QTimer *animationTimer;
     QVBoxLayout *frameLayout;

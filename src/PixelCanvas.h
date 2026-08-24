@@ -48,19 +48,13 @@ public:
     void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);} // set the current color
     void clear(); // clear the canvas on the current layer
     void resetCanvas(); // reset the whole canvas
-    void saveImage(); // save image as png
-    void saveProject(const QString &path); // save the project as a json file
-    void loadFromJson(QJsonObject obj); // load project from a json file
-    void loadPicture(); // load a picture on a separate layer for reference
-    void saveSpriteSheet(const QString &path, int columns, int scale);
-    void saveGIF(const QString &path, int scale);
+
     void updateCanvasSize(); // update the current canvas size
     void buildPalette(); // get colors and their corresponding frequencies from the canvas and add them to a hash table
     void floodFill(int x, int y); // method for flood fill tool
     void undo(); // undo method
     void redo(); // redo method
-    void pictureToPixel(); // turn imported picture into pixel art
-    void GIFToPixel();
+
     void copyPixels(); // copy pixels
     void pastePixels(); // paste copied pixels
     void flipHorizontal();
