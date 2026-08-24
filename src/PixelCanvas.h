@@ -170,7 +170,7 @@ private:
     CanvasDocument *document;
     int pixelSize = 20; // pixel/zoom size
     int brushSize = 1;
-    bool movingPicture; // boolean to check if an imported picture is being moved
+    bool movingPicture = false; // boolean to check if an imported picture is being moved
     bool horizontalSymmetry = false; // bool for horizontal symmetry
     bool verticalSymmetry = false; // bool for vertical symmetry
     QPoint moveOffset; // point on the canvas for moving picture
