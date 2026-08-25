@@ -497,7 +497,13 @@ void GifThresholdImage( const uint8_t* lastFrame, const uint8_t* nextFrame, uint
     {
         // if a previous color is available, and it matches the current color,
         // set the pixel to transparent
-        if(lastFrame &&
+        if(nextFrame[3] < 128){
+            outFrame[0] = 0;
+            outFrame[1] = 0;
+            outFrame[2] = 0;
+            outFrame[3] = kGifTransIndex;
+        }
+        else if(lastFrame &&
             lastFrame[0] == nextFrame[0] &&
             lastFrame[1] == nextFrame[1] &&
             lastFrame[2] == nextFrame[2])
