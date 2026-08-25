@@ -127,8 +127,8 @@ MainWindow::MainWindow(QWidget *parent)
     layerList->setCurrentRow(0);
     addLayerButton = new QPushButton("+", this);
     removeLayerButton = new QPushButton("-", this);
-    QPushButton *moveUpButton = new QPushButton("↓", this);
-    QPushButton *moveDownButton = new QPushButton("↑", this);
+    QPushButton *moveUpButton = new QPushButton("↑", this);
+    QPushButton *moveDownButton = new QPushButton("↓", this);
     QPushButton *renameLayerButton = new QPushButton("Rename", this);
     QSlider *opacitySlider = new QSlider(Qt::Horizontal);
     QLabel * opacityLabel = new QLabel("Opacity");
@@ -657,24 +657,13 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(moveUpButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
-        if(index <0 || index >= layerList->count()-1) return;
-        document->moveLayerUp(index);
-        layerList->clear();
-        QStringList layers = document->getLayerNames();
-        std::reverse(layers.begin(), layers.end());
-        layerList->addItems(layers);
-        int uiIndex = layerList->count() - 1 - index ;
-        layerList->setCurrentRow(index + 1);
+        int documentIndex = uiToDocumentLayer(index);
+        document->moveLayerUp(documentIndex);
     });
     connect(moveDownButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();
-        if(index <=0 || index > layerList->count()-1) return;
-        document->moveLayerDown(index);
-        layerList->clear();
-        QStringList layers = document->getLayerNames();
-        std::reverse(layers.begin(), layers.end());
-        layerList->addItems(layers);
-        layerList->setCurrentRow(index - 1);
+        int documentIndex = uiToDocumentLayer(index);
+        document->moveLayerDown(documentIndex);
     });
     connect(renameLayerButton, &QPushButton::clicked, [=](){
         int index = layerList->currentRow();

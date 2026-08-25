@@ -110,13 +110,14 @@ void CanvasDocument::setActiveLayer(int index){
     emit layerChanged();
 }
 void CanvasDocument::moveLayerDown(int index){
-    if(index<=0|| index>=frames[currentFrameIndex].layers.size()) return;
+    if(index<=0|| index>frames[currentFrameIndex].layers.size()) return;
     std::swap(frames[currentFrameIndex].layers[index], frames[currentFrameIndex].layers[index-1]);
-    if(activeLayerIndex == index)activeLayerIndex++;
+    if(activeLayerIndex == index)activeLayerIndex--;
+    else if(activeLayerIndex == index-1) activeLayerIndex++;
     emit layerChanged();
 }
 void CanvasDocument::moveLayerUp(int index){
-    if(index < 0 || index >= frames[currentFrameIndex].layers.size() -1) return;
+    if(index < 0 || index >= frames[currentFrameIndex].layers.size()-1) return;
     std::swap(frames[currentFrameIndex].layers[index], frames[currentFrameIndex].layers[index+1]);
     if(activeLayerIndex == index) activeLayerIndex++;
     else if(activeLayerIndex == index +1) activeLayerIndex--;
