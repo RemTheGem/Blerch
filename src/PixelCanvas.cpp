@@ -1,7 +1,5 @@
 #include "PixelCanvas.h"
-#include "tools/mediancut.h"
 #include "dialogs/onionskindialog.h"
-#include "File IO/filehandling.h"
 #include <QPainter>
 #include <QMouseEvent>
 #include <QPaintEvent>
@@ -42,7 +40,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
     // draw the checkered background
     drawChecker(painter);
     // draw all layers
-    for (const auto &layer : document->currentFrame_().layers)
+    for (const auto &layer : std::as_const(document->currentFrame_().layers))
     {
         if(!layer.visible) continue;
         painter.save();
@@ -112,7 +110,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
                 int layer = document->getActiveLayer();
                 QColor oldColor = document->activeLayer_().at(px, py);
                 bool alreadyRecorded = false;
-                for(const auto &change : currentAction){
+                for(const auto &change : std::as_const(currentAction)){
                     if(change.layer == layer && change.x == px && change.y == py){
                         alreadyRecorded = true;
                         break;
@@ -531,6 +529,8 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             update();
             break;
         }
+        default:
+            break;
         }
     }
     }
@@ -618,6 +618,8 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         break;
 
     }
+    default:
+        break;
     }
 
     // push what you did to the undo stack

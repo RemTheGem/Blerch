@@ -1,5 +1,4 @@
 #include "CanvasDocument.h"
-#include "../dialogs/onionskindialog.h"
 #include <QPainter>
 #include <algorithm>
 #include <QDebug>
@@ -63,7 +62,7 @@ void CanvasDocument::clear(){
 void CanvasDocument::buildPalette(){
     colorFrequency.clear();
     if(frames[currentFrameIndex].layers.isEmpty()) return;
-    for(const auto &layer : frames[currentFrameIndex].layers){
+    for(const auto &layer : std::as_const(frames[currentFrameIndex].layers)){
         if(layer.type != LayerType::Pixel) continue;
         for(const QColor &color : layer.pixels){
             if(color == Qt::transparent) continue;

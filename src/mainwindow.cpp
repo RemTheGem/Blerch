@@ -910,7 +910,7 @@ void MainWindow::updateRecentFiles(){
         empty->setEnabled(false);
         return;
     }
-    for(QString file :files){
+    for(const QString &file :std::as_const(files)){
         if(!QFile::exists(file)) continue;
         QAction *action = recentFilesMenu->addAction(QFileInfo(file).fileName());
         action->setData(file);
