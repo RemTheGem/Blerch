@@ -7,5 +7,6 @@
         <file>palettes/pico-8.gpl</file>
         <file>palettes/resurrect-64.gpl</file>
         <file>palettes/sweetie-16.gpl</file>
+        <file>palettes/gothic-bit.gpl</file>
     </qresource>
 </RCC>

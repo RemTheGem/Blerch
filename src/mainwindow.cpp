@@ -96,6 +96,7 @@ MainWindow::MainWindow(QWidget *parent)
     QString lastProject = SettingsManager::instance().getLastProject();
     QString previousPalette = SettingsManager::instance().getCustomPalette();
 
+
     // shape menu setup
     shapeMenu->addAction("Rectangle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
@@ -167,6 +168,7 @@ MainWindow::MainWindow(QWidget *parent)
     paletteSelector->addItem("DawnBringer 32", ":/palettes/dawnbringer-32.gpl");
     paletteSelector->addItem("Endesga 32", ":/palettes/endesga-32.gpl");
     paletteSelector->addItem("Resurrect 64", ":/palettes/resurrect-64.gpl");
+    paletteSelector->addItem("Gothic-bit", ":/palettes/gothic-bit.gpl");
     brushSizeSlider->setRange(1,16);
     brushSizeSlider->setValue(1);
     brushAmountSlider->setRange(1, 100);
