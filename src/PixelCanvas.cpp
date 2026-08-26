@@ -889,7 +889,7 @@ void PixelCanvas::flipHorizontal()
     action.before = document->currentFrame_().layers;
     for(auto &layer : document->currentFrame_().layers){
         if(document->isTypeReference(layer)){
-            document->activeLayer_().image.flip(Qt::Horizontal);
+            layer.image.flip(Qt::Horizontal);
             continue;
         }
         Layer tempLayer = layer;
@@ -916,7 +916,7 @@ void PixelCanvas::flipVertical()
     action.before = document->currentFrame_().layers;
     for(auto &layer : document->currentFrame_().layers){
         if(document->isTypeReference(layer)){
-            document->activeLayer_().image.flip(Qt::Vertical);
+            layer.image.flip(Qt::Vertical);
             continue;
         }
         Layer tempLayer = layer;
