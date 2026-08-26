@@ -51,6 +51,7 @@ void CanvasDocument::resetCanvas(){
     activeLayerIndex = 0;
     resizeCanvas(32,32);
     buildPalette();
+    emit layerChanged();
     emit documentMutated();
 
 }
