@@ -144,6 +144,9 @@ float CanvasDocument::getLayerOpacity(int index ) const{
     if(index <0 || index >= frames[currentFrameIndex].layers.size()) return 1.0f;
     return frames[currentFrameIndex].layers[index].opacity;
 }
+bool CanvasDocument::isTypeReference(Layer layer) const{
+    return layer.type == LayerType::Reference;
+}
 QStringList CanvasDocument::getLayerNames() const {
     QStringList names;
     if(frames.isEmpty()) return names;

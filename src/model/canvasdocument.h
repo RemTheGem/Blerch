@@ -31,6 +31,7 @@ public:
     void renameLayer(int index, const QString &name);
     void setLayerOpacity(int index, float opacity);
     float getLayerOpacity(int index) const;
+    bool isTypeReference(Layer layer) const;
     QStringList getLayerNames() const;
     int getActiveLayer() const;
     void makeTempLayer();

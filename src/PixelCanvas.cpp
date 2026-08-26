@@ -888,19 +888,22 @@ void PixelCanvas::flipHorizontal()
     action.type = UndoType::Snapshot;
     action.before = document->currentFrame_().layers;
     for(auto &layer : document->currentFrame_().layers){
-    Layer tempLayer = layer;
+        if(document->isTypeReference(layer)){
+            document->activeLayer_().image.flip(Qt::Horizontal);
+            continue;
+        }
+        Layer tempLayer = layer;
+        int width = layer.width;
+        int height = layer.height;
 
-    int width = layer.width;
-    int height = layer.height;
-    
-        for(int x = 0; x < width; x++)
-        {
-            for(int y = 0; y < height; y++)
+            for(int x = 0; x < width; x++)
             {
-                layer.at(x, y) = tempLayer.at(width - 1 - x, y);
+                for(int y = 0; y < height; y++)
+                {
+                    layer.at(x, y) = tempLayer.at(width - 1 - x, y);
+                }
             }
         }
-    }
     action.after = document->currentFrame_().layers;
     document->pushUndoAction(action);
     update();
@@ -912,18 +915,22 @@ void PixelCanvas::flipVertical()
     action.type = UndoType::Snapshot;
     action.before = document->currentFrame_().layers;
     for(auto &layer : document->currentFrame_().layers){
-    Layer tempLayer = layer;
-    int width = layer.width;
-    int height = layer.height;
-        for(int x = 0; x < width; x++)
-        {
-            for(int y = 0; y < height; y++)
+        if(document->isTypeReference(layer)){
+            document->activeLayer_().image.flip(Qt::Vertical);
+            continue;
+        }
+        Layer tempLayer = layer;
+        int width = layer.width;
+        int height = layer.height;
+            for(int x = 0; x < width; x++)
             {
-                
-                layer.at(x, y) = tempLayer.at(x, height - 1 - y);
+                for(int y = 0; y < height; y++)
+                {
+
+                    layer.at(x, y) = tempLayer.at(x, height - 1 - y);
+                }
             }
         }
-    }
     action.after = document->currentFrame_().layers;
     document->pushUndoAction(action);
     update();
