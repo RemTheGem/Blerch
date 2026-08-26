@@ -561,6 +561,7 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
         commitPaste();
         return;
     }
+    if(event->button() == Qt::MiddleButton) return;
     switch(currentTool){
     case Tool::Select:
     {
