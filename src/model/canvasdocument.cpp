@@ -23,6 +23,7 @@ void CanvasDocument::resizeCanvas(int width, int height){
 
     for(auto &frame : frames){
         for(auto &layer : frame.layers){
+            if(layer.type == LayerType::Reference) continue;
             QVector<QColor> oldPixels = layer.pixels;
             int oldWidth = layer.width;
             int oldHeight = layer.height;
