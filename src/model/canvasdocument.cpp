@@ -20,19 +20,23 @@ CanvasDocument::CanvasDocument(QObject *parent) : QObject(parent) {
     frames.append(initialFrame);
 }
 void CanvasDocument::resizeCanvas(int width, int height){
-    Layer &layer = frames[currentFrameIndex].layers[activeLayerIndex];
-    QVector<QColor> oldPixels = layer.pixels;
-    int oldWidth = layer.width;
-    int oldHeight = layer.height;
 
-    canvasWidth = width;
-    canvasHeight = height;
-    layer.width = width;
-    layer.height = height;
-    layer.pixels.assign(width *height, Qt::transparent);
-    for(int y = 0; y <std::min(oldHeight, height); y++){
-        for(int x = 0; x <std::min(oldWidth, width); x++){
-            layer.pixels[y*width +x] = oldPixels[y*oldWidth+x];
+    for(auto &frame : frames){
+        for(auto &layer : frame.layers){
+            QVector<QColor> oldPixels = layer.pixels;
+            int oldWidth = layer.width;
+            int oldHeight = layer.height;
+
+            canvasWidth = width;
+            canvasHeight = height;
+            layer.width = width;
+            layer.height = height;
+            layer.pixels.assign(width *height, Qt::transparent);
+            for(int y = 0; y <std::min(oldHeight, height); y++){
+                for(int x = 0; x <std::min(oldWidth, width); x++){
+                    layer.pixels[y*width +x] = oldPixels[y*oldWidth+x];
+                }
+            }
         }
     }
     emit canvasSizeChanged(canvasWidth, canvasHeight);
