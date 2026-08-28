@@ -96,7 +96,6 @@ MainWindow::MainWindow(QWidget *parent)
     QString lastProject = SettingsManager::instance().getLastProject();
     QString previousPalette = SettingsManager::instance().getCustomPalette();
 
-
     // shape menu setup
     shapeMenu->addAction("Rectangle", [=]{
         canvas->setTool(PixelCanvas::Tool::Shape);
