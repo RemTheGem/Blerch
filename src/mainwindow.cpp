@@ -334,6 +334,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveProjectAction = exportMenu->addAction("Save Project");
     QAction *saveSpriteSheetAction = exportMenu->addAction("Export as Sprite Sheet");
     QAction *saveGIFAction = exportMenu->addAction("Export GIF");
+    QAction *exportPalette = exportMenu->addAction("Export Palette");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
     brushAction->setChecked(true); // default tool as brush
@@ -537,6 +538,14 @@ MainWindow::MainWindow(QWidget *parent)
             int scale = scaleSpin->value();
             saveGIF("", scale);
         }
+    });
+    connect(exportPalette, &QAction::triggered, [=](){
+        QString dir = SettingsManager::instance().getLastSaveDirectory();
+        QString path;
+        path = QFileDialog::getSaveFileName(this, "Export Palette", dir, "GPL file (*.gpl)");
+        if(path.isEmpty())return;
+        if(!path.endsWith(".gpl")) path += ".gpl";
+        fileHandling->saveGPL(path);
     });
     connect(loadProjectAction, &QAction::triggered, [=](){
         loadProject();

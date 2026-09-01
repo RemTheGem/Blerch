@@ -403,12 +403,17 @@ void GifDitherImage( const uint8_t* lastFrame, const uint8_t* nextFrame, uint8_t
         {
             int32_t* nextPix = quantPixels + 4*(yy*width+xx);
             const uint8_t* lastPix = lastFrame? lastFrame + 4*(yy*width+xx) : NULL;
-
             // Compute the colors we want (rounding to nearest)
             int32_t rr = (nextPix[0] + 127) / 256;
             int32_t gg = (nextPix[1] + 127) / 256;
             int32_t bb = (nextPix[2] + 127) / 256;
-
+            if(nextPix[3]<128*256){
+                nextPix[0] = 0;
+                nextPix[1] = 0;
+                nextPix[2] = 0;
+                nextPix[3] = kGifTransIndex;
+                continue;
+            }
             // if it happens that we want the color from last frame, then just write out
             // a transparent pixel
             if( lastFrame &&
@@ -503,16 +508,6 @@ void GifThresholdImage( const uint8_t* lastFrame, const uint8_t* nextFrame, uint
             outFrame[2] = 0;
             outFrame[3] = kGifTransIndex;
         }
-        else if(lastFrame &&
-            lastFrame[0] == nextFrame[0] &&
-            lastFrame[1] == nextFrame[1] &&
-            lastFrame[2] == nextFrame[2])
-        {
-            outFrame[0] = lastFrame[0];
-            outFrame[1] = lastFrame[1];
-            outFrame[2] = lastFrame[2];
-            outFrame[3] = kGifTransIndex;
-        }
         else
         {
             // palettize the pixel
@@ -526,8 +521,6 @@ void GifThresholdImage( const uint8_t* lastFrame, const uint8_t* nextFrame, uint
             outFrame[2] = pPal->b[bestInd];
             outFrame[3] = (uint8_t)bestInd;
         }
-
-        if(lastFrame) lastFrame += 4;
         outFrame += 4;
         nextFrame += 4;
     }
@@ -622,7 +615,7 @@ void GifWriteLzwImage(FILE* f, uint8_t* image, uint32_t left, uint32_t top,  uin
     fputc(0x21, f);
     fputc(0xf9, f);
     fputc(0x04, f);
-    fputc(0x05, f); // leave prev frame in place, this frame has transparency
+    fputc(0x09, f); // leave prev frame in place, this frame has transparency
     fputc(delay & 0xff, f);
     fputc((delay >> 8) & 0xff, f);
     fputc(kGifTransIndex, f); // transparent color index
@@ -811,7 +804,7 @@ bool GifWriteFrame( GifWriter* writer, const uint8_t* image, uint32_t width, uin
 {
     if(!writer->f) return false;
 
-    const uint8_t* oldImage = writer->firstFrame? NULL : writer->oldImage;
+    const uint8_t* oldImage = NULL;
     writer->firstFrame = false;
 
     GifPalette pal;

@@ -20,9 +20,12 @@ public:
     void saveGIF(const QString &path, int scale);
     void pictureToPixel(const QString &path, PictureImportDialog &dialog); // turn imported picture into pixel art
     void GIFToPixel(const QString &path, PictureImportDialog &dialog);
+    void setPalette(QList<QColor> colors);
+    void saveGPL(const QString &fileName);
 private:
     CanvasDocument *document;
     PixelCanvas *canvas;
+    QList<QColor> usedColors;
 signals:
     void documentUpdated();
 };

@@ -9,6 +9,7 @@
 #include <QImageReader>
 
 FileHandling::FileHandling(CanvasDocument *document, PixelCanvas *canvas) : document(document), canvas(canvas) {
+    connect(document, &CanvasDocument::paletteUpdated, this, setPalette);
 }
 void FileHandling::saveImage(const QString &path)
 {
@@ -268,4 +269,27 @@ void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
     document->loadFrames(postFrames);
     document->buildPalette();
     emit documentUpdated();
+}
+void FileHandling::saveGPL(const QString &fileName){
+    QFile file(fileName);
+    if(!usedColors.empty()){
+        QTextStream out(&file);
+        if(!file.open(QIODevice::WriteOnly)){
+            return;
+        }
+        out << "GIMP Palette" << Qt::endl;
+        out << "#Palette Name: Custome Palette" << Qt::endl;
+        out << "Columns: " << usedColors.size() << Qt::endl;
+
+        for(int x = 0; x < usedColors.size(); x++){
+            out << usedColors.at(x).red() << " "
+                << usedColors.at(x).green() << " "
+                << usedColors.at(x).blue() << " "
+                << usedColors.at(x).name() << Qt::endl;
+        }
+        file.close();
+    }
+}
+void FileHandling::setPalette(QList<QColor> colors){
+    usedColors = colors;
 }
