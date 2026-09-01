@@ -159,6 +159,7 @@ QStringList CanvasDocument::getLayerNames() const {
 int CanvasDocument::getActiveLayer() const {return activeLayerIndex;}
 
 void CanvasDocument::makeTempLayer(){
+    rememberLayer = activeLayerIndex;
     addLayer();
     setActiveLayer(frames[currentFrameIndex].layers.size()-1);
     frames[currentFrameIndex].layers[activeLayerIndex].isTempLayer = true;
@@ -170,6 +171,7 @@ void CanvasDocument::makeTempLayer(){
 }
 void CanvasDocument::removeTempLayer(){
     removeLayer(frames[currentFrameIndex].layers.size()-1);
+    setActiveLayer(rememberLayer);
 }
 Layer &CanvasDocument::activeLayer_() {return frames[currentFrameIndex].layers[activeLayerIndex];}
 const Layer &CanvasDocument::activeLayer_() const {return frames[currentFrameIndex].layers[activeLayerIndex];}
