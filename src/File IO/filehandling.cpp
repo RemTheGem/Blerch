@@ -9,7 +9,7 @@
 #include <QImageReader>
 
 FileHandling::FileHandling(CanvasDocument *document, PixelCanvas *canvas) : document(document), canvas(canvas) {
-    connect(document, &CanvasDocument::paletteUpdated, this, setPalette);
+    connect(document, &CanvasDocument::paletteUpdated, this, &FileHandling::setPalette);
 }
 void FileHandling::saveImage(const QString &path)
 {
