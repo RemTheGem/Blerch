@@ -614,6 +614,7 @@ MainWindow::MainWindow(QWidget *parent)
         if(dialog.exec() != QDialog::Accepted)
             return;
         fileHandling->GIFToPixel(file, dialog);
+        statusBar()->showMessage("Importing....", 4000);
     });
     connect(loadPalette, &QAction::triggered, this, [=]{
         QString fileName = QFileDialog::getOpenFileName(this, "Open Palette", "", "GPL File (*.gpl)");
@@ -846,20 +847,29 @@ void MainWindow::pauseAnimation(){
     canvas->setOnionOn(onionSkinActivationButton->isChecked());
 }
 void MainWindow::updateTimeline(){
-    while (QLayoutItem *item = frameButtonsLayout->takeAt(0)){
-        delete item->widget();
-        delete item;
-    }
-    for (int i = 0; i < document->getFrameSize(); i++) {
+    int frameCount = document->getFrameSize();
+    while (frameButtons.size() < frameCount){
+        int i = frameButtons.size();
         QPushButton *button = new QPushButton(QString::number(i + 1));
         button->setCheckable(true);
-        button->setChecked(i == document->getCurrentFrame());
-        connect(button, &QPushButton::clicked, this, [this, i]() {
-            canvas->switchFrame(i);
+
+        connect(button, &QPushButton::clicked, this, [this, button](){
+            int frame = frameButtons.indexOf(button);
+            canvas->switchFrame(frame);
             durationSpinBox->setValue(document->getFrameDuration());
             updateTimeline();
         });
         frameButtonsLayout->addWidget(button);
+        frameButtons.append(button);
+    }
+    while(frameButtons.size() > frameCount){
+        QPushButton *button = frameButtons.takeLast();
+        frameButtonsLayout->removeWidget(button);
+        delete button;
+    }
+    int current = document->getCurrentFrame();
+    for (int i = 0; i < frameButtons.size(); i++){
+        frameButtons[i]->setChecked(i == current);
     }
 }
 void MainWindow::loadProject(const QString &filePath){
@@ -910,6 +920,7 @@ void MainWindow::saveGIF(const QString &filePath, int scale){
     if(!path.isEmpty()){
         SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
         fileHandling->saveGIF(path, scale);
+        statusBar()->showMessage("Exporting...", 4000);
     }
 }
 void MainWindow::updateRecentFiles(){

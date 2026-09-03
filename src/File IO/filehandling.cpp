@@ -195,25 +195,26 @@ void FileHandling::saveSpriteSheet(const QString &path, int cols, int scale){
 void FileHandling::saveGIF(const QString &path, int scale){
     QByteArray filePath = path.toUtf8();
     GifWriter writer = {};
-    int imageWidth = document->getCanvasWidth() *scale;
-    int imageHeight = document->getCanvasHeight() *scale;
-    int maxScale = qMin(64, 8192/qMax(document->getCanvasWidth(), document->getCanvasHeight()));
+    int imageWidth = document->getCanvasWidth();
+    int imageHeight = document->getCanvasHeight();
+    int maxScale = qMin(64, 8192/qMax(imageWidth, imageHeight));
     scale = qBound(1,scale,maxScale);
-    QImage firstImage = document->renderFrame(0).convertToFormat(QImage::Format_RGBA8888);
-    if(scale >1) firstImage = firstImage.scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-    if(!GifBegin(&writer, filePath.constData(), firstImage.width(), firstImage.height(), document->getThisFrameDuration(0)/10)){
+    int outWidth = imageWidth *scale;
+    int outHeight = imageHeight *scale;
+    if(!GifBegin(&writer, filePath.constData(), outWidth, outHeight, document->getThisFrameDuration(0)/10)){
         qDebug()<< "Gif Begin failed";
         return;
     }
     for(int i = 0; i < document->getFrameSize(); i++){
+        qDebug() << "Rendering Frame: " << i;
         QImage image = document->renderFrame(i).convertToFormat(QImage::Format_RGBA8888);
-        if(scale >1) image = image.scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-        if(!GifWriteFrame(&writer, image.constBits(), image.width(), image.height(), document->getThisFrameDuration(i)/10)){
+        qDebug() << "Writing Frame: " << i;
+        if(!GifWriteFrameScaled(&writer, image.constBits(), imageWidth, imageHeight, scale, document->getThisFrameDuration(i)/10)){
             qDebug() << "Gif write faile on frame" << i;
             GifEnd(&writer);
             return;
         }
-        qDebug()<<"Gif write successful";
+        qDebug()<<"Gif write successful. Frame: " << i;
     }
     GifEnd(&writer);
     qDebug() << "finished";
