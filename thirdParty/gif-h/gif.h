@@ -508,6 +508,12 @@ void GifThresholdImage( const uint8_t* lastFrame, const uint8_t* nextFrame, uint
             outFrame[2] = 0;
             outFrame[3] = kGifTransIndex;
         }
+        else if(lastFrame && lastFrame[0] == nextFrame[0] && lastFrame[1] == nextFrame[1] && lastFrame[2] == nextFrame[2]){
+            outFrame[0] = lastFrame[0];
+            outFrame[1] = lastFrame[1];
+            outFrame[2] = lastFrame[2];
+            outFrame[3] = kGifTransIndex;
+        }
         else
         {
             // palettize the pixel
@@ -609,7 +615,7 @@ void GifWritePalette( const GifPalette* pPal, FILE* f )
 }
 
 // write the image header, LZW-compress and write out the image
-void GifWriteLzwImage(FILE* f, uint8_t* image, uint32_t left, uint32_t top,  uint32_t width, uint32_t height, uint32_t delay, GifPalette* pPal)
+void GifWriteLzwImage(FILE* f, GifLzwNode* codetree,  uint8_t* image, uint32_t left, uint32_t top,  uint32_t width, uint32_t height, uint32_t delay, GifPalette* pPal)
 {
     // graphics control extension
     fputc(0x21, f);
@@ -643,8 +649,6 @@ void GifWriteLzwImage(FILE* f, uint8_t* image, uint32_t left, uint32_t top,  uin
     const uint32_t clearCode = 1 << pPal->bitDepth;
 
     fputc(minCodeSize, f); // min code size 8 bits
-
-    GifLzwNode* codetree = (GifLzwNode*)GIF_TEMP_MALLOC(sizeof(GifLzwNode)*4096);
 
     memset(codetree, 0, sizeof(GifLzwNode)*4096);
     int32_t curCode = -1;
@@ -724,13 +728,15 @@ void GifWriteLzwImage(FILE* f, uint8_t* image, uint32_t left, uint32_t top,  uin
 
     fputc(0, f); // image block terminator
 
-    GIF_TEMP_FREE(codetree);
 }
 
 typedef struct
 {
     FILE* f;
     uint8_t* oldImage;
+    uint8_t* nativeIndexed;
+    size_t nativeIndexedCapacity;
+    GifLzwNode* codeTree;
     bool firstFrame;
 
     uint8_t padding[7];    // make padding explicit
@@ -754,6 +760,9 @@ bool GifBegin( GifWriter* writer, const char* filename, uint32_t width, uint32_t
 
     // allocate
     writer->oldImage = (uint8_t*)GIF_MALLOC(width*height*4);
+    writer->codeTree = (GifLzwNode*)GIF_MALLOC(sizeof(GifLzwNode) * 4096);
+    writer->nativeIndexed = NULL;
+    writer->nativeIndexedCapacity = 0;
 
     fputs("GIF89a", writer->f);
 
@@ -815,11 +824,44 @@ bool GifWriteFrame( GifWriter* writer, const uint8_t* image, uint32_t width, uin
     else
         GifThresholdImage(oldImage, image, writer->oldImage, width, height, &pal);
 
-    GifWriteLzwImage(writer->f, writer->oldImage, 0, 0, width, height, delay, &pal);
+    GifWriteLzwImage(writer->f, writer->codeTree, writer->oldImage, 0, 0, width, height, delay, &pal);
 
     return true;
 }
+bool GifWriteFrameScaled(GifWriter* writer, const uint8_t* nativeImage, uint32_t nativeWidth, uint32_t nativeHeight, uint32_t scale, uint32_t delay, int bitDepth = 8, bool dither = false){
+    if(!writer->f) return false;
+    writer->firstFrame = false;
+    uint32_t outWidth = nativeWidth *scale;
+    uint32_t outHeight = nativeHeight *scale;
 
+    size_t nativeBytes = (size_t)nativeWidth *nativeHeight *4;
+    if(writer->nativeIndexedCapacity < nativeBytes){
+        GIF_FREE(writer->nativeIndexed);
+        writer->nativeIndexed = (uint8_t*)GIF_MALLOC(nativeBytes);
+        writer->nativeIndexedCapacity = nativeBytes;
+    }
+    GifPalette pal;
+    GifMakePalette(NULL, nativeImage, nativeWidth, nativeHeight, bitDepth, dither, &pal);
+
+    if(dither)
+        GifDitherImage(NULL, nativeImage, writer->nativeIndexed, nativeWidth, nativeHeight, &pal);
+    else
+        GifThresholdImage(NULL, nativeImage, writer->nativeIndexed, nativeWidth, nativeHeight, &pal);
+    for(uint32_t y = 0; y<nativeHeight; ++y){
+        const uint8_t* srcRow = writer->nativeIndexed + (size_t)y *nativeWidth * 4;
+        for(uint32_t sy = 0; sy < scale; ++sy){
+            uint8_t* dstRow = writer->oldImage + (size_t)(y *scale+sy) *outWidth *4;
+            for(uint32_t x = 0; x <nativeWidth; ++x){
+                const uint8_t* srcPix = srcRow + x *4;
+                for(uint32_t sx = 0; sx < scale; ++sx){
+                    memcpy(dstRow + (size_t)(x *scale + sx) *4, srcPix, 4);
+                }
+            }
+        }
+    }
+    GifWriteLzwImage(writer->f, writer->codeTree, writer->oldImage, 0, 0, outWidth, outHeight, delay, &pal);
+    return true;
+}
 // Writes the EOF code, closes the file handle, and frees temp memory used by a GIF.
 // Many if not most viewers will still display a GIF properly if the EOF code is missing,
 // but it's still a good idea to write it out.
@@ -830,9 +872,14 @@ bool GifEnd( GifWriter* writer )
     fputc(0x3b, writer->f); // end of file
     fclose(writer->f);
     GIF_FREE(writer->oldImage);
+    GIF_FREE(writer->codeTree);
+    GIF_FREE(writer->nativeIndexed);
+
 
     writer->f = NULL;
     writer->oldImage = NULL;
+    writer->codeTree = NULL;
+    writer->nativeIndexed = NULL;
 
     return true;
 }
