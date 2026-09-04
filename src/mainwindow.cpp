@@ -969,7 +969,7 @@ void MainWindow::initializeRecovery(){
     if(QFile::exists(lockPath)){
         //check for recovery
         QDir dir(recoveryDir);
-        QStringList files = dir.entryList(QStringList() << "*.autosave", QDir::Files);
+        QStringList files = dir.entryList(QStringList() << "*.autosave", QDir::Files, QDir::Time);
         if(!files.empty()){
             QMessageBox::StandardButton result = QMessageBox::question(this,
                                                                        "Recover Project?",
