@@ -35,6 +35,7 @@
 #include <QTimer>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QUuid>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -48,6 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
     document = canvas->getDocument();
     fileHandling = new FileHandling(document, canvas);
     auto colorPreview = new ColorPreviewWidget(this);
+    autosaveTimer = new QTimer(this);
     QToolButton *shapeButton = new QToolButton(this);
     setFocusPolicy(Qt::StrongFocus);
     shapeButton->setText("Shape");
@@ -391,6 +393,9 @@ MainWindow::MainWindow(QWidget *parent)
     pasteFrameAction->setShortcut(QKeySequence("Ctrl+Shift+V"));
 
     // Connections (needs organizing -_-#)
+    connect(autosaveTimer, &QTimer::timeout, this, &MainWindow::autosaveProject);
+    autosaveTimer->start(90* 1000);
+
     connect(pickColor, &QAction::triggered, [=]() {
         QColor color = QColorDialog::getColor(canvas->getColor(), this);
         if (color.isValid()) {
@@ -888,17 +893,29 @@ void MainWindow::loadProject(const QString &filePath){
     SettingsManager::instance().addRecentFile(path);
 }
 void MainWindow::saveProject(const QString &filePath){
-    QString dir = SettingsManager::instance().getLastSaveDirectory();
     QString path = filePath;
+    QString dir = SettingsManager::instance().getLastSaveDirectory();
     if(path.isEmpty()){
         path = QFileDialog::getSaveFileName(this, "Save Project", dir, "Pixel Project (*.json)");
         if(path.isEmpty())return;
     }
     if(!path.endsWith(".json")) path += ".json";
+
     SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
     fileHandling->saveProject(path);
     SettingsManager::instance().setLastProject(path);
     SettingsManager::instance().addRecentFile(path);
+}
+void MainWindow::autosaveProject(){
+    if(canvas->autosaveDirty){
+        QString path = fileHandling->recoveryDirectory();
+        QUuid autosaveId = QUuid::createUuid();
+        path = path + "/" + autosaveId.toString() + ".autosave";
+        qDebug() << "autosave in progress.";
+        fileHandling->saveProject(path);
+        canvas->autosaveDirty = false;
+        autosaveTimer->start(90*1000);
+    }
 }
 void MainWindow::saveSpriteSheet(const QString &filePath, int columns, int scale){
     QString dir = SettingsManager::instance().getLastSaveDirectory();

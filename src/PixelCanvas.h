@@ -157,6 +157,9 @@ public:
     int getFrameDuration();
     void setFrameDuration(int value);
     QImage renderFrame(int frameIndex);
+
+    // autosave
+    bool autosaveDirty = false;
     // Events
 protected:
     void paintEvent(QPaintEvent *event) override;

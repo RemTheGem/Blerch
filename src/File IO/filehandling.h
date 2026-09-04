@@ -22,6 +22,7 @@ public:
     void GIFToPixel(const QString &path, PictureImportDialog &dialog);
     void setPalette(QList<QColor> colors);
     void saveGPL(const QString &fileName);
+    QString recoveryDirectory() const;
 private:
     CanvasDocument *document;
     PixelCanvas *canvas;

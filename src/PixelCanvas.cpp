@@ -74,6 +74,7 @@ void PixelCanvas::paintEvent(QPaintEvent *)
 
         painter.restore();
     }
+    autosaveDirty = true;
     // draw onion frames
     if(onionOn){
         int current  = document->getCurrentFrame();

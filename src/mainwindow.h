@@ -10,6 +10,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QSpinBox>
+#include <QTimer>
 
 
 QT_BEGIN_NAMESPACE
@@ -27,6 +28,7 @@ public:
     ~MainWindow() override;
     void loadProject(const QString &filePath = QString());
     void saveProject(const QString &filePath = "");
+    void autosaveProject();
     void saveSpriteSheet(const QString &filePath = "", int columns = 5, int scale = 1);
     void saveGIF(const QString &filePath = "", int scale = 16);
     void playAnimation();
@@ -34,8 +36,6 @@ public:
     void updateTimeline();
     int uiToDocumentLayer(int uiIndex);
     int documentToUiLayer(int documentIndex);
-
-
 
 private:
     Ui::MainWindow *ui;
@@ -53,7 +53,7 @@ private:
     QSpinBox *durationSpinBox;
     QPushButton *onionSkinActivationButton;
     QVector<QPushButton*> frameButtons;
-
+    QTimer *autosaveTimer;
     void updateRecentFiles();
 };
 #endif // MAINWINDOW_H

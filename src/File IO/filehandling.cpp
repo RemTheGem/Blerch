@@ -8,10 +8,19 @@
 #include <QFileDialog>
 #include <QImageReader>
 #include <QElapsedTimer>
+#include <QStandardPaths>
+#include <QDir>
 
 FileHandling::FileHandling(CanvasDocument *document, PixelCanvas *canvas) : document(document), canvas(canvas) {
     connect(document, &CanvasDocument::paletteUpdated, this, &FileHandling::setPalette);
 }
+
+QString FileHandling::recoveryDirectory() const{
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/recovery";
+    QDir().mkpath(path);
+    return path;
+}
+
 void FileHandling::saveImage(const QString &path)
 {
     QImage image(document->currentFrame_().layers[0].width * canvas->getZoom(), document->currentFrame_().layers[0].height * canvas->getZoom(), QImage::Format_ARGB32);
