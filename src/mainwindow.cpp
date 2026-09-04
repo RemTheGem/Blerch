@@ -36,6 +36,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QUuid>
+#include <QMessageBox>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -50,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     fileHandling = new FileHandling(document, canvas);
     auto colorPreview = new ColorPreviewWidget(this);
     autosaveTimer = new QTimer(this);
+    initializeRecovery();
     QToolButton *shapeButton = new QToolButton(this);
     setFocusPolicy(Qt::StrongFocus);
     shapeButton->setText("Shape");
@@ -961,11 +963,56 @@ void MainWindow::updateRecentFiles(){
         });
     }
 }
+void MainWindow::initializeRecovery(){
+    QString recoveryDir = fileHandling->recoveryDirectory();
+    lockPath = recoveryDir + "/blerch.lock";
+    if(QFile::exists(lockPath)){
+        //check for recovery
+        QDir dir(recoveryDir);
+        QStringList files = dir.entryList(QStringList() << "*.autosave", QDir::Files);
+        if(!files.empty()){
+            QMessageBox::StandardButton result = QMessageBox::question(this,
+                                                                       "Recover Project?",
+                                                                       "Blerch did not shut down properly.\n\n"
+                                                                       "A recovery file was found. Would you like to recover it?",
+                                                                       QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+            if(result == QMessageBox::Yes){
+                QString recoveryPath = dir.absoluteFilePath(files.first());
+                loadProject(recoveryPath);
+            }
+            else{
+                for(const QString &file: std::as_const(files)){
+                    qDebug() << "removing old recovery files";
+                    dir.remove(file);
+                }
+            }
+            QFile lock(lockPath);
+            if(lock.open(QIODevice::WriteOnly)) lock.close();
+        }
+    }
+    else{
+        QDir dir(recoveryDir);
+        QStringList files = dir.entryList(QStringList() << "*.autosave", QDir::Files);
+        for(const QString &file: std::as_const(files)){
+            qDebug() << "removing old recovery files";
+            dir.remove(file);
+        }
+    }
+    QFile lock(lockPath);
+    if(lock.open(QIODevice::WriteOnly)){
+        lock.close();
+    }
+}
 int MainWindow::uiToDocumentLayer(int uiIndex){
     return layerList->count() - 1 - uiIndex;
 }
 int MainWindow::documentToUiLayer(int documentIndex){
     return layerList->count() - 1 - documentIndex;
+}
+void MainWindow::closeEvent(QCloseEvent *event){
+    QFile::remove(lockPath);
+    qDebug() << "removed lock file";
+    event->accept();
 }
 MainWindow::~MainWindow()
 {

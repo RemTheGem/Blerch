@@ -23,6 +23,9 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
@@ -36,6 +39,8 @@ public:
     void updateTimeline();
     int uiToDocumentLayer(int uiIndex);
     int documentToUiLayer(int documentIndex);
+    void initializeRecovery();
+
 
 private:
     Ui::MainWindow *ui;
@@ -54,6 +59,7 @@ private:
     QPushButton *onionSkinActivationButton;
     QVector<QPushButton*> frameButtons;
     QTimer *autosaveTimer;
+    QString lockPath;
     void updateRecentFiles();
 };
 #endif // MAINWINDOW_H
