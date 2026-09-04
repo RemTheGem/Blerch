@@ -17,24 +17,11 @@ void FileHandling::saveImage(const QString &path)
     QImage image(document->currentFrame_().layers[0].width * canvas->getZoom(), document->currentFrame_().layers[0].height * canvas->getZoom(), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
-
-    for(const auto &layer : document->currentFrame_().layers)
-    {
-        if(!layer.visible) continue;
-        for(int y = 0; y < layer.height; y++)
-        {
-            for(int x = 0; x < layer.width; x++)
-            {
-                QColor color = layer.at(x,y);
-                if(color != Qt::transparent)
-                {
-                    QRect rect(x * canvas->getZoom(), y * canvas->getZoom(), canvas->getZoom(), canvas->getZoom());
-                    painter.fillRect(rect, color);
-                }
-            }
-        }
-    }
-    image.save(path);
+    QImage rendered = document->renderFrame(document->getCurrentFrame());
+    rendered = rendered.scaled(rendered.size() * 20, Qt::KeepAspectRatio, Qt::FastTransformation);
+    painter.drawImage(0, 0, rendered);
+    painter.end();
+    rendered.save(path);
 
 }
 void FileHandling::saveProject(const QString &path)
