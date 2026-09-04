@@ -233,10 +233,10 @@ void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
     MedianCut medianCut;
     QImage firstImage = reader.read();
     if(dialog.keepAspect()){
-        firstImage = firstImage.scaled(firstImage.width(), firstImage.height(), Qt::KeepAspectRatio, Qt::FastTransformation);
+        firstImage = firstImage.scaled(dialog.width(), dialog.height(), Qt::KeepAspectRatio, Qt::FastTransformation);
     }
     else {
-        firstImage = firstImage.scaled(firstImage.width(), firstImage.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        firstImage = firstImage.scaled(dialog.width(), dialog.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
     }
     int targetWidth = firstImage.width();
     int targetHeight = firstImage.height();

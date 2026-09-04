@@ -414,9 +414,9 @@ void PixelCanvas::wheelEvent(QWheelEvent *event)
     // for normal layers zoom in and out
     if(event->modifiers() & Qt::ControlModifier){
         if(event->angleDelta().y() > 0)
-            setZoom(pixelSize + 2);
+            setZoom(pixelSize + 1);
         else
-            setZoom(std::max(2, pixelSize -2));
+            setZoom(std::max(1, pixelSize -1));
         return;
     }
     QWidget::wheelEvent(event);
