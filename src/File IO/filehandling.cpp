@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QImageReader>
+#include <QElapsedTimer>
 
 FileHandling::FileHandling(CanvasDocument *document, PixelCanvas *canvas) : document(document), canvas(canvas) {
     connect(document, &CanvasDocument::paletteUpdated, this, &FileHandling::setPalette);
@@ -228,17 +229,30 @@ void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
     }
     int totalFrames = reader.imageCount();
     QVector<Frame> postFrames;
+    postFrames.reserve(totalFrames);
     MedianCut medianCut;
-
+    QImage firstImage = reader.read();
+    if(dialog.keepAspect()){
+        firstImage = firstImage.scaled(firstImage.width(), firstImage.height(), Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    else {
+        firstImage = firstImage.scaled(firstImage.width(), firstImage.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    }
+    int targetWidth = firstImage.width();
+    int targetHeight = firstImage.height();
+    int paletteSize = dialog.colors();
+    document->resizeCanvas(targetWidth , targetHeight);
+    canvas->updateCanvasSize();
+    QElapsedTimer timer;
     for(int x=0; x < totalFrames; x++){
         // if(!reader.jumpToImage(x)) break;
+        timer.restart();
         Frame frame;
         Layer layer;
         layer.type = LayerType::Pixel;
-        int targetWidth = dialog.width();
-        int targetHeight = dialog.height();
-        int paletteSize = dialog.colors();
         QImage image = reader.read();
+        qDebug() << "Read: " << timer.elapsed();
+        timer.restart();
         if(image.isNull()) continue;
         if(dialog.keepAspect()){
             image = image.scaled(targetWidth, targetHeight, Qt::KeepAspectRatio, Qt::FastTransformation);
@@ -246,23 +260,39 @@ void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
         else {
             image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
         }
+        qDebug() << "Scaled: " << timer.elapsed();
+        timer.restart();
         layer.width = image.width();
         layer.height = image.height();
         layer.name = QFileInfo(path).baseName();
-        document->resizeCanvas(image.width() , image.height());
-        canvas->updateCanvasSize();
         auto palette = medianCut.medianCut(image, paletteSize);
-        layer.pixels.resize(image.width() * image.height());
-        for (int y = 0; y < document->getCanvasHeight(); y++) {
-            for (int x = 0; x < document->getCanvasWidth(); x++) {
-                QColor original = image.pixelColor(x, y);
-                if(original.alpha() == 0) layer.at(x, y) = original;
+        qDebug() << "Palette: " << timer.elapsed();
+        timer.restart();
+        QImage argb = image.convertToFormat(QImage::Format_ARGB32);
+        std::unordered_map<QRgb, QColor> nearestCache;
+        nearestCache.reserve(4096);
+        layer.pixels.resize(argb.width() * argb.height());
+        for (int y = 0; y < argb.height(); y++) {
+            const QRgb* line = reinterpret_cast<const QRgb*> (argb.constScanLine(y));
+            for (int x = 0; x < argb.width(); x++) {
+                QRgb rgb = line[x];
+                if (qAlpha(rgb) == 0){
+                    layer.at(x, y) = QColor(rgb);
+                    continue;
+                }
+                auto it = nearestCache.find(rgb);
+                if(it != nearestCache.end()){
+                    layer.at(x,y) = it->second;
+                }
                 else{
-                    QColor mapped = medianCut.nearestColor(image.pixelColor(x, y), palette);
-                    layer.at(x, y) = mapped;
+                    QColor nearest = medianCut.nearestColor(QColor(rgb), palette);
+                    nearestCache.emplace(rgb, nearest);
+                    layer.at(x,y) = nearest;
                 }
             }
         }
+        qDebug() << "Conversion: " << timer.elapsed();
+        timer.restart();
         frame.layers.push_back(layer);
         postFrames.append(frame);
 

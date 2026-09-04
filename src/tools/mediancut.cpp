@@ -33,17 +33,13 @@ std::pair<ColorBox, ColorBox> MedianCut::splitBox(ColorBox box)
     if(box.colors.size() <= 1){
         return {box, ColorBox{}};
     }
-    int rRange = colorRange(box, 0);
-    int gRange = colorRange(box, 1);
-    int bRange = colorRange(box, 2);
     // default channel is red
     int channel = 0;
-    if (gRange > rRange && gRange >= bRange)
-        channel = 1;
-    else if (bRange > rRange && bRange >= gRange)
-        channel = 2;
+    if(box.gRange() > box.rRange() && box.gRange() >= box.bRange()) channel = 1;
+    else if(box.bRange() > box.rRange() && box.bRange() >= box.gRange()) channel = 2;
     // sort the box, compare red, green or blue based on channel, then return which comes first
-    std::sort(box.colors.begin(), box.colors.end(),[channel](const Color& a, const Color& b){
+    std::vector<Color> sorted = box.colors;
+    std::sort(sorted.begin(), sorted.end(),[channel](const Color& a, const Color& b){
         if (channel == 0) return a.r < b.r;
         if (channel == 1) return a.g < b.g;
             return a.b < b.b;
@@ -95,11 +91,11 @@ QColor MedianCut::averageColor(const ColorBox& box)
 std::vector<QColor> MedianCut::medianCut(const QImage& image, int paletteSize)
 {
     // count the rgb values in the image and add them to a map
-    std::map<std::tuple<int,int,int>,int> colorFrequency;
+    std::unordered_map<std::tuple<int,int,int>,int, TupleHash> colorFrequency;
     for (int y = 0; y < image.height(); y++){
         for (int x = 0; x < image.width(); x++){
-            if(image.pixelColor(x,y) == Qt::transparent) continue;
             QColor c = image.pixelColor(x, y);
+            if(c.alpha() == 0) continue;
             auto key = std::make_tuple(c.red(), c.green(), c.blue());
             colorFrequency[key]++;
         }
@@ -113,13 +109,11 @@ std::vector<QColor> MedianCut::medianCut(const QImage& image, int paletteSize)
     if(first.colors.empty()) return {};
     std::vector<ColorBox> boxes;
     boxes.push_back(first);
+    first.computeRanges();
     while ((int)boxes.size() < paletteSize){
         // lambda to get da biggest box from current boxes
-        auto largest = std::max_element(boxes.begin(), boxes.end(), [this](const ColorBox& a, const ColorBox& b){
-            int boxA = std::max({colorRange(a,0), colorRange(a,1), colorRange(a,2)});
-            int boxB = std::max({colorRange(b,0), colorRange(b,1), colorRange(b,2)});
-            // to ensure we dont waste palette slots, we return the box with the bigger color range
-            return boxA < boxB;
+        auto largest = std::max_element(boxes.begin(), boxes.end(), [](const ColorBox& a, const ColorBox& b){
+            return a.maxRange() < b.maxRange();
     });
         if(largest == boxes.end() || largest->colors.size() <=1)
             break;
@@ -127,11 +121,14 @@ std::vector<QColor> MedianCut::medianCut(const QImage& image, int paletteSize)
         auto split = splitBox(*largest);
         if(split.second.colors.empty()) break;
         boxes.erase(largest);
-        boxes.push_back(split.first);
-        boxes.push_back(split.second);
+        split.first.computeRanges();
+        split.second.computeRanges();
+        boxes.push_back(std::move(split.first));
+        boxes.push_back(std::move(split.second));
     }
     // turn our boxes into colors and return it as a palette
     std::vector<QColor> palette;
+    palette.reserve(paletteSize);
     for (const auto& box : boxes)
         palette.push_back(averageColor(box));
     return palette;
