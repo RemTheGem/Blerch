@@ -62,5 +62,7 @@ private:
     QTimer *autosaveTimer;
     QString lockPath;
     void updateRecentFiles();
+    bool importInProgress = false;
+
 };
 #endif // MAINWINDOW_H

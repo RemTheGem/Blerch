@@ -914,6 +914,10 @@ void MainWindow::saveProject(const QString &filePath){
     SettingsManager::instance().addRecentFile(path);
 }
 void MainWindow::autosaveProject(){
+    if(importInProgress){
+        autosaveTimer->start(90*1000);
+        return;
+    }
     if(canvas->autosaveDirty){
         QString path = fileHandling->recoveryDirectory();
         QUuid autosaveId = QUuid::createUuid();
@@ -1009,6 +1013,7 @@ void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
         progressDialog->setValue(cur);
     });
     connect(progressDialog, &QProgressDialog::canceled, worker, &GifImportWorker::cancel, Qt::DirectConnection);
+    importInProgress = true;
     connect(worker, &GifImportWorker::finished, this, [=](bool ok){
         progressDialog->close();
         if(ok){
@@ -1019,8 +1024,10 @@ void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
             std::reverse(layers.begin(), layers.end());
             layerList->addItems(layers);
             layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
+            durationSpinBox->setValue(document->getFrameDuration());
         }
         statusBar()->showMessage(ok ? "GIF Imported!" : "GIF Cancelled!", 3000);
+        importInProgress = false;
         thread->quit();
     });
     connect(thread, &QThread::finished, worker, &QObject::deleteLater);
