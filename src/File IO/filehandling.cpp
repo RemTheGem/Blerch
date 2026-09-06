@@ -216,12 +216,11 @@ void FileHandling::saveGIF(const QString &path, int scale){
     GifEnd(&writer);
     qDebug() << "finished";
 }
-*/
+
 void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
 
     QImageReader reader(path);
     if (!reader.supportsAnimation()){
-        // mayhe add warning here later
         return;
     }
     int totalFrames = reader.imageCount();
@@ -298,6 +297,7 @@ void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
     document->buildPalette();
     emit documentUpdated();
 }
+*/
 void FileHandling::saveGPL(const QString &fileName){
     QFile file(fileName);
     if(!usedColors.empty()){

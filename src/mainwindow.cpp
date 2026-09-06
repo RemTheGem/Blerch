@@ -8,6 +8,7 @@
 #include "dialogs/pictureimportdialog.h"
 #include "../include/settingsmanager.h"
 #include "workers/GifExportWorker.h"
+#include "workers/gifimportworker.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QToolBar>
@@ -40,6 +41,7 @@
 #include <QMessageBox>
 #include <QThread>
 #include <QProgressDialog>
+#include <QImageReader>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -623,8 +625,8 @@ MainWindow::MainWindow(QWidget *parent)
         PictureImportDialog dialog(this);
         if(dialog.exec() != QDialog::Accepted)
             return;
-        fileHandling->GIFToPixel(file, dialog);
-        statusBar()->showMessage("Importing....", 4000);
+        GifToPixel(file, dialog);
+
     });
     connect(loadPalette, &QAction::triggered, this, [=]{
         QString fileName = QFileDialog::getOpenFileName(this, "Open Palette", "", "GPL File (*.gpl)");
@@ -962,7 +964,7 @@ void MainWindow::saveGIF(const QString &filePath, int scale){
             progressDialog->setMaximum(total);
             progressDialog->setValue(cur);
         });
-        connect(progressDialog, &QProgressDialog::cancelled, worker, &GifExportWorker::cancel, Qt::DirectConnection);
+        connect(progressDialog, &QProgressDialog::canceled, worker, &GifExportWorker::cancel, Qt::DirectConnection);
         connect(worker, &GifExportWorker::finished, this, [=](bool ok){
             progressDialog->close();
             statusBar()->showMessage(ok ? "GIF Exported!" : "GIF Cancelled!", 3000);
@@ -973,6 +975,58 @@ void MainWindow::saveGIF(const QString &filePath, int scale){
         connect(thread, &QThread::finished, progressDialog, &QObject::deleteLater);
         thread->start();
     }
+}
+void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
+    qDebug() <<"path:" << file;
+    QImageReader reader(file);
+    if (!reader.supportsAnimation()){
+        return;
+    }
+    int totalFrames = reader.imageCount();
+    QVector<Frame> postFrames;
+    postFrames.reserve(totalFrames);
+    QImage firstImage = reader.read();
+    if(dialog.keepAspect()){
+        firstImage = firstImage.scaled(dialog.width(), dialog.height(), Qt::KeepAspectRatio, Qt::FastTransformation);
+    }
+    else {
+        firstImage = firstImage.scaled(dialog.width(), dialog.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    }
+    int targetWidth = firstImage.width();
+    int targetHeight = firstImage.height();
+    int paletteSize = dialog.colors();
+    document->resizeCanvas(targetWidth -1, targetHeight);
+    canvas->updateCanvasSize();
+    auto *thread = new QThread(this);
+    auto *worker = new GifImportWorker(file, totalFrames, postFrames, targetWidth, targetHeight, paletteSize, dialog.keepAspect());
+    worker->moveToThread(thread);
+    auto *progressDialog = new QProgressDialog("Importing GIF...", "Cancel", 0, totalFrames, this);
+    progressDialog->setWindowModality(Qt::WindowModal);
+
+    connect(thread, &QThread::started, worker, &GifImportWorker::run);
+    connect(worker, &GifImportWorker::progress, progressDialog, [=](int cur, int total){
+        progressDialog->setMaximum(total);
+        progressDialog->setValue(cur);
+    });
+    connect(progressDialog, &QProgressDialog::canceled, worker, &GifImportWorker::cancel, Qt::DirectConnection);
+    connect(worker, &GifImportWorker::finished, this, [=](bool ok){
+        progressDialog->close();
+        if(ok){
+            document->loadFrames(worker->getFrames());
+            document->buildPalette();
+            layerList->clear();
+            QStringList layers = document->getLayerNames();
+            std::reverse(layers.begin(), layers.end());
+            layerList->addItems(layers);
+            layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
+        }
+        statusBar()->showMessage(ok ? "GIF Imported!" : "GIF Cancelled!", 3000);
+        thread->quit();
+    });
+    connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    connect(thread, &QThread::finished, progressDialog, &QObject::deleteLater);
+    thread->start();
 }
 void MainWindow::updateRecentFiles(){
     recentFilesMenu->clear();
