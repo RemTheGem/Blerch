@@ -273,7 +273,7 @@ void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
             for (int x = 0; x < argb.width(); x++) {
                 QRgb rgb = line[x];
                 if (qAlpha(rgb) == 0){
-                    layer.at(x, y) = QColor(rgb);
+                    layer.at(x, y) = Qt::transparent;
                     continue;
                 }
                 auto it = nearestCache.find(rgb);
