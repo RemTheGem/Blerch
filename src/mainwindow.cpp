@@ -7,6 +7,7 @@
 #include "model/canvasdocument.h"
 #include "dialogs/pictureimportdialog.h"
 #include "../include/settingsmanager.h"
+#include "workers/GifExportWorker.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QToolBar>
@@ -37,6 +38,8 @@
 #include <QGroupBox>
 #include <QUuid>
 #include <QMessageBox>
+#include <QThread>
+#include <QProgressDialog>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -938,8 +941,37 @@ void MainWindow::saveGIF(const QString &filePath, int scale){
     }
     if(!path.isEmpty()){
         SettingsManager::instance().setLastSaveDirectory(QFileInfo(path).absolutePath());
-        fileHandling->saveGIF(path, scale);
-        statusBar()->showMessage("Exporting...", 4000);
+        int imageWidth = document->getCanvasWidth();
+        int imageHeight = document->getCanvasHeight();
+        int maxScale = qMin(64, 8192/qMax(imageWidth, imageHeight));
+        scale = qBound(1,scale,maxScale);
+        QVector<QImage> frames;
+        QVector<int> durations;
+        for(int i = 0; i< document->getFrameSize(); i++){
+            frames.append(document->renderFrame(i));
+            durations.append(document->getThisFrameDuration(i));
+        }
+        auto *thread = new QThread(this);
+        auto *worker = new GifExportWorker(path, frames, durations, scale);
+        worker->moveToThread(thread);
+        auto *progressDialog = new QProgressDialog("Exporting GIF...", "Cancel", 0, frames.size(), this);
+        progressDialog->setWindowModality(Qt::WindowModal);
+
+        connect(thread, &QThread::started, worker, &GifExportWorker::run);
+        connect(worker, &GifExportWorker::progress, progressDialog, [=](int cur, int total){
+            progressDialog->setMaximum(total);
+            progressDialog->setValue(cur);
+        });
+        connect(progressDialog, &QProgressDialog::cancelled, worker, &GifExportWorker::cancel, Qt::DirectConnection);
+        connect(worker, &GifExportWorker::finished, this, [=](bool ok){
+            progressDialog->close();
+            statusBar()->showMessage(ok ? "GIF Exported!" : "GIF Cancelled!", 3000);
+            thread->quit();
+        });
+        connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+        connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+        connect(thread, &QThread::finished, progressDialog, &QObject::deleteLater);
+        thread->start();
     }
 }
 void MainWindow::updateRecentFiles(){

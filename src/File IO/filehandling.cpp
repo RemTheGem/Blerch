@@ -1,5 +1,4 @@
 #include "filehandling.h"
-#include "../../thirdParty/gif-h/gif.h"
 #include <QPainter>
 #include <QJsonArray>
 #include <QIODevice>
@@ -189,6 +188,7 @@ void FileHandling::saveSpriteSheet(const QString &path, int cols, int scale){
     painter.end();
     spriteSheet.save(path);
 }
+/*
 void FileHandling::saveGIF(const QString &path, int scale){
     QByteArray filePath = path.toUtf8();
     GifWriter writer = {};
@@ -216,6 +216,7 @@ void FileHandling::saveGIF(const QString &path, int scale){
     GifEnd(&writer);
     qDebug() << "finished";
 }
+*/
 void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
 
     QImageReader reader(path);

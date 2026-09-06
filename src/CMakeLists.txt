@@ -41,6 +41,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         model/CanvasTypes.h
         dialogs/onionskindialog.h dialogs/onionskindialog.cpp
         "File IO/filehandling.h" "File IO/filehandling.cpp"
+        workers/GifExportWorker.h
+        workers/GifExportWorker.cpp
 
 
 
