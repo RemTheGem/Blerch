@@ -44,6 +44,8 @@
 #include <QImageReader>
 
 
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -343,6 +345,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *saveProjectAction = exportMenu->addAction("Save Project");
     QAction *saveSpriteSheetAction = exportMenu->addAction("Export as Sprite Sheet");
     QAction *saveGIFAction = exportMenu->addAction("Export GIF");
+    QAction *saveVideoAction = exportMenu->addAction("Export Video");
     QAction *exportPalette = exportMenu->addAction("Export Palette");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
@@ -549,6 +552,22 @@ MainWindow::MainWindow(QWidget *parent)
         if(dialog.exec() == QDialog::Accepted){
             int scale = scaleSpin->value();
             saveGIF("", scale);
+        }
+    });
+    connect(saveVideoAction, &QAction::triggered, [=](){
+        QDialog dialog(this);
+        dialog.setWindowTitle("Export Video");
+        QFormLayout *layout = new QFormLayout(&dialog);
+        QSpinBox *scaleSpin = new QSpinBox(&dialog);
+        scaleSpin->setRange(1, 64);
+        scaleSpin->setValue(16);
+        layout->addRow("Scale: ", scaleSpin);
+        QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+        layout->addWidget(buttons);
+        connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+        if(dialog.exec() == QDialog::Accepted){
+            saveVideo("");
         }
     });
     connect(exportPalette, &QAction::triggered, [=](){
@@ -979,6 +998,59 @@ void MainWindow::saveGIF(const QString &filePath, int scale){
         connect(thread, &QThread::finished, progressDialog, &QObject::deleteLater);
         thread->start();
     }
+}
+void MainWindow::saveVideo(const QString &filePath, int scale){
+    QString dir = SettingsManager::instance().getLastSaveDirectory();
+    QString path = filePath;
+    if(path.isEmpty()){
+        path = QFileDialog::getSaveFileName(this, "Save Video", dir, "MP4 Video (*.mp4)");
+    }
+    if(!path.endsWith(".mp4")) path+= ".mp4";
+    int imageWidth = document->getCanvasWidth();
+    int imageHeight = document->getCanvasHeight();
+    int maxScale = qMin(64, 8192/qMax(imageWidth, imageHeight));
+    scale = qBound(1,scale,maxScale);
+    imageWidth = imageWidth *scale;
+    imageHeight = imageHeight *scale;
+    // const int fps = 30;
+    // const double frameInterval = 1000.0 / fps;
+    videoExportFrames.clear();
+    for (int i = 0; i< document->getFrameSize(); i++){
+        QImage frame = document->renderFrame(i).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        videoExportFrames.append(frame);
+    }
+
+    videoExportFrameIndex = 0;
+    videoSession = new QMediaCaptureSession(this);
+    videoRecorder = new QMediaRecorder(this);
+    videoFrameInput = new QVideoFrameInput(this);
+    videoSession->setRecorder(videoRecorder);
+    videoSession->setVideoFrameInput(videoFrameInput);
+    videoRecorder->setOutputLocation(QUrl::fromLocalFile(path));
+    videoRecorder->setQuality(QMediaRecorder::HighQuality);
+    connect(videoFrameInput, &QVideoFrameInput::readyToSendVideoFrame, this, [this](){
+        qDebug() << "ready to send. index: " << videoExportFrameIndex << " size: " << videoExportFrames.size();
+        if(videoExportFrameIndex >= videoExportFrames.size()){
+            videoRecorder->stop();
+            return;
+        }
+        QVideoFrame videoFrame(videoExportFrames[videoExportFrameIndex].convertToFormat(QImage::Format_RGB32));
+        videoFrameInput->sendVideoFrame(videoFrame);
+        videoExportFrameIndex++;
+    });
+    connect(videoRecorder, &QMediaRecorder::recorderStateChanged, this, [this](QMediaRecorder::RecorderState state){
+        if(state == QMediaRecorder::StoppedState){
+            statusBar()->showMessage("Video Exported!", 4000);
+            videoSession->deleteLater();
+            videoRecorder->deleteLater();
+            videoFrameInput->deleteLater();
+            videoSession = nullptr;
+            videoRecorder = nullptr;
+            videoFrameInput = nullptr;
+        }
+    });
+    videoRecorder->record();
+
 }
 void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
     qDebug() <<"path:" << file;

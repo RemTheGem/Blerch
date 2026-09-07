@@ -11,7 +11,10 @@
 #include <QVBoxLayout>
 #include <QSpinBox>
 #include <QTimer>
-
+#include <QMediaCaptureSession>
+#include <QMediaRecorder>
+#include <QVideoFrameInput>
+#include <QVideoFrame>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -34,6 +37,7 @@ public:
     void autosaveProject();
     void saveSpriteSheet(const QString &filePath = "", int columns = 5, int scale = 1);
     void saveGIF(const QString &filePath = "", int scale = 16);
+    void saveVideo(const QString &filePath = "", int scale = 16);
     void GifToPixel(const QString &file, PictureImportDialog &dialog);
     void playAnimation();
     void pauseAnimation();
@@ -63,6 +67,11 @@ private:
     QString lockPath;
     void updateRecentFiles();
     bool importInProgress = false;
+    QMediaCaptureSession *videoSession = nullptr;
+    QMediaRecorder *videoRecorder = nullptr;
+    QVideoFrameInput *videoFrameInput = nullptr;
+    QVector<QImage> videoExportFrames;
+    int videoExportFrameIndex = 0;
 
 };
 #endif // MAINWINDOW_H
