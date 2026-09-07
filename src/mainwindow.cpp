@@ -1012,12 +1012,15 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
     scale = qBound(1,scale,maxScale);
     imageWidth = imageWidth *scale;
     imageHeight = imageHeight *scale;
-    // const int fps = 30;
-    // const double frameInterval = 1000.0 / fps;
+    const int fps = 30;
+    const double frameInterval = 1000.0 / fps;
     videoExportFrames.clear();
     for (int i = 0; i< document->getFrameSize(); i++){
         QImage frame = document->renderFrame(i).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-        videoExportFrames.append(frame);
+        int repeatCount = qMax(1, qRound(document->getThisFrameDuration(i)/frameInterval));
+        for(int r = 0; r < repeatCount; r++){
+            videoExportFrames.append(frame);
+        }
     }
 
     videoExportFrameIndex = 0;
@@ -1029,13 +1032,14 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
     videoRecorder->setOutputLocation(QUrl::fromLocalFile(path));
     videoRecorder->setQuality(QMediaRecorder::HighQuality);
     connect(videoFrameInput, &QVideoFrameInput::readyToSendVideoFrame, this, [this](){
-        qDebug() << "ready to send. index: " << videoExportFrameIndex << " size: " << videoExportFrames.size();
         if(videoExportFrameIndex >= videoExportFrames.size()){
             videoRecorder->stop();
             return;
         }
-        QVideoFrame videoFrame(videoExportFrames[videoExportFrameIndex].convertToFormat(QImage::Format_RGB32));
+        importInProgress = true;
+        QVideoFrame videoFrame(videoExportFrames[videoExportFrameIndex].convertToFormat(QImage::Format_RGBA8888));
         videoFrameInput->sendVideoFrame(videoFrame);
+        qDebug() << videoExportFrameIndex << " out of " << videoExportFrames.size();
         videoExportFrameIndex++;
     });
     connect(videoRecorder, &QMediaRecorder::recorderStateChanged, this, [this](QMediaRecorder::RecorderState state){
@@ -1047,6 +1051,7 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
             videoSession = nullptr;
             videoRecorder = nullptr;
             videoFrameInput = nullptr;
+            importInProgress = false;
         }
     });
     videoRecorder->record();
