@@ -41,6 +41,7 @@ public:
     const Layer &activeLayer_() const;
     Frame &currentFrame_();
     const Frame &currentFrame_() const;
+    Frame getFrame(int index);
 
     void duplicateFrame();
     void copyFrame();

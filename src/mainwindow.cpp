@@ -1012,8 +1012,7 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
     scale = qBound(1,scale,maxScale);
     imageWidth = imageWidth *scale;
     imageHeight = imageHeight *scale;
-    const int fps = 30;
-    const double frameInterval = 1000.0 / fps;
+    /*
     videoExportFrames.clear();
     for (int i = 0; i< document->getFrameSize(); i++){
         QImage frame = document->renderFrame(i).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
@@ -1022,7 +1021,7 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
             videoExportFrames.append(frame);
         }
     }
-
+    */
     videoExportFrameIndex = 0;
     videoSession = new QMediaCaptureSession(this);
     videoRecorder = new QMediaRecorder(this);
@@ -1031,16 +1030,27 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
     videoSession->setVideoFrameInput(videoFrameInput);
     videoRecorder->setOutputLocation(QUrl::fromLocalFile(path));
     videoRecorder->setQuality(QMediaRecorder::HighQuality);
-    connect(videoFrameInput, &QVideoFrameInput::readyToSendVideoFrame, this, [this](){
-        if(videoExportFrameIndex >= videoExportFrames.size()){
+    connect(videoFrameInput, &QVideoFrameInput::readyToSendVideoFrame, this, [this, imageWidth, imageHeight](){
+        if(videoExportFrameIndex >= document->getFrameSize()){
             videoRecorder->stop();
             return;
         }
-        importInProgress = true;
+        const int fps = 30;
+        const double frameInterval = 1000.0 / fps;
+        /*
         QVideoFrame videoFrame(videoExportFrames[videoExportFrameIndex].convertToFormat(QImage::Format_RGBA8888));
-        videoFrameInput->sendVideoFrame(videoFrame);
         qDebug() << videoExportFrameIndex << " out of " << videoExportFrames.size();
+        */
+        importInProgress = true;
+        QImage frame = document->renderFrame(videoExportFrameIndex).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        int repeatCount = qMax(1, qRound(document->getThisFrameDuration(videoExportFrameIndex)/frameInterval));
+        QVideoFrame videoFrame(frame.convertToFormat(QImage::Format_RGBA8888));
+        for(int i = 1; i <= repeatCount; i++){
+            qDebug() << "Repeat Count for frame: "<< videoExportFrameIndex << " is: " << repeatCount;
+            videoFrameInput->sendVideoFrame(videoFrame);
+        }
         videoExportFrameIndex++;
+
     });
     connect(videoRecorder, &QMediaRecorder::recorderStateChanged, this, [this](QMediaRecorder::RecorderState state){
         if(state == QMediaRecorder::StoppedState){

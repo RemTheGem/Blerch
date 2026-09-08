@@ -19,6 +19,9 @@ CanvasDocument::CanvasDocument(QObject *parent) : QObject(parent) {
     initialFrame.layers.push_back(layer);
     frames.append(initialFrame);
 }
+Frame CanvasDocument::getFrame(int index){
+    return frames.at(index);
+}
 void CanvasDocument::resizeCanvas(int width, int height){
 
     for(auto &frame : frames){
