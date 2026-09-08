@@ -149,9 +149,19 @@ void PixelCanvas::drawChecker(QPainter &painter){
         for (int x = 0; x < width(); x += pixelSize) {
             bool dark = ((x / pixelSize) + (y / pixelSize)) % 2;
             if (dark)
-                painter.fillRect(x, y, pixelSize, pixelSize, QColor(224, 224, 224));
+                if(darkMode){
+                    painter.fillRect(x, y, pixelSize, pixelSize, QColor(86, 86, 86));
+                }
+                else{
+                    painter.fillRect(x, y, pixelSize, pixelSize, QColor(224, 224, 224));
+                }
             else
-                painter.fillRect(x, y, pixelSize, pixelSize, QColor(176, 176, 176));
+                if(darkMode){
+                    painter.fillRect(x, y, pixelSize, pixelSize, QColor(38, 38, 38));
+                }
+                else{
+                    painter.fillRect(x, y, pixelSize, pixelSize, QColor(176, 176, 176));
+                }
         }
     }
 }

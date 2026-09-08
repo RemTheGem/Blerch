@@ -350,6 +350,8 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *exportPalette = exportMenu->addAction("Export Palette");
     QAction *zoomIn = toolbar->addAction("+");
     QAction *zoomOut = toolbar->addAction("-");
+    QAction *toggleDarkMode = new QAction("Dark Mode", this);
+    addAction(toggleDarkMode);
     brushAction->setChecked(true); // default tool as brush
     brushAction->setCheckable(true);
     eraserAction->setCheckable(true);
@@ -402,11 +404,15 @@ MainWindow::MainWindow(QWidget *parent)
     pastePixels->setShortcut(QKeySequence("Ctrl+V"));
     copyFrameAction->setShortcut(QKeySequence("Ctrl+Shift+C"));
     pasteFrameAction->setShortcut(QKeySequence("Ctrl+Shift+V"));
+    toggleDarkMode->setShortcut(QKeySequence("Ctrl+Shift+D"));
 
     // Connections (needs organizing -_-#)
     connect(autosaveTimer, &QTimer::timeout, this, &MainWindow::autosaveProject);
     autosaveTimer->start(90* 1000);
-
+    connect(toggleDarkMode, &QAction::triggered, [=](){
+        canvas->setDarkMode(!canvas->getDarkMode());
+        qDebug() << "toggled darkmode";
+    });
     connect(pickColor, &QAction::triggered, [=]() {
         QColor color = QColorDialog::getColor(canvas->getColor(), this);
         if (color.isValid()) {
@@ -773,6 +779,7 @@ MainWindow::MainWindow(QWidget *parent)
                                  "Ctrl + Shift + S  - Save Project\n\n"
 
                                  "View:\n"
+                                 "Ctr + Shift + D  - Toggle Dark Mode\n"
                                  "Ctrl + Mouse Wheel  - Canvas Zoom\n"
                                  "Shift + Mouse Wheel   - Reference Image Zoom\n"
                                  "Mouse Wheel  - Scroll vertically\n"

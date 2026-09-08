@@ -1,4 +1,5 @@
 #include "filehandling.h"
+#include "../tools/mediancut.h"
 #include <QPainter>
 #include <QJsonArray>
 #include <QIODevice>

@@ -1,16 +1,13 @@
 #ifndef PIXELCANVAS_H
 #define PIXELCANVAS_H
-#include "tools/mediancut.h"
 #include "model/CanvasTypes.h"
 #include "model/canvasdocument.h"
 #include <QWidget>
 #include <QColor>
 #include <QMouseEvent>
 #include <QPaintEvent>
-#include <deque>
 #include <vector>
 #include <QWheelEvent>
-#include <algorithm>
 
 class PixelCanvas : public QWidget
 {
@@ -46,6 +43,8 @@ public:
 
     // main functions
     void setColor(const QColor &c) {currentColor = c; emit colorChanged(c);} // set the current color
+    void setDarkMode(bool mode) {darkMode = mode; update();}
+    bool getDarkMode(){return darkMode;}
     void clear(); // clear the canvas on the current layer
     void resetCanvas(); // reset the whole canvas
 
@@ -182,6 +181,7 @@ private:
     bool isUndoing = false; // bool to check if user is undoing
     bool isErasing = false; // bool to check if user is erasing
     bool isPasting = false;
+    bool darkMode = true;
     int previousFrames = 1;
     int nextFrames = 1;
     float onionOpacity = 0.15;
