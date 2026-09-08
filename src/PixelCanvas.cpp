@@ -144,6 +144,25 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
     }
 
 }
+void PixelCanvas::paintLine(int x0, int y0, int x1, int y1, const std::function<QColor(int, int)> &colorAt, bool recordUndo){
+    int dx = std::abs(x1 - x0);
+    int dy = -std::abs(y1-y0);
+    int sx = (x0<x1) ? 1:-1;
+    int sy = (y0<y1) ? 1:-1;
+    int err = dx + dy;
+    while (true){
+        paintColor(x0, y0, colorAt(x0, y0), recordUndo);
+        if(x0 == x1 && y0 == y1) break;
+        int e2 = 2 * err;
+        if (e2 >=  dy){
+            err += dy; x0 += sx;
+        }
+        if(e2<= dx){
+            err += dx; y0 += sy;
+        }
+    }
+}
+
 void PixelCanvas::drawChecker(QPainter &painter){
     for (int y = 0; y < height(); y += pixelSize) {
         for (int x = 0; x < width(); x += pixelSize) {
@@ -333,9 +352,11 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
     if (x >= 0 && x < document->activeLayer_().width && y >= 0 && y < document->activeLayer_().height) {
         switch(currentTool){
         case Tool::Brush:
+            lastPaintPos = QPoint(x, y);
             paintColor(x, y, getBrushColor(document->activeLayer_().at(x, y)));
             break;
         case Tool::Eraser:
+            lastPaintPos = QPoint(x,y);
             paintColor(x, y, Qt::transparent);
             break;
         case Tool::EyeDropper:
@@ -470,21 +491,15 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         switch(currentTool){
         case Tool::Brush:
         {
-            QColor oldColor = document->activeLayer_().at(x, y);
-            QColor newColor = getBrushColor(oldColor);
-            if(oldColor != newColor)
-            {
-                paintColor(x, y, newColor);
-                changed = true;
-            }
+            paintLine(lastPaintPos.x(), lastPaintPos.y(), x, y, [this](int px, int py){ return getBrushColor(document->activeLayer_().at(px, py));});
+            lastPaintPos = QPoint(x,y);
+            changed = true;
             break;
         }
         case Tool::Eraser:
-            if(document->activeLayer_().at(x, y) != Qt::transparent)
-            {
-                paintColor(x, y, Qt::transparent);
-                changed = true;
-            }
+            paintLine(lastPaintPos.x(), lastPaintPos.y(), x, y, [](int, int){ return QColor(Qt::transparent);});
+            lastPaintPos = QPoint(x,y);
+            changed = true;
             break;
         case Tool::Select:
         {
