@@ -1,0 +1,17 @@
+{
+    "Height": 32,
+    "Width": 32,
+    "frames": [
+        {
+            "duration": 100,
+            "layers": [
+                {
+                    "name": "Layer 1",
+                    "opacity": 1,
+                    "pixels": "AAAQAHja7cEBDQAAAMKg909tDwcUAAAA8G4QAAAB",
+                    "visible": true
+                }
+            ]
+        }
+    ]
+}
