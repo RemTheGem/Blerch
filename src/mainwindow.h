@@ -72,6 +72,7 @@ private:
     QVideoFrameInput *videoFrameInput = nullptr;
     QVector<QImage> videoExportFrames;
     int videoExportFrameIndex = 0;
+    int repeatIndex = 0;
 
 };
 #endif // MAINWINDOW_H
