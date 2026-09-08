@@ -9,6 +9,7 @@
 #include "../include/settingsmanager.h"
 #include "workers/GifExportWorker.h"
 #include "workers/gifimportworker.h"
+#include "workers/videoexportworker.h"
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QToolBar>
@@ -1006,68 +1007,40 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
         path = QFileDialog::getSaveFileName(this, "Save Video", dir, "MP4 Video (*.mp4)");
     }
     if(!path.endsWith(".mp4")) path+= ".mp4";
+    importInProgress = true;
     int imageWidth = document->getCanvasWidth();
     int imageHeight = document->getCanvasHeight();
     int maxScale = qMin(64, 8192/qMax(imageWidth, imageHeight));
     scale = qBound(1,scale,maxScale);
     imageWidth = imageWidth *scale;
     imageHeight = imageHeight *scale;
-    /*
-    videoExportFrames.clear();
-    for (int i = 0; i< document->getFrameSize(); i++){
-        QImage frame = document->renderFrame(i).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-        int repeatCount = qMax(1, qRound(document->getThisFrameDuration(i)/frameInterval));
-        for(int r = 0; r < repeatCount; r++){
-            videoExportFrames.append(frame);
-        }
-    }
-    */
-    videoExportFrameIndex = 0;
-    repeatIndex = 1;
-    videoSession = new QMediaCaptureSession(this);
-    videoRecorder = new QMediaRecorder(this);
-    videoFrameInput = new QVideoFrameInput(this);
-    videoSession->setRecorder(videoRecorder);
-    videoSession->setVideoFrameInput(videoFrameInput);
-    videoRecorder->setOutputLocation(QUrl::fromLocalFile(path));
-    videoRecorder->setQuality(QMediaRecorder::HighQuality);
-    connect(videoFrameInput, &QVideoFrameInput::readyToSendVideoFrame, this, [this, imageWidth, imageHeight](){
-        if(videoExportFrameIndex >= document->getFrameSize()){
-            videoRecorder->stop();
-            return;
-        }
-        const int fps = 30;
-        const double frameInterval = 1000.0 / fps;
-        /*
-        QVideoFrame videoFrame(videoExportFrames[videoExportFrameIndex].convertToFormat(QImage::Format_RGBA8888));
-        qDebug() << videoExportFrameIndex << " out of " << videoExportFrames.size();
-        */
-        importInProgress = true;
-        QImage frame = document->renderFrame(videoExportFrameIndex).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-        QVideoFrame videoFrame(frame.convertToFormat(QImage::Format_RGBA8888));
-        videoFrameInput->sendVideoFrame(videoFrame);
-        repeatIndex++;
-        int repeatCount = qMax(1, qRound(document->getThisFrameDuration(videoExportFrameIndex)/frameInterval));
-        if(repeatIndex > repeatCount){
-            repeatIndex = 1;
-            videoExportFrameIndex++;
-        }
-        qDebug() << "Repeat Count for frame: "<< videoExportFrameIndex << " is: " << repeatCount;
-    });
-    connect(videoRecorder, &QMediaRecorder::recorderStateChanged, this, [this](QMediaRecorder::RecorderState state){
-        if(state == QMediaRecorder::StoppedState){
-            statusBar()->showMessage("Video Exported!", 4000);
-            videoSession->deleteLater();
-            videoRecorder->deleteLater();
-            videoFrameInput->deleteLater();
-            videoSession = nullptr;
-            videoRecorder = nullptr;
-            videoFrameInput = nullptr;
-            importInProgress = false;
-        }
-    });
-    videoRecorder->record();
+    int frameSize = document->getFrameSize();
+    auto *thread = new QThread(this);
+    auto *worker = new VideoExportWorker(path, imageWidth, imageHeight, frameSize);
+    worker->moveToThread(thread);
+    auto *progressDialog = new QProgressDialog("Exporting Video...", "Cancel", 0, frameSize, this);
+    progressDialog->setWindowModality(Qt::WindowModal);
 
+    connect(thread, &QThread::started, worker, &VideoExportWorker::run);
+    connect(worker, &VideoExportWorker::recieveNextFrame, [=](int index){
+        QImage frame = document->renderFrame(index).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        worker->recieveFrame(frame, document->getThisFrameDuration(index));
+    });
+    connect(worker, &VideoExportWorker::progress, progressDialog, [=](int cur, int total){
+        progressDialog->setMaximum(total);
+        progressDialog->setValue(cur);
+    });
+    connect(progressDialog, &QProgressDialog::canceled, worker, &VideoExportWorker::cancel, Qt::DirectConnection);
+    connect(worker, &VideoExportWorker::finished, this, [=](bool ok){
+        progressDialog->close();
+        statusBar()->showMessage(ok ? "Video Exported!" : "Video Cancelled!", 3000);
+        importInProgress = false;
+        thread->quit();
+    });
+    connect(thread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    connect(thread, &QThread::finished, progressDialog, &QObject::deleteLater);
+    thread->start();
 }
 void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
     qDebug() <<"path:" << file;

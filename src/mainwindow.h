@@ -11,10 +11,7 @@
 #include <QVBoxLayout>
 #include <QSpinBox>
 #include <QTimer>
-#include <QMediaCaptureSession>
-#include <QMediaRecorder>
-#include <QVideoFrameInput>
-#include <QVideoFrame>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -67,12 +64,7 @@ private:
     QString lockPath;
     void updateRecentFiles();
     bool importInProgress = false;
-    QMediaCaptureSession *videoSession = nullptr;
-    QMediaRecorder *videoRecorder = nullptr;
-    QVideoFrameInput *videoFrameInput = nullptr;
-    QVector<QImage> videoExportFrames;
-    int videoExportFrameIndex = 0;
-    int repeatIndex = 0;
+
 
 };
 #endif // MAINWINDOW_H

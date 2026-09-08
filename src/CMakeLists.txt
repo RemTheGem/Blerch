@@ -44,6 +44,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         workers/GifExportWorker.h
         workers/GifExportWorker.cpp
         workers/gifimportworker.h workers/gifimportworker.cpp
+        workers/videoexportworker.h workers/videoexportworker.cpp
 
 
 
