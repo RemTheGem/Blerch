@@ -229,7 +229,9 @@ void PixelCanvas::drawSelectionPreview(QPainter &painter){
         painter.setPen(Qt::NoPen);
         painter.setBrush(Qt::white);
         for(const auto &c : corners){
-            painter.drawRect(QRectF(c.x() * pixelSize - 4, c.y()*pixelSize -4, 8, 8));
+            double screenX = c.x() *pixelSize;
+            double screenY = c.y() *pixelSize;
+            painter.drawRect(QRectF(screenX - handleHalfSize, screenY - handleHalfSize, handleHalfSize*2, handleHalfSize*2));
         }
     }
 }
@@ -414,7 +416,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             // make sure we have a selection
             if(selection.isEmpty(selection) || !selection.canMove) return;
             if(selection.moveFloating){
-                selection.activeHandle = hitTransformHandle(QPoint(x, y));
+                selection.activeHandle = hitTransformHandle(event->position());
             } else {
                 selection.activeHandle = Selection::Handle::None;
             }
@@ -428,17 +430,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             selection.dragOffset = event->pos();
             selection.dragging = true;
             if(!selection.moveFloating){
-                document->makeTempLayer();
-                selection.moveFloating = true;
-                selection.scaleX = 1.0f;
-                selection.scaleY = 1.0f;
-                selection.sourceImage = QImage(selection.width+1, selection.height+1, QImage::Format_RGBA8888);
-                for(int sy = 0; sy <= selection.height; sy++){
-                    for(int sx = 0; sx <= selection.width; sx++){
-                        selection.sourceImage.setPixelColor(sx, sy, selection.colors[sy*(selection.width+1)+sx]);
-                    }
-                }
-                selection.pivot = QPointF(selection.topLeft.x() + (selection.width+1)/2.0, selection.topLeft.y() + (selection.height+1)/2.0);
+                beginFloatingSelection();
             }
             break;
         }
@@ -763,7 +755,7 @@ void PixelCanvas::keyPressEvent(QKeyEvent *event){
     QWidget::keyPressEvent(event);
 }
 // helper methods
-PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPoint mousePos){
+PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPointF pos){
     const int hitRadius = qMax(1, 6/pixelSize);
     QPointF corners[4] = {
         {selection.pivot.x() - (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() - (selection.height+1)/2.0 * selection.scaleY},
@@ -773,7 +765,8 @@ PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPoint mousePos){
         };
     Selection::Handle types[4] = {Selection::Handle::TopLeft,Selection::Handle::TopRight, Selection::Handle::BottomLeft, Selection::Handle::BottomRight};
     for(int i = 0; i<4; i++){
-        if((mousePos - corners[i].toPoint()).manhattanLength() <= hitRadius) return types[i];
+        QPointF screenCorner(corners[i].x() * pixelSize, corners[i].y() * pixelSize);
+        if(std::abs(pos.x() - screenCorner.x()) <= handleHalfSize && (pos.y() - screenCorner.y()) <= handleHalfSize) return types[i];
     }
     return Selection::Handle::None;
 }
@@ -802,6 +795,20 @@ QImage PixelCanvas::makeTransformedImage(){
     if(selection.scaleX < 0) scaled = scaled.flipped(Qt::Horizontal);
     if(selection.scaleY < 0) scaled = scaled.flipped(Qt::Vertical);
     return scaled;
+}
+void PixelCanvas::beginFloatingSelection(){
+    document->makeTempLayer();
+    selection.moveFloating = true;
+    selection.scaleX = 1.0f;
+    selection.scaleY = 1.0f;
+    selection.sourceImage = QImage(selection.width+1, selection.height+1, QImage::Format_RGBA8888);
+    for(int sy = 0; sy <= selection.height; sy++){
+        for(int sx = 0; sx <= selection.width; sx++){
+            selection.sourceImage.setPixelColor(sx, sy, selection.colors[sy*(selection.width+1)+sx]);
+        }
+    }
+    selection.pivot = QPointF(selection.topLeft.x() + (selection.width+1)/2.0, selection.topLeft.y() + (selection.height+1)/2.0);
+    rebuildTransformPreview();
 }
 // function to draw rectangle with just boundaries
 void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo){
@@ -1108,6 +1115,9 @@ void PixelCanvas::setTool(Tool tool){
     cancelMove();
     }
     currentTool = tool;
+    if(tool == Tool::Move && !selection.isEmpty(selection) && selection.canMove){
+        beginFloatingSelection();
+    }
     update();
 }
 void PixelCanvas::setShape(ShapeType shape){

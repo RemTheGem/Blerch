@@ -120,9 +120,10 @@ public:
     void drawChecker(QPainter &painter); // draw the checkerboard in the background
     void drawSelectionPreview(QPainter &painter); // draws the dotted line that shows selection
     void paintLine(int x0, int y0, int x1, int y1, const std::function<QColor(int, int)> &colorAt, bool recordUndo = true);
-    Selection::Handle hitTransformHandle(QPoint mousePos);
+    Selection::Handle hitTransformHandle(QPointF pos);
     void rebuildTransformPreview();
     QImage makeTransformedImage();
+    void beginFloatingSelection();
     // onion methods
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
@@ -177,6 +178,7 @@ private:
     BrushApplication brushApplication = BrushApplication::OnePassPerStroke;
     QSet<QPair<int, int>> affectedPixels;
     QPoint lastPaintPos;
+    static constexpr double handleHalfSize = 4.0;
     // others
 
 
