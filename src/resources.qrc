@@ -1,6 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file>Blerch icon v2.png</file>
+        <file>blerch.ico</file>
         <file>palettes/dawnbringer-16.gpl</file>
         <file>palettes/dawnbringer-32.gpl</file>
         <file>palettes/endesga-32.gpl</file>
