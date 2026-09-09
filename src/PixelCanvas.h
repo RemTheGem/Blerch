@@ -92,6 +92,7 @@ public:
 
     // helper methods
     void paintColor(int x, int y, const QColor &color, bool recordUndo = true); // paint color into the corresponding square
+    void setPixel(int x, int y, const QColor &color, bool recordUndo = true); // same as paint color but for individual pixels
     QColor getColor(); // return the current color
     int getZoom(); // get the current zoom
     void setZoom(int zoom); // set the zoom amount

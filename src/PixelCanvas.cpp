@@ -144,6 +144,26 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
     }
 
 }
+void PixelCanvas::setPixel(int x, int y, const QColor &color, bool recordUndo){
+    if (x >= 0 && x < document->activeLayer_().width &&
+        y >= 0 && y < document->activeLayer_().height && document->activeLayer_().at(x, y) != color){
+        if(recordUndo){
+            int layer = document->getActiveLayer();
+            QColor oldColor = document->activeLayer_().at(x, y);
+            bool alreadyRecorded = false;
+            for(const auto &change : std::as_const(currentAction)){
+                if(change.layer == layer && change.x == x && change.y == y){
+                    alreadyRecorded = true;
+                    break;
+                }
+            }
+            if(!alreadyRecorded){
+                currentAction.push_back({layer, x, y, oldColor, color});
+            }
+        }
+        document->activeLayer_().at(x, y) = color;
+    }
+}
 void PixelCanvas::paintLine(int x0, int y0, int x1, int y1, const std::function<QColor(int, int)> &colorAt, bool recordUndo){
     int dx = std::abs(x1 - x0);
     int dy = -std::abs(y1-y0);
@@ -797,7 +817,12 @@ void PixelCanvas::floodFill(int startX, int startY){
         if (x >= 0 && x < document->activeLayer_().width && y >= 0 && y < document->activeLayer_().height){
             // if the current pixel is the same as what we clicked then go on
             if(document->activeLayer_().at(x, y) == target){
-                paintColor(x, y, currentColor);
+                setPixel(x, y, currentColor);
+                int mirrorX = document->activeLayer_().width -1 -x;
+                int mirrorY = document->activeLayer_().width -1 -y;
+                if(horizontalSymmetry) setPixel(mirrorX, y, fill);
+                if(verticalSymmetry) setPixel(x, mirrorY, fill);
+                if(horizontalSymmetry && verticalSymmetry) setPixel(mirrorX, mirrorY, fill);
                 // add the current layer's neighbors and continue
                 q.push(QPoint(x+1, y));
                 q.push(QPoint(x-1, y));
@@ -827,7 +852,7 @@ void PixelCanvas::commitMove(){
             // if(selection.colors.at(index) == Qt::transparent) continue;
             // make sure we dont overwrite what we just put down
             // if(destRect.contains(oldX, oldY)) continue;
-            paintColor(oldX,oldY,Qt::transparent);
+            setPixel(oldX,oldY,Qt::transparent);
         }
     }
     // draw the pixels in new location
@@ -840,7 +865,7 @@ void PixelCanvas::commitMove(){
             if (canvasX < 0 || canvasX >= document->activeLayer_().width) continue;
             if (canvasY < 0 || canvasY >= document->activeLayer_().height) continue;
             if(selection.colors.at(index) == Qt::transparent) continue;
-            paintColor(canvasX, canvasY,selection.colors.at(index));
+            setPixel(canvasX, canvasY,selection.colors.at(index));
             // change where the selection highlight square is
             selection.previewEnd = QPoint(canvasX, canvasY);
         }
@@ -889,7 +914,7 @@ void PixelCanvas::commitPaste(){
             if (canvasX < 0 || canvasX >= document->activeLayer_().width) continue;
             if (canvasY < 0 || canvasY >= document->activeLayer_().height) continue;
             if(selection.colors.at(index) == Qt::transparent) continue;
-            paintColor(canvasX, canvasY,selection.colors.at(index));
+            setPixel(canvasX, canvasY,selection.colors.at(index));
 
         }
     }
