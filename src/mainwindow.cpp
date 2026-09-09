@@ -66,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
     QMenu *shapeMenu = new QMenu(shapeButton);
     QApplication::setApplicationName("Blerch");
     setWindowTitle("Blerch");
-    setWindowIcon(QIcon(":/Blerch icon v2.png"));
+    setWindowIcon(QIcon(":/blerch.png"));
     QWidget *container = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(container);
     mainLayout->setContentsMargins(0,0,0,0);
@@ -464,12 +464,26 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->setNextFrames(value);
     });
     connect(saveDrawing, &QAction::triggered, [=]() {
-        QString fileName = QFileDialog::getSaveFileName(this,"Save Image","","PNG Files (*.png)");
-        if(!fileName.isEmpty())
-        {
-            if(!fileName.endsWith(".png"))
-                fileName += ".png";
-            fileHandling->saveImage(fileName);
+        QDialog dialog(this);
+        dialog.setWindowTitle("Save Image");
+        QFormLayout *layout = new QFormLayout(&dialog);
+        QSpinBox *scaleSpin = new QSpinBox(&dialog);
+        scaleSpin->setRange(1,64);
+        scaleSpin->setValue(1);
+        layout->addRow("Scale:", scaleSpin);
+        QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+        layout->addWidget(buttons);
+        connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+        if(dialog.exec() == QDialog::Accepted){
+            QString fileName = QFileDialog::getSaveFileName(this,"Save Image","","PNG Files (*.png)");
+            int scale = scaleSpin->value();
+            if(!fileName.isEmpty())
+            {
+                if(!fileName.endsWith(".png"))
+                    fileName += ".png";
+                fileHandling->saveImage(fileName, scale);
+            }
         }
     });
     connect(brushAction, &QAction::triggered, [=](){

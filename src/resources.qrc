@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>blerch.ico</file>
         <file>palettes/dawnbringer-16.gpl</file>
         <file>palettes/dawnbringer-32.gpl</file>
         <file>palettes/endesga-32.gpl</file>
@@ -9,5 +8,8 @@
         <file>palettes/sweetie-16.gpl</file>
         <file>palettes/gothic-bit.gpl</file>
         <file>palettes/clear project.json</file>
+        <file>resources/blerch.ico</file>
+        <file>blerch.png</file>
+        <file>resources/blerch.icns</file>
     </qresource>
 </RCC>

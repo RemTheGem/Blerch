@@ -47,10 +47,17 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         workers/videoexportworker.h workers/videoexportworker.cpp
         app.rc
 
-
-
-
     )
+if(WIN32)
+    target_sources(Blerch PRIVATE app.rc)
+endif()
+if(APPLE)
+    set_source_files_properties(resources/blerch.icns PROPERTIES MACOSX_PACKAGE_LOCATION "resources")
+    target_sources(Blerch PRIVATE resources/blerch.icns)
+    set_target_properties(Blerch PROPERTIES MACOS_BUNDLE_ICON_FILE blerch.icns)
+endif()
+
+
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Blerch APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)

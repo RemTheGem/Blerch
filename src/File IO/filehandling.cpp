@@ -21,13 +21,13 @@ QString FileHandling::recoveryDirectory() const{
     return path;
 }
 
-void FileHandling::saveImage(const QString &path)
+void FileHandling::saveImage(const QString &path, int scale)
 {
     QImage image(document->currentFrame_().layers[0].width * canvas->getZoom(), document->currentFrame_().layers[0].height * canvas->getZoom(), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     QImage rendered = document->renderFrame(document->getCurrentFrame());
-    rendered = rendered.scaled(rendered.size() * 20, Qt::KeepAspectRatio, Qt::FastTransformation);
+    rendered = rendered.scaled(rendered.size() * scale, Qt::KeepAspectRatio, Qt::FastTransformation);
     painter.drawImage(0, 0, rendered);
     painter.end();
     rendered.save(path);

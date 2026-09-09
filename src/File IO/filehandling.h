@@ -12,7 +12,7 @@ class FileHandling : public QObject
     Q_OBJECT
 public:
     FileHandling(CanvasDocument *document, PixelCanvas *canvas);
-    void saveImage(const QString &path); // save image as png
+    void saveImage(const QString &path, int scale = 1); // save image as png
     void saveProject(const QString &path); // save the project as a json file
     void loadFromJson(QJsonObject obj); // load project from a json file
     void loadPicture(const QString &path); // load a picture on a separate layer for reference
