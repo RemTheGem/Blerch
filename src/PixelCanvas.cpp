@@ -589,8 +589,18 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
                     double mouseY = event->position().y() / pixelSize;
                     double halfWidth = (selection.width+1) / 2.0;
                     double halfHeight = (selection.height+1) / 2.0;
-                    selection.scaleX = qMax(0.1, std::abs(mouseX - selection.pivot.x())/halfWidth);
-                    selection.scaleY = qMax(0.1, std::abs(mouseY - selection.pivot.y())/halfHeight);
+                    double rawScaleX = (mouseX - selection.pivot.x()) / halfWidth;
+                    double rawScaleY = (mouseY - selection.pivot.y()) / halfHeight;
+
+                    if(event->modifiers() & Qt::ShiftModifier){
+                        double magnitude = qMax(std::abs(rawScaleX), std::abs(rawScaleY));
+                        selection.scaleX = (rawScaleX < 0 ? -1 : 1) * magnitude;
+                        selection.scaleY = (rawScaleY < 0 ? -1 : 1) * magnitude;
+                    }
+                    else {
+                        selection.scaleX = rawScaleX;
+                        selection.scaleY = rawScaleY;
+                    }
                     rebuildTransformPreview();
                     break;
                 }
@@ -769,10 +779,9 @@ PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPoint mousePos){
 }
 void PixelCanvas::rebuildTransformPreview(){
     document->clear();
-    QSize targetSize(qRound((selection.width +1)*selection.scaleX), qRound((selection.height+1)*selection.scaleY));
-    QImage scaled = selection.sourceImage.scaled(targetSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-    int destX = qRound(selection.pivot.x() - targetSize.width()/2.0);
-    int destY = qRound(selection.pivot.y() - targetSize.height()/2.0);
+    QImage scaled = makeTransformedImage();
+    int destX = qRound(selection.pivot.x() - scaled.width()/2.0);
+    int destY = qRound(selection.pivot.y() - scaled.height()/2.0);
     for(int sy = 0; sy < scaled.height(); sy++){
         for(int sx = 0; sx <scaled.width(); sx++){
             QColor color = scaled.pixelColor(sx,sy);
@@ -785,6 +794,14 @@ void PixelCanvas::rebuildTransformPreview(){
         }
     }
     update();
+}
+QImage PixelCanvas::makeTransformedImage(){
+    QSize targetSize(qMax(1, qRound((selection.width+1) * std::abs(selection.scaleX))),
+                     qMax(1, qRound((selection.height+1) * std::abs(selection.scaleY))));
+    QImage scaled = selection.sourceImage.scaled(targetSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    if(selection.scaleX < 0) scaled = scaled.flipped(Qt::Horizontal);
+    if(selection.scaleY < 0) scaled = scaled.flipped(Qt::Vertical);
+    return scaled;
 }
 // function to draw rectangle with just boundaries
 void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo){
@@ -921,10 +938,9 @@ void PixelCanvas::commitMove(){
             setPixel(selection.topLeft.x() + mx, selection.topLeft.y()+my, Qt::transparent);
         }
     }
-    QSize targetSize(qRound((selection.width+1)*selection.scaleX), qRound((selection.height+1)*selection.scaleY));
-    QImage scaled = selection.sourceImage.scaled(targetSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-    int destX = qRound(selection.pivot.x() - targetSize.width() / 2.0);
-    int destY = qRound(selection.pivot.y() - targetSize.height() / 2.0);
+    QImage scaled = makeTransformedImage();
+    int destX = qRound(selection.pivot.x() - scaled.width() / 2.0);
+    int destY = qRound(selection.pivot.y() - scaled.height() / 2.0);
     for(int sy = 0; sy < scaled.height(); sy++){
         for(int sx = 0; sx < scaled.width(); sx++){
             QColor color = scaled.pixelColor(sx, sy);
