@@ -329,6 +329,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *redo = toolbar->addAction("Redo");
     toolbar->addWidget(spacer);
     toolbar->addSeparator();
+    QAction *newProject = fileMenu->addAction("Open New Project");
     QAction *loadPicture = fileMenu->addAction("Open Reference Picture");
     QAction *loadProjectAction = fileMenu->addAction("Open Project");
     QAction *loadLastProject = fileMenu->addAction("Open Last Project");
@@ -584,6 +585,18 @@ MainWindow::MainWindow(QWidget *parent)
         if(path.isEmpty())return;
         if(!path.endsWith(".gpl")) path += ".gpl";
         fileHandling->saveGPL(path);
+    });
+    connect(newProject, &QAction::triggered, [=](){
+        reply = QMessageBox::warning(this, "Open New Project?", "All progress may be lost. New Project?", QMessageBox::Yes | QMessageBox::Cancel);
+        if(reply == QMessageBox::Yes){
+            loadProject(":/palettes/clear project.json");
+            layerList->clear();
+            QStringList layers =document->getLayerNames();
+            std::reverse(layers.begin(), layers.end());
+            layerList->addItems(layers);
+            layerList->setCurrentRow(documentToUiLayer(document->getActiveLayer()));
+            updateTimeline();
+        }
     });
     connect(loadProjectAction, &QAction::triggered, [=](){
         loadProject();
@@ -922,9 +935,10 @@ void MainWindow::loadProject(const QString &filePath){
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
 
     fileHandling->loadFromJson(doc.object());
-
-    SettingsManager::instance().setLastProject(path);
-    SettingsManager::instance().addRecentFile(path);
+    if(path!=":/palettes/clear project.json"){
+        SettingsManager::instance().setLastProject(path);
+        SettingsManager::instance().addRecentFile(path);
+    }
 }
 void MainWindow::saveProject(const QString &filePath){
     QString path = filePath;
@@ -1022,14 +1036,11 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
     imageWidth = imageWidth *scale;
     imageHeight = imageHeight *scale;
     int frameSize = document->getFrameSize();
-    auto *thread = new QThread(this);
     auto *worker = new VideoExportWorker(path, imageWidth, imageHeight, frameSize);
-    worker->moveToThread(thread);
     auto *progressDialog = new QProgressDialog("Exporting Video...", "Cancel", 0, frameSize, this);
     progressDialog->setWindowModality(Qt::WindowModal);
 
-    connect(thread, &QThread::started, worker, &VideoExportWorker::run);
-    connect(worker, &VideoExportWorker::recieveNextFrame, [=](int index){
+    connect(worker, &VideoExportWorker::recieveNextFrame, this, [=](int index){
         QImage frame = document->renderFrame(index).scaled(imageWidth, imageHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
         worker->recieveFrame(frame, document->getThisFrameDuration(index));
     });
@@ -1038,16 +1049,27 @@ void MainWindow::saveVideo(const QString &filePath, int scale){
         progressDialog->setValue(cur);
     });
     connect(progressDialog, &QProgressDialog::canceled, worker, &VideoExportWorker::cancel, Qt::DirectConnection);
-    connect(worker, &VideoExportWorker::finished, this, [=](bool ok){
+    connect(worker, &VideoExportWorker::finished, this, [=](VideoExportWorker::ExportResult result){
         progressDialog->close();
-        statusBar()->showMessage(ok ? "Video Exported!" : "Video Cancelled!", 3000);
+        switch(result){
+        case VideoExportWorker::ExportResult::Success:
+            statusBar()->showMessage("Video Exported!", 3000);
+            break;
+        case VideoExportWorker::ExportResult::Cancelled:
+            statusBar()->showMessage("Video Cancelled!", 3000);
+            break;
+        case VideoExportWorker::ExportResult::Failed:
+            QMessageBox::warning(this, "Export Failed!", "Your video driver cannot create a video of this size \n\n"
+                                                         "This is a known issue with large canvas sizes.\n Try:\n"
+                                                         "\u2022 Lower canvas sizes\n"
+                                                         "\u2022 Exporting as a GIF and converting to Video\n\n"
+                                                         "                       Apologies '-'");
+        }
+
         importInProgress = false;
-        thread->quit();
+        worker->deleteLater();
     });
-    connect(thread, &QThread::finished, worker, &QObject::deleteLater);
-    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
-    connect(thread, &QThread::finished, progressDialog, &QObject::deleteLater);
-    thread->start();
+    QTimer::singleShot(0, worker, &VideoExportWorker::run);
 }
 void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
     qDebug() <<"path:" << file;
@@ -1068,7 +1090,7 @@ void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
     int targetWidth = firstImage.width();
     int targetHeight = firstImage.height();
     int paletteSize = dialog.colors();
-    document->resizeCanvas(targetWidth -1, targetHeight);
+    document->resizeCanvas(targetWidth, targetHeight);
     canvas->updateCanvasSize();
     auto *thread = new QThread(this);
     auto *worker = new GifImportWorker(file, totalFrames, postFrames, targetWidth, targetHeight, paletteSize, dialog.keepAspect());
