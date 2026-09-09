@@ -1,37 +1,23 @@
 #include "gifimportworker.h"
 #include "../tools/mediancut.h"
-#include <QElapsedTimer>
 #include <QFileInfo>
 
 void GifImportWorker::run(){
-    QElapsedTimer timer;
     MedianCut medianCut;
     QImageReader reader(path);
     for(int x=0; x < totalFrames; x++){
         // if(!reader.jumpToImage(x)) break;
         if(cancelled.loadRelaxed()) break;
-        timer.restart();
         Frame frame;
         Layer layer;
         layer.type = LayerType::Pixel;
         QImage image = reader.read();
-        qDebug() << "Read: " << timer.elapsed();
-        timer.restart();
         if(image.isNull()) continue;
-        if(keepAspect){
-            image = image.scaled(targetWidth, targetHeight, Qt::KeepAspectRatio, Qt::FastTransformation);
-        }
-        else {
-            image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-        }
-        qDebug() << "Scaled: " << timer.elapsed();
-        timer.restart();
+        image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
         layer.width = image.width();
         layer.height = image.height();
         layer.name = QFileInfo(path).baseName();
         auto palette = medianCut.medianCut(image, paletteSize);
-        qDebug() << "Palette: " << timer.elapsed();
-        timer.restart();
         QImage argb = image.convertToFormat(QImage::Format_ARGB32);
         std::unordered_map<QRgb, QColor> nearestCache;
         nearestCache.reserve(4096);
@@ -55,8 +41,6 @@ void GifImportWorker::run(){
                 }
             }
         }
-        qDebug() << "Conversion: " << timer.elapsed();
-        timer.restart();
         frame.layers.push_back(layer);
         postFrames.append(frame);
         emit progress(x + 1, totalFrames);

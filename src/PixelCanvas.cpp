@@ -74,7 +74,6 @@ void PixelCanvas::paintEvent(QPaintEvent *)
 
         painter.restore();
     }
-    autosaveDirty = true;
     // draw onion frames
     if(onionOn){
         int current  = document->getCurrentFrame();
@@ -99,7 +98,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
 {
     // if we want to undo the drawing later (skip when drawing previews)
     auto draw = [&](int px, int py){
-        if (px >= 0 && px < document->activeLayer_().width &&
+        if (px >= 0 && px < document->activeLayer_().width +1 &&
             py >= 0 && py < document->activeLayer_().height && document->activeLayer_().at(px, py) != color){
             if(brushApplication == BrushApplication::OnePassPerStroke && recordUndo && currentTool == Tool::Brush){
                 QPair<int, int> key(px, py);
@@ -142,7 +141,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
                 draw(mirrorX, mirrorY);
         }
     }
-
+    autosaveDirty = true;
 }
 void PixelCanvas::setPixel(int x, int y, const QColor &color, bool recordUndo){
     if (x >= 0 && x < document->activeLayer_().width &&
@@ -163,6 +162,7 @@ void PixelCanvas::setPixel(int x, int y, const QColor &color, bool recordUndo){
         }
         document->activeLayer_().at(x, y) = color;
     }
+    autosaveDirty = true;
 }
 void PixelCanvas::paintLine(int x0, int y0, int x1, int y1, const std::function<QColor(int, int)> &colorAt, bool recordUndo){
     int dx = std::abs(x1 - x0);

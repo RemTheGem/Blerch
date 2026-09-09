@@ -1090,6 +1090,7 @@ void MainWindow::GifToPixel(const QString &file, PictureImportDialog &dialog){
     int targetWidth = firstImage.width();
     int targetHeight = firstImage.height();
     int paletteSize = dialog.colors();
+    qDebug() << "Image: " << firstImage.size() << " Target: " << targetWidth << targetHeight;
     document->resizeCanvas(targetWidth, targetHeight);
     canvas->updateCanvasSize();
     auto *thread = new QThread(this);
