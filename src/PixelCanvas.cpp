@@ -217,6 +217,21 @@ void PixelCanvas::drawSelectionPreview(QPainter &painter){
         QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
         painter.drawRect(selectionRect);
     }
+    if(currentTool == Tool::Move && selection.moveFloating){
+        double halfWidth = (selection.width+1)/2.0 *selection.scaleX;
+        double halfHeight = (selection.height+1)/2.0 * selection.scaleY;
+        QPointF corners[4] = {
+            {selection.pivot.x() - halfWidth, selection.pivot.y() - halfHeight},
+            {selection.pivot.x() + halfWidth, selection.pivot.y() - halfHeight},
+            {selection.pivot.x() - halfWidth, selection.pivot.y() + halfHeight},
+            {selection.pivot.x() + halfWidth, selection.pivot.y() + halfHeight}
+        };
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(Qt::white);
+        for(const auto &c : corners){
+            painter.drawRect(QRectF(c.x() * pixelSize - 4, c.y()*pixelSize -4, 8, 8));
+        }
+    }
 }
 void PixelCanvas::drawOnionFrame(QPainter &painter, int frameIndex,  float onionOpacity){
     if(frameIndex < 0 || frameIndex >= document->getFrameSize()) return;
@@ -398,11 +413,32 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         {
             // make sure we have a selection
             if(selection.isEmpty(selection) || !selection.canMove) return;
+            if(selection.moveFloating){
+                selection.activeHandle = hitTransformHandle(QPoint(x, y));
+            } else {
+                selection.activeHandle = Selection::Handle::None;
+            }
+            if(selection.activeHandle == Selection::Handle::None){
+                selection.activeHandle = Selection::Handle::Move;
+                selection.dragOffset = event->pos();
+            }
+            else{
+                selection.dragOffset = event->pos();
+            }
             selection.dragOffset = event->pos();
             selection.dragging = true;
             if(!selection.moveFloating){
                 document->makeTempLayer();
                 selection.moveFloating = true;
+                selection.scaleX = 1.0f;
+                selection.scaleY = 1.0f;
+                selection.sourceImage = QImage(selection.width+1, selection.height+1, QImage::Format_RGBA8888);
+                for(int sy = 0; sy <= selection.height; sy++){
+                    for(int sx = 0; sx <= selection.width; sx++){
+                        selection.sourceImage.setPixelColor(sx, sy, selection.colors[sy*(selection.width+1)+sx]);
+                    }
+                }
+                selection.pivot = QPointF(selection.topLeft.x() + (selection.width+1)/2.0, selection.topLeft.y() + (selection.height+1)/2.0);
             }
             break;
         }
@@ -536,20 +572,30 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             // draw a preview of where the moved selection is
             if(selection.isEmpty(selection) || !selection.canMove) return;
 
-            document->clear();
-            selection.selectionOffset = ((event->pos() - selection.dragOffset)/pixelSize) + QPoint(selection.topLeft.x(), selection.topLeft.y());
-            for (int my = 0; my < selection.height+1; my++){
-                for (int mx = 0; mx < selection.width+1; mx++){
-                    int canvasX = selection.selectionOffset.x() + mx;
-                    int canvasY = selection.selectionOffset.y() + my;
-                    int index = (selection.width+1) * my + mx;
-                    if (index >= selection.colors.size()) continue;
-                    if (canvasX < 0 || canvasX >= document->activeLayer_().width) continue;
-                    if (canvasY < 0 || canvasY >= document->activeLayer_().height) continue;
-                    document->activeLayer_().at(canvasX, canvasY) = selection.colors.at(index);
+            switch(selection.activeHandle){
+                case Selection::Handle::Move:{
+                    QPoint delta = (event->pos() - selection.dragOffset)/pixelSize;
+                    selection.selectionOffset = delta + QPoint(selection.topLeft.x(), selection.topLeft.y());
+                    selection.pivot = QPointF(selection.selectionOffset.x() + (selection.width+1)/2.0, selection.selectionOffset.y() + (selection.height+1)/2.0);
+                    rebuildTransformPreview();
+                    break;
                 }
+                case Selection::Handle::TopLeft:
+                case Selection::Handle::TopRight:
+                case Selection::Handle::BottomLeft:
+                case Selection::Handle::BottomRight:
+                {
+                    double mouseX = event->position().x() / pixelSize;
+                    double mouseY = event->position().y() / pixelSize;
+                    double halfWidth = (selection.width+1) / 2.0;
+                    double halfHeight = (selection.height+1) / 2.0;
+                    selection.scaleX = qMax(0.1, std::abs(mouseX - selection.pivot.x())/halfWidth);
+                    selection.scaleY = qMax(0.1, std::abs(mouseY - selection.pivot.y())/halfHeight);
+                    rebuildTransformPreview();
+                    break;
+                }
+                default: break;
             }
-            update();
             break;
         }
         case Tool::Shape:{
@@ -707,7 +753,39 @@ void PixelCanvas::keyPressEvent(QKeyEvent *event){
     QWidget::keyPressEvent(event);
 }
 // helper methods
-
+PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPoint mousePos){
+    const int hitRadius = qMax(1, 6/pixelSize);
+    QPointF corners[4] = {
+        {selection.pivot.x() - (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() - (selection.height+1)/2.0 * selection.scaleY},
+        {selection.pivot.x() + (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() - (selection.height+1)/2.0 * selection.scaleY},
+        {selection.pivot.x() - (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() + (selection.height+1)/2.0 * selection.scaleY},
+        {selection.pivot.x() + (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() + (selection.height+1)/2.0 * selection.scaleY},
+        };
+    Selection::Handle types[4] = {Selection::Handle::TopLeft,Selection::Handle::TopRight, Selection::Handle::BottomLeft, Selection::Handle::BottomRight};
+    for(int i = 0; i<4; i++){
+        if((mousePos - corners[i].toPoint()).manhattanLength() <= hitRadius) return types[i];
+    }
+    return Selection::Handle::None;
+}
+void PixelCanvas::rebuildTransformPreview(){
+    document->clear();
+    QSize targetSize(qRound((selection.width +1)*selection.scaleX), qRound((selection.height+1)*selection.scaleY));
+    QImage scaled = selection.sourceImage.scaled(targetSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    int destX = qRound(selection.pivot.x() - targetSize.width()/2.0);
+    int destY = qRound(selection.pivot.y() - targetSize.height()/2.0);
+    for(int sy = 0; sy < scaled.height(); sy++){
+        for(int sx = 0; sx <scaled.width(); sx++){
+            QColor color = scaled.pixelColor(sx,sy);
+            if(color.alpha() != 0){
+                int colorX = destX +sx;
+                int colorY = destY +sy;
+                if(colorX < 0 || colorX >= document->activeLayer_().width || colorY  < 0 || colorY >= document->activeLayer_().height) continue;
+                document->activeLayer_().at(colorX, colorY) = color;
+            }
+        }
+    }
+    update();
+}
 // function to draw rectangle with just boundaries
 void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo){
     for(int sx = topLeft.x(); sx <= bottomRight.x(); sx++){
@@ -819,7 +897,7 @@ void PixelCanvas::floodFill(int startX, int startY){
             if(document->activeLayer_().at(x, y) == target){
                 setPixel(x, y, currentColor);
                 int mirrorX = document->activeLayer_().width -1 -x;
-                int mirrorY = document->activeLayer_().width -1 -y;
+                int mirrorY = document->activeLayer_().height -1 -y;
                 if(horizontalSymmetry) setPixel(mirrorX, y, fill);
                 if(verticalSymmetry) setPixel(x, mirrorY, fill);
                 if(horizontalSymmetry && verticalSymmetry) setPixel(mirrorX, mirrorY, fill);
@@ -838,36 +916,21 @@ void PixelCanvas::commitMove(){
     document->removeTempLayer();
     // make a rectangle of where you will put the selection
     // this will be checked later to ensure we dont erase what we just put down
-    QRect destRect(selection.selectionOffset.x(), selection.selectionOffset.y(),
-                   selection.width+1, selection.height+1);
-    // erase the pixels from old location
-    for (int my = 0; my < selection.height+1; my++){
-        for (int mx = 0; mx < selection.width+1; mx++){
-            int oldX = selection.topLeft.x() + mx;
-            int oldY = selection.topLeft.y() + my;
-            int index = (selection.width+1) * my + mx;
-            if (index >= selection.colors.size()) continue;
-            if (oldX < 0 || oldX >= document->activeLayer_().width) continue;
-            if (oldY < 0 || oldY >= document->activeLayer_().height) continue;
-            // if(selection.colors.at(index) == Qt::transparent) continue;
-            // make sure we dont overwrite what we just put down
-            // if(destRect.contains(oldX, oldY)) continue;
-            setPixel(oldX,oldY,Qt::transparent);
+    for(int my = 0; my <= selection.height; my ++){
+        for(int mx = 0; mx <= selection.width; mx ++){
+            setPixel(selection.topLeft.x() + mx, selection.topLeft.y()+my, Qt::transparent);
         }
     }
-    // draw the pixels in new location
-    for (int my = 0; my < selection.height+1; my++){
-        for (int mx = 0; mx < selection.width+1; mx++){
-            int canvasX = selection.selectionOffset.x() + mx;
-            int canvasY = selection.selectionOffset.y() + my;
-            int index = (selection.width+1) * my + mx;
-            if (index >= selection.colors.size()) continue;
-            if (canvasX < 0 || canvasX >= document->activeLayer_().width) continue;
-            if (canvasY < 0 || canvasY >= document->activeLayer_().height) continue;
-            if(selection.colors.at(index) == Qt::transparent) continue;
-            setPixel(canvasX, canvasY,selection.colors.at(index));
-            // change where the selection highlight square is
-            selection.previewEnd = QPoint(canvasX, canvasY);
+    QSize targetSize(qRound((selection.width+1)*selection.scaleX), qRound((selection.height+1)*selection.scaleY));
+    QImage scaled = selection.sourceImage.scaled(targetSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    int destX = qRound(selection.pivot.x() - targetSize.width() / 2.0);
+    int destY = qRound(selection.pivot.y() - targetSize.height() / 2.0);
+    for(int sy = 0; sy < scaled.height(); sy++){
+        for(int sx = 0; sx < scaled.width(); sx++){
+            QColor color = scaled.pixelColor(sx, sy);
+            if(color.alpha() != 0){
+                setPixel(destX + sx, destY +sy, color);
+            }
         }
     }
     selection.dragging = false;
@@ -1029,6 +1092,7 @@ void PixelCanvas::setTool(Tool tool){
     cancelMove();
     }
     currentTool = tool;
+    update();
 }
 void PixelCanvas::setShape(ShapeType shape){
     currentShape = shape;

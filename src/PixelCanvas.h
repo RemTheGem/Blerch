@@ -31,6 +31,14 @@ public:
         QPoint topLeft; // used for move only. preview has its own
         QPoint bottomRight; // used for move only. preview has its own
         std::vector<QColor> colors;
+        // Transform variables
+        float scaleX = 1.0f;
+        float scaleY = 1.0f;
+        QPointF pivot;
+        QImage sourceImage;
+        enum class Handle{ None, Move, TopLeft, TopRight, BottomLeft, BottomRight};
+        Handle activeHandle = Handle::None;
+
         bool isEmpty(const Selection& s){
             return s.colors.empty();
         }
@@ -112,6 +120,8 @@ public:
     void drawChecker(QPainter &painter); // draw the checkerboard in the background
     void drawSelectionPreview(QPainter &painter); // draws the dotted line that shows selection
     void paintLine(int x0, int y0, int x1, int y1, const std::function<QColor(int, int)> &colorAt, bool recordUndo = true);
+    Selection::Handle hitTransformHandle(QPoint mousePos);
+    void rebuildTransformPreview();
     // onion methods
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color

@@ -320,7 +320,7 @@ MainWindow::MainWindow(QWidget *parent)
     shapeButton->setPopupMode(QToolButton::MenuButtonPopup);
     toolbar->addWidget(shapeButton);
     QAction *selectAction = toolbar->addAction("Select");
-    QAction *moveAction = toolbar->addAction("Move");
+    QAction *moveAction = toolbar->addAction("Move and Transform");
     QAction *pickColor = toolbar->addAction("Pick Color");
     colorPreview->setFixedSize(20,20);
     toolbar->addWidget(colorPreview);
