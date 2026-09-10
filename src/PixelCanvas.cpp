@@ -171,7 +171,12 @@ void PixelCanvas::paintLine(int x0, int y0, int x1, int y1, const std::function<
     int sy = (y0<y1) ? 1:-1;
     int err = dx + dy;
     while (true){
-        paintColor(x0, y0, colorAt(x0, y0), recordUndo);
+        if(pixelPerfect && brushSize == 1){
+            placeStrokePixel(x0, y0, colorAt(x0, y0), recordUndo);
+        }
+        else{
+            paintColor(x0, y0, colorAt(x0, y0), recordUndo);
+        }
         if(x0 == x1 && y0 == y1) break;
         int e2 = 2 * err;
         if (e2 >=  dy){
@@ -390,11 +395,23 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
         switch(currentTool){
         case Tool::Brush:
             lastPaintPos = QPoint(x, y);
-            paintColor(x, y, getBrushColor(document->activeLayer_().at(x, y)));
+            strokeHistory.clear();
+            if(pixelPerfect && brushSize == 1){
+                placeStrokePixel(x, y, getBrushColor(document->activeLayer_().at(x, y)), true);
+            }
+            else{
+                paintColor(x, y, getBrushColor(document->activeLayer_().at(x, y)));
+            }
             break;
         case Tool::Eraser:
             lastPaintPos = QPoint(x,y);
-            paintColor(x, y, Qt::transparent);
+            strokeHistory.clear();
+            if(pixelPerfect && brushSize == 1){
+                placeStrokePixel(x, y, Qt::transparent, true);
+            }
+            else{
+                paintColor(x, y, Qt::transparent);
+            }
             break;
         case Tool::EyeDropper:
             currentColor = document->activeLayer_().at(x, y);
@@ -809,6 +826,45 @@ void PixelCanvas::beginFloatingSelection(){
     }
     selection.pivot = QPointF(selection.topLeft.x() + (selection.width+1)/2.0, selection.topLeft.y() + (selection.height+1)/2.0);
     rebuildTransformPreview();
+}
+void PixelCanvas::undoStrokePixel(const QPoint &point){
+    int layer = document->getActiveLayer();
+    for(const auto &point : mirroredPointsPixelPerfect(point)){
+        for(const auto &change : std::as_const(currentAction)){
+            if(change.layer == layer && change.x == point.x() && change.y == point.y()){
+                document->activeLayer_().at(point.x(), point.y()) = change.oldColor;
+                break;
+            }
+        }
+    }
+}
+QVector<QPoint> PixelCanvas::mirroredPointsPixelPerfect(const QPoint &point){
+    QVector<QPoint> points;
+    points.push_back(point);
+    int mirrorX = document->activeLayer_().width - 1 - point.x();
+    int mirrorY = document->activeLayer_().height - 1 - point.y();
+    if(horizontalSymmetry) points.push_back(QPoint(mirrorX, point.y()));
+    if(verticalSymmetry) points.push_back(QPoint(point.x(), mirrorY));
+    if(horizontalSymmetry && verticalSymmetry) points.push_back(QPoint(mirrorX, mirrorY));
+    return points;
+}
+void PixelCanvas::placeStrokePixel(int x, int y, const QColor &color, bool recordUndo){
+    QPoint point(x, y);
+    if(pixelPerfect && strokeHistory.size() >= 2){
+        const QPoint &a = strokeHistory[strokeHistory.size() - 2];
+        const QPoint &b = strokeHistory.last();
+        bool diagonalStep = (std::abs(point.x() - a.x()) == 1) && (std::abs(point.y() - a.y()) == 1);
+        bool bIsCorner = (std::abs(b.x() - a.x()) + std::abs(b.y() - a.y()) == 1) &&
+                         (std::abs(point.x() - b.x()) + std::abs(point.y() - b.y()) == 1);
+        if(diagonalStep && bIsCorner && point != a){
+            undoStrokePixel(b);
+            strokeHistory.removeLast();
+        }
+    }
+    if(strokeHistory.isEmpty() || strokeHistory.last() != point){
+        paintColor(point.x(), point.y(), color, recordUndo);
+        strokeHistory.push_back(point);
+    }
 }
 // function to draw rectangle with just boundaries
 void PixelCanvas::drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo){

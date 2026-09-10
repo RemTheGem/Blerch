@@ -184,6 +184,7 @@ MainWindow::MainWindow(QWidget *parent)
     brushSizeSlider->setValue(1);
     brushAmountSlider->setRange(1, 100);
     brushAmountSlider->setValue(10);
+    QPushButton *pixelPerfectButton = new QPushButton("Pixel Perfect Drawing");
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
     QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
     QGroupBox *brushGroup = new QGroupBox("Brush Options");
@@ -224,9 +225,11 @@ MainWindow::MainWindow(QWidget *parent)
     paletteLayout->addWidget(brushGroup);
     QLabel *symmetryLabel = new QLabel("Symmetry");
     paletteLayout->addWidget(symmetryLabel);
+    paletteLayout->addWidget(pixelPerfectButton);
     paletteLayout->addWidget(horizontalSymmetryButton);
     paletteLayout->addWidget(verticalSymmetryButton);
 
+    pixelPerfectButton->setCheckable(true);
     horizontalSymmetryButton->setCheckable(true);
     verticalSymmetryButton->setCheckable(true);
     brushContinousButton->setCheckable(true);
@@ -840,6 +843,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(flipVertical, &QAction::triggered, [=](){
         canvas->flipVertical();
     });
+    connect(pixelPerfectButton, &QPushButton::toggled, canvas, &PixelCanvas::setPixelPerfect);
     connect(horizontalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setHorizontalSymmetry);
     connect(verticalSymmetryButton, &QPushButton::toggled, canvas, &PixelCanvas::setVerticalSymmetry);
     connect(brushSizeSlider, &QSlider::valueChanged, [=](int value){

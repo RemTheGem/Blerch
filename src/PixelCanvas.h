@@ -124,6 +124,11 @@ public:
     void rebuildTransformPreview();
     QImage makeTransformedImage();
     void beginFloatingSelection();
+    void placeStrokePixel(int x, int y, const QColor &color, bool recordUndo = false);
+    QVector<QPoint> mirroredPointsPixelPerfect(const QPoint &point);
+    void undoStrokePixel(const QPoint &point);
+    void setPixelPerfect(bool enabled) { pixelPerfect = enabled;}
+    bool isPixelPerfect() const {return pixelPerfect;}
     // onion methods
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
@@ -179,6 +184,8 @@ private:
     QSet<QPair<int, int>> affectedPixels;
     QPoint lastPaintPos;
     static constexpr double handleHalfSize = 4.0;
+    bool pixelPerfect = false;
+    QVector<QPoint> strokeHistory;
     // others
 
 
