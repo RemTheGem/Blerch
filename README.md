@@ -32,9 +32,10 @@ A simple Desktop application built with Qt and C++ to make pixel art and animati
 <img src="images/sonic gif.gif" width="45%" height="550"/><img src="images/gif to pix sonic.gif" width="45%" height="550"/>
 </p>
 
-- Export as PNG, sprite sheets, GIF
-  - Choose your own scale for gifs if you want to scale up or down
+- Export as PNG, sprite sheets, GIF, Video
+  - Choose your own scale for gifs, videos and images if you want to scale up or down
   - Choose your own columns for sprite sheets
+  - Video exports may be limited based on canvas size
 - Save and load projects
 ### Misc
 - Undo and redo
@@ -57,6 +58,7 @@ An inside look as of version 1.2.3 (I did NOT know how semantic versioning worke
 <p float="left">
 <img src="images/64 scale rat.gif" width="45%" height="550"/><img src="images/fu sprite sheet.png" width="45%" height="550"/>
 </p>
+
 ## Coming Soon
 - Any feature suggestions are welcome!
 
