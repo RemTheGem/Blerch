@@ -48,4 +48,4 @@ because this would not be possible as easily without gif-h.
 
 The above licenses (LGPLv3, LGPLv2.1+) apply only to the respective third-party libraries
 and their own source code. They do not impose licensing terms on Blerch's own source code,
-which is licensed separately. See [LICENSE.txt](./LICENSE.txt) for details.
+which is licensed separately. See LICENSE.txt in the same directory for details.
