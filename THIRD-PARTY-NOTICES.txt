@@ -1,0 +1,51 @@
+# THIRD-PARTY NOTICES
+
+Blerch uses the following third-party libraries. This file includes each dependancy, its
+license and links to the license and project's source code.
+
+---
+
+### Qt 6
+
+- License: GNU Lesser General Public License v3.0 (LGPLv3)
+- Project: https://www.qt.io
+- Source code: https://code.qt.io
+- License Text: https://www.gnu.org/licenses/lgpl-3.0.html
+
+Qt is used under the LGPLv3. Blerch links against Qt dynamically. Qt's source code is
+publicly available at the link above. Blerch does not modify Qt itself.
+
+---
+
+### FFmpeg (via Qt Multimedia)
+
+- License: GNU Lesser General Public License v2.1 or later (LGPLv2.1+)
+- Project: https://ffmpeg.org/
+- Source code: https://github.com/FFmpeg/FFmpeg
+- License Text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+- Version: 7.1.3 (as bundled with the official Qt installer)
+
+FFmpeg is used indirectly through the Qt Multimedia module for video exports.
+Blerch uses Qt's officially distributed FFmpeg binaries, which are built without GPL-only
+components. FFmpeg is loaded as dynamic plugin.
+
+---
+
+### gif-h
+
+- License: The Unlicense (Public Domain)
+- Author: Charlie Tangora
+- Source code: https://github.com/charlietangora/gif-h
+- License Text: https://unlicense.org/
+
+gif-h by Charlie Tangora is used for GIF exports. Huge thank you to Charlie.
+gif-h is under The Unlicense and thus no attribution is legally required, but is included
+because this would not be possible as easily without gif-h.
+
+---
+
+## A Note on Licensing
+
+The above licenses (LGPLv3, LGPLv2.1+) apply only to the respective third-party libraries
+and their own source code. They do not impose licensing terms on Blerch's own source code,
+which is licensed separately. See [LICENSE.txt](./LICENSE.txt) for details.
