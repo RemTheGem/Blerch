@@ -4,9 +4,12 @@ A simple Desktop application built with Qt and C++ to make pixel art and animati
 ## Features
 ### Drawing
 - Brush, Eraser, Eyedropper, Fill, Select, Move
+- Brush modes: shade, lighten, blend
 - Shape Tool: Rectangle, Circle, Ellipse, Line
 - Adjustable brush size
+- Pixel perfect drawing
 - Horizontal and Vertical symmetry drawing
+- Select, copy and paste selections and frames, move and transform selections
 ### Layers
 - Add, remove, reorder, rename layers
 - Per layer opacity
@@ -15,8 +18,8 @@ A simple Desktop application built with Qt and C++ to make pixel art and animati
 - Per frame duration and, live play and pause
 ### Color and Palettes
 - Auto-generated frequency based palette built for each frame (Ranked by most frequent colors used to least)
-- Builtin Palette presets with: Pico-8, Sweetie 16, DawnBringer 16/32, Endesga 32, Resurrect 64
-- Import custom .gpl palettes
+- Builtin Palette presets with: Pico-8, Sweetie 16, DawnBringer 16/32, Endesga 32, Resurrect 64, Gothic-bit
+- Import and export custom .gpl palettes
 ### Import / Export
 - Import reference image as movable and scalable layer
 - Convert photo into pixel art (with median cut color quantization)
@@ -40,7 +43,9 @@ A simple Desktop application built with Qt and C++ to make pixel art and animati
 ### Misc
 - Undo and redo
 - Persistent memory for recent files
+- Autosave recovery files in case something goes wrong (which shouldn't but you never know)
 - Keyboard Shortcuts
+- Light and dark mode for canvas (Blerch uses OS theme)
 
 - More on the way!! (If i dont forget about this)
 (I may have forgotten some features lmao)
@@ -58,6 +63,8 @@ An inside look as of version 1.2.3 (I did NOT know how semantic versioning worke
 <p float="left">
 <img src="images/64 scale rat.gif" width="45%" height="550"/><img src="images/fu sprite sheet.png" width="45%" height="550"/>
 </p>
+
+(Apologies for the shit code. First ever proper project. lots to learn still)
 
 ## Coming Soon
 - Any feature suggestions are welcome!
