@@ -7,12 +7,14 @@
 #include <QString>
 #include <QVector>
 #include <QList>
+#include <QHash>
 
 enum class LayerType{
     Pixel,
     Reference
 };
 struct Layer {
+    int id = -1;
     int width;
     int height;
     float opacity = 1.0f;
@@ -44,6 +46,8 @@ enum class UndoType{
     Snapshot
 };
 struct UndoAction{
+    int layerId;
+    qint64 seq = 0;
     UndoType type;
     QVector<PixelChange> changes;
     QVector<Layer> before;
@@ -52,8 +56,10 @@ struct UndoAction{
 struct Frame{
     QList<Layer> layers;
     int duration = 100;
-    QVector<UndoAction> undoStack;
-    QVector<UndoAction> redoStack;
+    QHash<int, QVector<UndoAction>> undoStack;
+    QHash<int, QVector<UndoAction>> redoStack;
+    QVector<UndoAction> frameUndoStack;
+    QVector<UndoAction> frameRedoStack;
     bool isEmpty() const { return layers.isEmpty();}
 };
 

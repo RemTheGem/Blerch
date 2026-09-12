@@ -107,17 +107,17 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
                 affectedPixels.insert(key);
             }
             if(recordUndo){
-                int layer = document->getActiveLayer();
+                int layerId = document->activeLayer_().id;
                 QColor oldColor = document->activeLayer_().at(px, py);
                 bool alreadyRecorded = false;
                 for(const auto &change : std::as_const(currentAction)){
-                    if(change.layer == layer && change.x == px && change.y == py){
+                    if(change.layer == layerId && change.x == px && change.y == py){
                         alreadyRecorded = true;
                         break;
                     }
                 }
                 if(!alreadyRecorded){
-                    currentAction.push_back({layer, px, py, oldColor, color});
+                    currentAction.push_back({layerId, px, py, oldColor, color});
                 }
             }
             document->activeLayer_().at(px, py) = color;
@@ -147,17 +147,17 @@ void PixelCanvas::setPixel(int x, int y, const QColor &color, bool recordUndo){
     if (x >= 0 && x < document->activeLayer_().width &&
         y >= 0 && y < document->activeLayer_().height && document->activeLayer_().at(x, y) != color){
         if(recordUndo){
-            int layer = document->getActiveLayer();
+            int layerId = document->activeLayer_().id;
             QColor oldColor = document->activeLayer_().at(x, y);
             bool alreadyRecorded = false;
             for(const auto &change : std::as_const(currentAction)){
-                if(change.layer == layer && change.x == x && change.y == y){
+                if(change.layer == layerId && change.x == x && change.y == y){
                     alreadyRecorded = true;
                     break;
                 }
             }
             if(!alreadyRecorded){
-                currentAction.push_back({layer, x, y, oldColor, color});
+                currentAction.push_back({layerId, x, y, oldColor, color});
             }
         }
         document->activeLayer_().at(x, y) = color;
@@ -738,9 +738,8 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     if(!currentAction.empty()){
         UndoAction action;
         action.type = UndoType::Pixel;
+        action.layerId = document->activeLayer_().id;
         action.changes = currentAction;
-
-
         document->pushUndoAction(action);
     }
     affectedPixels.clear();
@@ -828,10 +827,10 @@ void PixelCanvas::beginFloatingSelection(){
     rebuildTransformPreview();
 }
 void PixelCanvas::undoStrokePixel(const QPoint &point){
-    int layer = document->getActiveLayer();
+    int layerId = document->activeLayer_().id;
     for(const auto &point : mirroredPointsPixelPerfect(point)){
         for(const auto &change : std::as_const(currentAction)){
-            if(change.layer == layer && change.x == point.x() && change.y == point.y()){
+            if(change.layer == layerId && change.x == point.x() && change.y == point.y()){
                 document->activeLayer_().at(point.x(), point.y()) = change.oldColor;
                 break;
             }
@@ -1019,6 +1018,7 @@ void PixelCanvas::commitMove(){
     if(!currentAction.empty()){
         UndoAction action;
         action.type = UndoType::Pixel;
+        action.layerId = document->activeLayer_().id;
         action.changes = currentAction;
         document->pushUndoAction(action);
     }
@@ -1063,6 +1063,7 @@ void PixelCanvas::commitPaste(){
     if(!currentAction.empty()){
         UndoAction action;
         action.type = UndoType::Pixel;
+        action.layerId = document->activeLayer_().id;
         action.changes = currentAction;
         document->pushUndoAction(action);
     }
@@ -1161,6 +1162,7 @@ void PixelCanvas::switchFrame(int index){
     if(!currentAction.empty()){
         UndoAction action;
         action.type = UndoType::Pixel;
+        action.layerId = document->activeLayer_().id;
         action.changes = currentAction;
         document->pushUndoAction(action);
     }

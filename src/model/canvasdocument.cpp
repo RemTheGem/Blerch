@@ -96,6 +96,7 @@ void CanvasDocument::addLayer(){
     layer.name = "Layer " + QString::number(frames[currentFrameIndex].layers.size() + 1);
     layer.width = canvasWidth;
     layer.height = canvasHeight;
+    layer.id = nextLayerId++;
     layer.visible = true;
     layer.pixels.resize(layer.width * layer.height);
     for(auto &pixel : layer.pixels) pixel = Qt::transparent;
@@ -106,7 +107,10 @@ void CanvasDocument::addLayer(){
 }
 void CanvasDocument::removeLayer(int index){
     if(frames[currentFrameIndex].layers.size() <=1) return;
+    int id = frames[currentFrameIndex].layers[index].id;
     frames[currentFrameIndex].layers.erase(frames[currentFrameIndex].layers.begin() + index);
+    frames[currentFrameIndex].undoStack.remove(id);
+    frames[currentFrameIndex].redoStack.remove(id);
     activeLayerIndex = std::clamp(activeLayerIndex, 0, (int)frames[currentFrameIndex].layers.size() -1);
     emit layerChanged();
 }
@@ -282,38 +286,65 @@ void CanvasDocument::loadFrames(const QList<Frame> &newFrames){
 
 
 void CanvasDocument::pushUndoAction(const UndoAction &action){
-    frames[currentFrameIndex].undoStack.push_back(action);
-    frames[currentFrameIndex].redoStack.clear();
+    Frame &frame = frames[currentFrameIndex];
+    UndoAction actionLocal = action;
+    actionLocal.seq = nextSeq++;
+    if(actionLocal.type == UndoType::Snapshot){
+        frame.frameUndoStack.push_back(actionLocal);
+        frame.frameRedoStack.clear();
+    }
+    else{
+        frames[currentFrameIndex].undoStack[actionLocal.layerId].push_back(actionLocal);
+        frames[currentFrameIndex].redoStack[actionLocal.layerId].clear();
+    }
+}
+Layer *CanvasDocument::layerById(Frame &frame, int id){
+    for(auto &layer : frame.layers){
+        if(layer.id == id) return &layer;
+    }
+    return nullptr;
 }
 void CanvasDocument::undo(){
+    int id = activeLayer_().id;
     Frame &frame = frames[currentFrameIndex];
-    if(frame.undoStack.empty()) return;
-    UndoAction action = frame.undoStack.back();
-    frame.undoStack.pop_back();
-    if(action.type == UndoType::Pixel){
-        for(auto &change : action.changes ){
-            frame.layers[change.layer].at(change.x, change.y) = change.oldColor;
-        }
-    }
-    else if(action.type == UndoType::Snapshot){
+    auto &stack = frame.undoStack[id];
+    auto &frameStack = frame.frameUndoStack;
+    if(stack.isEmpty() && frameStack.isEmpty()) return;
+    bool useFrame = !frameStack.isEmpty() && (stack.isEmpty() || frameStack.back().seq > stack.back().seq);
+    if(useFrame){
+        UndoAction action = frameStack.takeLast();
         frame.layers = action.before;
+        frame.frameRedoStack.push_back(action);
     }
-    frame.redoStack.push_back(action);
+    else{
+        UndoAction action = stack.takeLast();
+        for(auto &change : action.changes){
+            if(Layer *layer = layerById(frame, change.layer))
+                layer->at(change.x, change.y) = change.oldColor;
+        }
+        frame.redoStack[id].push_back(action);
+    }
     emit documentMutated();
 }
 void CanvasDocument::redo(){
+    int id = activeLayer_().id;
     Frame &frame = frames[currentFrameIndex];
-    if(frame.redoStack.empty()) return;
-    UndoAction action = frame.redoStack.back();
-    frame.redoStack.pop_back();
-    if(action.type== UndoType::Pixel){
-        for(auto &change : action.changes){
-            frame.layers[change.layer].at(change.x, change.y) = change.newColor;
-        }
-    }
-    else if(action.type == UndoType::Snapshot){
+    auto &stack = frame.redoStack[id];
+    auto &frameStack = frame.frameRedoStack;
+    if(stack.isEmpty() && frameStack.isEmpty()) return;
+    bool useFrame = !frameStack.isEmpty() && (stack.isEmpty() || frameStack.back().seq > stack.back().seq);
+    if(useFrame){
+        UndoAction action = frameStack.takeLast();
         frame.layers = action.after;
+        frame.frameUndoStack.push_back(action);
     }
-    frame.undoStack.push_back(action);
+    else{
+        UndoAction action = stack.takeLast();
+        for(auto &change : action.changes){
+            if(Layer *layer = layerById(frame, change.layer))
+                layer->at(change.x, change.y) = change.newColor;
+        }
+        frame.undoStack[id].push_back(action);
+    }
     emit documentMutated();
 }

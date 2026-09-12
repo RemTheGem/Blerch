@@ -37,6 +37,7 @@ public:
     void makeTempLayer();
     void removeTempLayer();
 
+    Layer *layerById(Frame &frame, int id);
     Layer &activeLayer_();
     const Layer &activeLayer_() const;
     Frame &currentFrame_();
@@ -77,6 +78,8 @@ private:
     int currentFrameIndex = 0;
     int activeLayerIndex = 0;
     int rememberLayer = 0;
+    qint64 nextSeq = 0;
+    int nextLayerId = 0;
     QList<Frame> frames;
     Frame copiedFrame;
     QHash<QRgb, int> colorFrequency;
