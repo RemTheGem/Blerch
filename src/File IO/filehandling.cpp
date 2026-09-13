@@ -82,6 +82,7 @@ void FileHandling::loadPicture(const QString &path)
     Layer layer;
     layer.type = LayerType::Reference;
     layer.name = QFileInfo(path).baseName();
+    layer.id = document->giveLayerId();
     layer.image.load(path);
     layer.width = document->currentFrame_().layers[0].width;
     layer.height = document->currentFrame_().layers[0].height;

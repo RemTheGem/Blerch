@@ -11,5 +11,8 @@
         <file>resources/blerch.ico</file>
         <file>blerch.png</file>
         <file>resources/blerch.icns</file>
+        <file>palettes/apollo.gpl</file>
+        <file>palettes/cc-29.gpl</file>
+        <file>palettes/duel.gpl</file>
     </qresource>
 </RCC>

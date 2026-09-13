@@ -47,19 +47,16 @@ enum class UndoType{
 };
 struct UndoAction{
     int layerId;
-    qint64 seq = 0;
     UndoType type;
     QVector<PixelChange> changes;
-    QVector<Layer> before;
-    QVector<Layer> after;
+    Layer before;
+    Layer after;
 };
 struct Frame{
     QList<Layer> layers;
     int duration = 100;
     QHash<int, QVector<UndoAction>> undoStack;
     QHash<int, QVector<UndoAction>> redoStack;
-    QVector<UndoAction> frameUndoStack;
-    QVector<UndoAction> frameRedoStack;
     bool isEmpty() const { return layers.isEmpty();}
 };
 

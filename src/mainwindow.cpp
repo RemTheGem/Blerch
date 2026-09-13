@@ -179,6 +179,9 @@ MainWindow::MainWindow(QWidget *parent)
     paletteSelector->addItem("DawnBringer 32", ":/palettes/dawnbringer-32.gpl");
     paletteSelector->addItem("Endesga 32", ":/palettes/endesga-32.gpl");
     paletteSelector->addItem("Resurrect 64", ":/palettes/resurrect-64.gpl");
+    paletteSelector->addItem("Duel", ":/palettes/duel.gpl");
+    paletteSelector->addItem("Apollo", ":/palettes/apollo.gpl");
+    paletteSelector->addItem("CC-29", ":/palettes/cc-29.gpl");
     paletteSelector->addItem("Gothic-bit", ":/palettes/gothic-bit.gpl");
     brushSizeSlider->setRange(1,16);
     brushSizeSlider->setValue(1);

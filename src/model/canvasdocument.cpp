@@ -287,16 +287,9 @@ void CanvasDocument::loadFrames(const QList<Frame> &newFrames){
 
 void CanvasDocument::pushUndoAction(const UndoAction &action){
     Frame &frame = frames[currentFrameIndex];
-    UndoAction actionLocal = action;
-    actionLocal.seq = nextSeq++;
-    if(actionLocal.type == UndoType::Snapshot){
-        frame.frameUndoStack.push_back(actionLocal);
-        frame.frameRedoStack.clear();
-    }
-    else{
-        frames[currentFrameIndex].undoStack[actionLocal.layerId].push_back(actionLocal);
-        frames[currentFrameIndex].redoStack[actionLocal.layerId].clear();
-    }
+    frame.undoStack[action.layerId].push_back(action);
+    frame.redoStack[action.layerId].clear();
+
 }
 Layer *CanvasDocument::layerById(Frame &frame, int id){
     for(auto &layer : frame.layers){
@@ -308,43 +301,37 @@ void CanvasDocument::undo(){
     int id = activeLayer_().id;
     Frame &frame = frames[currentFrameIndex];
     auto &stack = frame.undoStack[id];
-    auto &frameStack = frame.frameUndoStack;
-    if(stack.isEmpty() && frameStack.isEmpty()) return;
-    bool useFrame = !frameStack.isEmpty() && (stack.isEmpty() || frameStack.back().seq > stack.back().seq);
-    if(useFrame){
-        UndoAction action = frameStack.takeLast();
-        frame.layers = action.before;
-        frame.frameRedoStack.push_back(action);
-    }
-    else{
-        UndoAction action = stack.takeLast();
+    if(stack.isEmpty()) return;
+    UndoAction action = stack.takeLast();
+    if(action.type == UndoType::Pixel){
         for(auto &change : action.changes){
-            if(Layer *layer = layerById(frame, change.layer))
+            if(Layer *layer = layerById(frame, change.layer)){
                 layer->at(change.x, change.y) = change.oldColor;
+            }
         }
-        frame.redoStack[id].push_back(action);
     }
+    else if(action.type == UndoType::Snapshot){
+        if(Layer *layer = layerById(frame, action.layerId)) *layer = action.before;
+    }
+    frame.redoStack[id].push_back(action);
     emit documentMutated();
 }
 void CanvasDocument::redo(){
     int id = activeLayer_().id;
     Frame &frame = frames[currentFrameIndex];
     auto &stack = frame.redoStack[id];
-    auto &frameStack = frame.frameRedoStack;
-    if(stack.isEmpty() && frameStack.isEmpty()) return;
-    bool useFrame = !frameStack.isEmpty() && (stack.isEmpty() || frameStack.back().seq > stack.back().seq);
-    if(useFrame){
-        UndoAction action = frameStack.takeLast();
-        frame.layers = action.after;
-        frame.frameUndoStack.push_back(action);
-    }
-    else{
-        UndoAction action = stack.takeLast();
+    if(stack.isEmpty()) return;
+    UndoAction action = stack.takeLast();
+    if(action.type == UndoType::Pixel){
         for(auto &change : action.changes){
-            if(Layer *layer = layerById(frame, change.layer))
+            if(Layer *layer = layerById(frame, change.layer)){
                 layer->at(change.x, change.y) = change.newColor;
+            }
         }
-        frame.undoStack[id].push_back(action);
     }
+    else if(action.type == UndoType::Snapshot){
+        if(Layer *layer = layerById(frame, action.layerId)) *layer = action.after;
+    }
+    frame.undoStack[id].push_back(action);
     emit documentMutated();
 }

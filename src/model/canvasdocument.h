@@ -36,6 +36,7 @@ public:
     int getActiveLayer() const;
     void makeTempLayer();
     void removeTempLayer();
+    int giveLayerId(){return nextLayerId++;}
 
     Layer *layerById(Frame &frame, int id);
     Layer &activeLayer_();
