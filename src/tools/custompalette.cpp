@@ -62,13 +62,32 @@ void CustomPalette::clearPalette(){
 
 void CustomPalette::randomizePalette(){
     QList<QColor> randomColors;
+    int hueCount = QRandomGenerator::global()->bounded(1, 5);
+    QList<int> hues;
     int size = 16;
+    for(int i = 0; i< hueCount; i++){
+        hues.append(QRandomGenerator::global()->bounded(360));
+    }
+    int baseSaturation = QRandomGenerator::global()->bounded(150, 256);
     for(int i  = 0; i < size; i++){
-        int h = QRandomGenerator::global()->bounded(0, 359);
-        int s = QRandomGenerator::global()->bounded(0, 255);
-        int v = QRandomGenerator::global()->bounded(0, 255);
+        int baseHue = hues[QRandomGenerator::global()->bounded(hues.size())];
+        int h = baseHue + QRandomGenerator::global()->bounded(-30, 31);
+        h = (h + 360) % 360;
+        int s = baseSaturation + QRandomGenerator::global()->bounded(-40, 41);
+        s = qBound(0, s, 255);
+        int v = 40 + (i * 215 / (size -1));
+        v += QRandomGenerator::global()->bounded(-15, 16);
+        v = qBound ( 0, v, 255);
         QColor color = QColor::fromHsv(h, s, v);
         randomColors.append(color);
     }
+    sortColors(randomColors);
     setColors(randomColors);
+}
+
+void CustomPalette::sortColors(QList<QColor> &colors){
+    std::sort(colors.begin(), colors.end(), [](const QColor &a, const QColor &b){
+        if(a.value() != b.value()) return a.value() < b.value();
+        return a.hsvHue() < b.hsvHue();
+    });
 }

@@ -14,6 +14,7 @@ public:
     void loadGPL(const QString &fileName);
     void clearPalette();
     void randomizePalette();
+    void sortColors(QList<QColor> &colors);
 
 signals:
     void colorSelected(QColor color);
