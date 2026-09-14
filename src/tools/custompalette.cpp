@@ -1,6 +1,8 @@
 #include "custompalette.h"
 #include <QRegularExpression>
 #include <QFile>
+#include <QRandomGenerator>
+
 CustomPalette::CustomPalette(QWidget *parent)
     : QWidget{parent}
 {
@@ -56,4 +58,17 @@ void CustomPalette::loadGPL(const QString &fileName){
 void CustomPalette::clearPalette(){
     colors.clear();
     emit paletteUpdatedCustom(colors);
+}
+
+void CustomPalette::randomizePalette(){
+    QList<QColor> randomColors;
+    int size = 16;
+    for(int i  = 0; i < size; i++){
+        int h = QRandomGenerator::global()->bounded(0, 359);
+        int s = QRandomGenerator::global()->bounded(0, 255);
+        int v = QRandomGenerator::global()->bounded(0, 255);
+        QColor color = QColor::fromHsv(h, s, v);
+        randomColors.append(color);
+    }
+    setColors(randomColors);
 }

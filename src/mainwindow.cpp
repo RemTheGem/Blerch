@@ -187,6 +187,7 @@ MainWindow::MainWindow(QWidget *parent)
     brushSizeSlider->setValue(1);
     brushAmountSlider->setRange(1, 100);
     brushAmountSlider->setValue(10);
+    QPushButton *randomPaletteButton = new QPushButton("🎲");
     QPushButton *pixelPerfectButton = new QPushButton("Pixel Perfect Drawing");
     QPushButton *horizontalSymmetryButton = new QPushButton("Horizontal Symmetry");
     QPushButton *verticalSymmetryButton = new QPushButton ("Vertical Symmetry");
@@ -246,6 +247,7 @@ MainWindow::MainWindow(QWidget *parent)
     paletteLayout->addWidget(onionOptions);
     paletteLayout->addWidget(customPaletteLabel);
     paletteLayout->addWidget(paletteSelector);
+    paletteLayout->addWidget(randomPaletteButton);
     paletteLayout->addWidget(customPalette);
     paletteLayout->addWidget(paletteLabel);
     paletteLayout->addWidget(paletteW);
@@ -839,6 +841,10 @@ MainWindow::MainWindow(QWidget *parent)
             QVariantMap map = data.toMap();
             customPalette->loadGPL(map["path"].toString());
         }
+    });
+    connect(randomPaletteButton, &QPushButton::clicked, this, [=](){
+        paletteSelector->setCurrentIndex(0);
+        customPalette->randomizePalette();
     });
     connect(flipHorizontal, &QAction::triggered, [=](){
         canvas->flipHorizontal();

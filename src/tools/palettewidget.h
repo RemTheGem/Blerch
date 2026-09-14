@@ -11,6 +11,7 @@ class paletteWidget : public QWidget
 public:
     explicit paletteWidget(QWidget *parent = nullptr);
     void setColors(const QList<QColor> &colors);
+
 signals:
     void colorSelected(QColor color);
 protected:
