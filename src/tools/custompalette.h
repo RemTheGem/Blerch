@@ -15,6 +15,8 @@ public:
     void clearPalette();
     void randomizePalette();
     void sortColors(QList<QColor> &colors);
+    bool tooSimilar(const QColor &candidate, const QList<QColor> &existing, int minDistance);
+    int colorDistance(const QColor &a, const QColor &b);
 
 signals:
     void colorSelected(QColor color);
