@@ -265,6 +265,7 @@ QImage CanvasDocument::renderFrame(int frameIndex) const {
     painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
     for(const auto &layer :frames[frameIndex].layers){
         if(!layer.visible) continue;
+        if(layer.type == LayerType::Reference) continue;
         painter.setOpacity(layer.opacity);
         for(int y = 0; y < layer.height; y ++){
             for(int x = 0; x < layer.width; x++){

@@ -140,9 +140,6 @@ void FileHandling::loadFromJson(QJsonObject root)
 }
 void FileHandling::pictureToPixel(const QString &path, PictureImportDialog &dialog){
 
-    Layer layer;
-    layer.type = LayerType::Pixel;
-    layer.name = QFileInfo(path).baseName();
     MedianCut medianCut;
     int targetWidth = dialog.width();
     int targetHeight = dialog.height();
@@ -156,8 +153,10 @@ void FileHandling::pictureToPixel(const QString &path, PictureImportDialog &dial
     }
     document->resizeCanvas(image.width(), image.height());
     canvas->updateCanvasSize();
+    document->addLayer();
+    document->activeLayer_().name = QFileInfo(path).baseName();
     auto palette = medianCut.medianCut(image, paletteSize);
-    layer.pixels.resize(document->getCanvasWidth() * document->getCanvasHeight());
+    document->activeLayer_().pixels.resize(document->getCanvasWidth() * document->getCanvasHeight());
     for (int y = 0; y < document->getCanvasHeight(); y++) {
         for (int x = 0; x < document->getCanvasWidth(); x++) {
             QColor original = image.pixelColor(x, y);
