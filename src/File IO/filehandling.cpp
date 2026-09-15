@@ -99,12 +99,12 @@ void FileHandling::loadFromJson(QJsonObject root)
     QJsonArray frameArray = root["frames"].toArray();
     if (frameArray.isEmpty()) return;
     QList<Frame> loadedFrames;
-    for(const auto &frameValue : frameArray){
+    for(const auto &frameValue : std::as_const(frameArray)){
         QJsonObject frameObject = frameValue.toObject();
         Frame frame;
         frame.duration = frameObject["duration"].toInt(100);
         QJsonArray layerArray = frameObject["layers"].toArray();
-        for(const auto &layerValue : layerArray){
+        for(const auto &layerValue : std::as_const(layerArray)){
             QJsonObject layerObject = layerValue.toObject();
             Layer layer;
             layer.name =  layerObject["name"].toString();
@@ -189,116 +189,6 @@ void FileHandling::saveSpriteSheet(const QString &path, int cols, int scale){
     painter.end();
     spriteSheet.save(path);
 }
-/*
-void FileHandling::saveGIF(const QString &path, int scale){
-    QByteArray filePath = path.toUtf8();
-    GifWriter writer = {};
-    int imageWidth = document->getCanvasWidth();
-    int imageHeight = document->getCanvasHeight();
-    int maxScale = qMin(64, 8192/qMax(imageWidth, imageHeight));
-    scale = qBound(1,scale,maxScale);
-    int outWidth = imageWidth *scale;
-    int outHeight = imageHeight *scale;
-    if(!GifBegin(&writer, filePath.constData(), outWidth, outHeight, document->getThisFrameDuration(0)/10)){
-        qDebug()<< "Gif Begin failed";
-        return;
-    }
-    for(int i = 0; i < document->getFrameSize(); i++){
-        qDebug() << "Rendering Frame: " << i;
-        QImage image = document->renderFrame(i).convertToFormat(QImage::Format_RGBA8888);
-        qDebug() << "Writing Frame: " << i;
-        if(!GifWriteFrameScaled(&writer, image.constBits(), imageWidth, imageHeight, scale, document->getThisFrameDuration(i)/10)){
-            qDebug() << "Gif write faile on frame" << i;
-            GifEnd(&writer);
-            return;
-        }
-        qDebug()<<"Gif write successful. Frame: " << i;
-    }
-    GifEnd(&writer);
-    qDebug() << "finished";
-}
-
-void FileHandling::GIFToPixel(const QString &path, PictureImportDialog &dialog){
-
-    QImageReader reader(path);
-    if (!reader.supportsAnimation()){
-        return;
-    }
-    int totalFrames = reader.imageCount();
-    QVector<Frame> postFrames;
-    postFrames.reserve(totalFrames);
-    MedianCut medianCut;
-    QImage firstImage = reader.read();
-    if(dialog.keepAspect()){
-        firstImage = firstImage.scaled(dialog.width(), dialog.height(), Qt::KeepAspectRatio, Qt::FastTransformation);
-    }
-    else {
-        firstImage = firstImage.scaled(dialog.width(), dialog.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
-    }
-    int targetWidth = firstImage.width();
-    int targetHeight = firstImage.height();
-    int paletteSize = dialog.colors();
-    document->resizeCanvas(targetWidth , targetHeight);
-    canvas->updateCanvasSize();
-    QElapsedTimer timer;
-    for(int x=0; x < totalFrames; x++){
-        // if(!reader.jumpToImage(x)) break;
-        timer.restart();
-        Frame frame;
-        Layer layer;
-        layer.type = LayerType::Pixel;
-        QImage image = reader.read();
-        qDebug() << "Read: " << timer.elapsed();
-        timer.restart();
-        if(image.isNull()) continue;
-        if(dialog.keepAspect()){
-            image = image.scaled(targetWidth, targetHeight, Qt::KeepAspectRatio, Qt::FastTransformation);
-        }
-        else {
-            image = image.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
-        }
-        qDebug() << "Scaled: " << timer.elapsed();
-        timer.restart();
-        layer.width = image.width();
-        layer.height = image.height();
-        layer.name = QFileInfo(path).baseName();
-        auto palette = medianCut.medianCut(image, paletteSize);
-        qDebug() << "Palette: " << timer.elapsed();
-        timer.restart();
-        QImage argb = image.convertToFormat(QImage::Format_ARGB32);
-        std::unordered_map<QRgb, QColor> nearestCache;
-        nearestCache.reserve(4096);
-        layer.pixels.resize(argb.width() * argb.height());
-        for (int y = 0; y < argb.height(); y++) {
-            const QRgb* line = reinterpret_cast<const QRgb*> (argb.constScanLine(y));
-            for (int x = 0; x < argb.width(); x++) {
-                QRgb rgb = line[x];
-                if (qAlpha(rgb) == 0){
-                    layer.at(x, y) = Qt::transparent;
-                    continue;
-                }
-                auto it = nearestCache.find(rgb);
-                if(it != nearestCache.end()){
-                    layer.at(x,y) = it->second;
-                }
-                else{
-                    QColor nearest = medianCut.nearestColor(QColor(rgb), palette);
-                    nearestCache.emplace(rgb, nearest);
-                    layer.at(x,y) = nearest;
-                }
-            }
-        }
-        qDebug() << "Conversion: " << timer.elapsed();
-        timer.restart();
-        frame.layers.push_back(layer);
-        postFrames.append(frame);
-
-    }
-    document->loadFrames(postFrames);
-    document->buildPalette();
-    emit documentUpdated();
-}
-*/
 void FileHandling::saveGPL(const QString &fileName){
     QFile file(fileName);
     if(!usedColors.empty()){

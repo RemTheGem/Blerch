@@ -117,7 +117,7 @@ public:
     void cancelMove(); // cancel move
     void commitPaste(); // confirm paste
     void cancelPaste(); // cancel paste
-    void drawChecker(QPainter &painter); // draw the checkerboard in the background
+    void drawChecker(QPainter &painter, const QRect &area); // draw the checkerboard in the background
     void drawSelectionPreview(QPainter &painter); // draws the dotted line that shows selection
     void paintLine(int x0, int y0, int x1, int y1, const std::function<QColor(int, int)> &colorAt, bool recordUndo = true);
     Selection::Handle hitTransformHandle(QPointF pos);
@@ -129,6 +129,10 @@ public:
     void undoStrokePixel(const QPoint &point);
     void setPixelPerfect(bool enabled) { pixelPerfect = enabled;}
     bool isPixelPerfect() const {return pixelPerfect;}
+    QImage layerToImage(const Layer &layer);
+    void rebuildLayerCaches();
+    void flushDirtyRect();
+    void clearLayerPreview();
     // onion methods
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
@@ -186,6 +190,8 @@ private:
     static constexpr double handleHalfSize = 4.0;
     bool pixelPerfect = false;
     QVector<QPoint> strokeHistory;
+    QHash<int, QImage> layerCache;
+    QRect dirtyRect;
     // others
 
 

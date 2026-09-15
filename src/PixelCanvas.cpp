@@ -24,21 +24,33 @@ PixelCanvas::PixelCanvas(QWidget *parent)
     document = new CanvasDocument(this);
     connect(document, &CanvasDocument::documentMutated, this, [this]{
         selection = Selection();
+        rebuildLayerCaches();
         update();
     });
-    connect(document, &CanvasDocument::layerChanged, this,[this]{update();});
-    connect(document, &CanvasDocument::frameChanged, this, [this]{update();});
-    connect(document, &CanvasDocument::canvasSizeChanged, this, [this]{updateCanvasSize();});
+    connect(document, &CanvasDocument::layerChanged, this,[this]{
+        rebuildLayerCaches();
+        update();
+    });
+    connect(document, &CanvasDocument::frameChanged, this, [this]{
+        rebuildLayerCaches();
+        update();
+    });
+    connect(document, &CanvasDocument::canvasSizeChanged, this, [this]{
+        updateCanvasSize();
+        rebuildLayerCaches();
+    });
+    rebuildLayerCaches();
     updateCanvasSize();
     setMouseTracking(true);
 }
 
 // paint events
-void PixelCanvas::paintEvent(QPaintEvent *)
+void PixelCanvas::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
     // draw the checkered background
-    drawChecker(painter);
+    painter.setClipRect(event->rect());
+    drawChecker(painter, event->rect());
     // draw all layers
     for (const auto &layer : std::as_const(document->currentFrame_().layers))
     {
@@ -47,18 +59,8 @@ void PixelCanvas::paintEvent(QPaintEvent *)
         painter.setOpacity(layer.opacity);
         // if its a pixel layer draw pixels
         if(layer.type == LayerType::Pixel){
-        for (int y = 0; y < layer.height; y++)
-        {
-            for (int x = 0; x < layer.width; x++)
-            {
-                QRect rect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
-                QColor color = layer.at(x, y);
-                if(color != Qt::transparent)
-                {
-                    painter.fillRect(rect, color);
-                }
-            }
-        }
+            QImage &image = layerCache[layer.id];
+            painter.drawImage(QRect(0, 0, layer.width*pixelSize, layer.height*pixelSize), image);
         }
         // else if its a reference image then draw image
         else {
@@ -98,7 +100,7 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
 {
     // if we want to undo the drawing later (skip when drawing previews)
     auto draw = [&](int px, int py){
-        if (px >= 0 && px < document->activeLayer_().width +1 &&
+        if (px >= 0 && px < document->activeLayer_().width &&
             py >= 0 && py < document->activeLayer_().height && document->activeLayer_().at(px, py) != color){
             if(brushApplication == BrushApplication::OnePassPerStroke && recordUndo && currentTool == Tool::Brush){
                 QPair<int, int> key(px, py);
@@ -121,6 +123,9 @@ void PixelCanvas::paintColor(int x, int y, const QColor &color, bool recordUndo)
                 }
             }
             document->activeLayer_().at(px, py) = color;
+            int layerId = document->activeLayer_().id;
+            layerCache[layerId].setPixelColor(px,py, color);
+            dirtyRect |= QRect(px,py,1,1);
         }
     };
     int radius = brushSize / 2;
@@ -161,6 +166,9 @@ void PixelCanvas::setPixel(int x, int y, const QColor &color, bool recordUndo){
             }
         }
         document->activeLayer_().at(x, y) = color;
+        int layerId = document->activeLayer_().id;
+        layerCache[layerId].setPixelColor(x,y, color);
+        dirtyRect |= QRect(x,y,1,1);
     }
     autosaveDirty = true;
 }
@@ -188,9 +196,11 @@ void PixelCanvas::paintLine(int x0, int y0, int x1, int y1, const std::function<
     }
 }
 
-void PixelCanvas::drawChecker(QPainter &painter){
-    for (int y = 0; y < height(); y += pixelSize) {
-        for (int x = 0; x < width(); x += pixelSize) {
+void PixelCanvas::drawChecker(QPainter &painter, const QRect &area){
+    int startX = (area.left()/pixelSize) *pixelSize;
+    int startY = (area.top()/pixelSize) *pixelSize;
+    for (int y = startY; y < area.bottom(); y += pixelSize) {
+        for (int x = startX; x < area.right(); x += pixelSize) {
             bool dark = ((x / pixelSize) + (y / pixelSize)) % 2;
             if (dark)
                 if(darkMode){
@@ -368,6 +378,30 @@ void PixelCanvas::updateCanvasSize()
     setFixedSize(document->getCanvasWidth()*pixelSize, document->getCanvasHeight()*pixelSize);
     update();
 }
+QImage PixelCanvas::layerToImage(const Layer &layer){
+    QImage image(layer.width, layer.height, QImage::Format_ARGB32);
+    for(int y = 0; y <layer.height; y++){
+        for(int x = 0; x < layer.width; x++){
+            image.setPixelColor(x, y, layer.at(x, y));
+        }
+    }
+    return image;
+}
+void PixelCanvas::rebuildLayerCaches(){
+    layerCache.clear();
+    for(const auto &layer : std::as_const(document->currentFrame_().layers)) layerCache[layer.id] = layerToImage(layer);
+}
+void PixelCanvas::flushDirtyRect(){
+    if(dirtyRect.isNull()) return;
+    QRect widgetRect(dirtyRect.x()*pixelSize, dirtyRect.y()*pixelSize, (dirtyRect.width()+1)*pixelSize, (dirtyRect.height()+1)*pixelSize);
+    update(widgetRect);
+    dirtyRect = QRect();
+}
+void PixelCanvas::clearLayerPreview(){
+    document->clear();
+    QImage &image = layerCache[document->activeLayer_().id];
+    image.fill(Qt::transparent);
+}
 // mouse events
 void PixelCanvas::mousePressEvent(QMouseEvent *event)
 {
@@ -402,6 +436,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             else{
                 paintColor(x, y, getBrushColor(document->activeLayer_().at(x, y)));
             }
+            flushDirtyRect();
             break;
         case Tool::Eraser:
             lastPaintPos = QPoint(x,y);
@@ -412,6 +447,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             else{
                 paintColor(x, y, Qt::transparent);
             }
+            flushDirtyRect();
             break;
         case Tool::EyeDropper:
             currentColor = document->activeLayer_().at(x, y);
@@ -419,6 +455,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             break;
         case Tool::Fill:
             floodFill(x, y);
+            flushDirtyRect();
             break;
         case Tool::Select:
         {
@@ -426,7 +463,9 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             selection = Selection();
             selection.canMove = true;
             selection.dragStart = QPoint(x, y);
+            update();
             break;
+
         }
         case Tool::Move:
         {
@@ -449,6 +488,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             if(!selection.moveFloating){
                 beginFloatingSelection();
             }
+            update();
             break;
         }
         case Tool::Shape:{
@@ -456,11 +496,10 @@ void PixelCanvas::mousePressEvent(QMouseEvent *event)
             shape = Shape();
             shape.start = QPoint(x, y);
             document->makeTempLayer();
+            update();
             break;
         }
-        }
-
-        update();
+        }        
     }
     }
     else if(event->button() == Qt::RightButton){
@@ -531,7 +570,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
     // draw a preview of copied selection when pasting
     if(isPasting){
         if(selection.isEmpty(selection)) return;
-        document->clear();
+        clearLayerPreview();
         selection.movePosition = QPoint(event->position().x()/pixelSize, event->position().y()/pixelSize);
         for (int py = 0; py < selection.height+1; py++){
             for (int px = 0; px < selection.width+1; px++){
@@ -619,7 +658,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         }
         case Tool::Shape:{
             // draw a preview of how the shape will look
-            document->clear();
+            clearLayerPreview();
             shape.end = event->pos()/pixelSize;
             QPoint topLeft(std::min(shape.start.x(), shape.end.x()), std::min(shape.start.y(), shape.end.y()));
             QPoint bottomRight(std::max(shape.start.x(), shape.end.x()), std::max(shape.start.y(),shape.end.y()));
@@ -654,7 +693,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             }
         }
     }
-    if (changed) update();
+    if (changed) flushDirtyRect();
 }
 void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
@@ -772,7 +811,6 @@ void PixelCanvas::keyPressEvent(QKeyEvent *event){
 }
 // helper methods
 PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPointF pos){
-    const int hitRadius = qMax(1, 6/pixelSize);
     QPointF corners[4] = {
         {selection.pivot.x() - (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() - (selection.height+1)/2.0 * selection.scaleY},
         {selection.pivot.x() + (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() - (selection.height+1)/2.0 * selection.scaleY},
@@ -787,7 +825,7 @@ PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPointF pos){
     return Selection::Handle::None;
 }
 void PixelCanvas::rebuildTransformPreview(){
-    document->clear();
+    clearLayerPreview();
     QImage scaled = makeTransformedImage();
     int destX = qRound(selection.pivot.x() - scaled.width()/2.0);
     int destY = qRound(selection.pivot.y() - scaled.height()/2.0);
@@ -799,6 +837,9 @@ void PixelCanvas::rebuildTransformPreview(){
                 int colorY = destY +sy;
                 if(colorX < 0 || colorX >= document->activeLayer_().width || colorY  < 0 || colorY >= document->activeLayer_().height) continue;
                 document->activeLayer_().at(colorX, colorY) = color;
+                int layerId = document->activeLayer_().id;
+                layerCache[layerId].setPixelColor(colorX,colorY, color);
+                dirtyRect |= QRect(colorX,colorY,1,1);
             }
         }
     }

@@ -708,7 +708,10 @@ MainWindow::MainWindow(QWidget *parent)
             SettingsManager::instance().setCustomPalette(fileName);
         }
     });
-    connect(fileHandling, &FileHandling::documentUpdated, this, [this]{canvas->update();});
+    connect(fileHandling, &FileHandling::documentUpdated, this, [this]{
+        canvas->rebuildLayerCaches();
+        canvas->update();
+    });
     connect(zoomIn, &QAction::triggered, [=](){
         canvas->setZoom(canvas->getZoom() + 2);
     });
