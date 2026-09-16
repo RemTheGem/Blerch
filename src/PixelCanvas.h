@@ -31,6 +31,10 @@ public:
         QPoint topLeft; // used for move only. preview has its own
         QPoint bottomRight; // used for move only. preview has its own
         std::vector<QColor> colors;
+        // lasso selection
+        QPolygon lassoPoints;
+        QVector<bool> mask;
+        bool isLasso = false;
         // Transform variables
         float scaleX = 1.0f;
         float scaleY = 1.0f;
@@ -90,6 +94,10 @@ public:
         Continuous,
         OnePassPerStroke
     };
+    enum class SelectType{
+        Rectangle,
+        Lasso
+    };
 
     struct Shape{
         QPoint start;
@@ -133,6 +141,7 @@ public:
     void rebuildLayerCaches();
     void flushDirtyRect();
     void clearLayerPreview();
+    void buildLassoMask();
     // onion methods
     void drawOnionFrame(QPainter &painter, int frameIndex, float onionOpacity);
     QImage tintOnionFrame(QImage imageBefore, QImage imageAfter, QColor tint); // tint onion frame to different color
@@ -183,6 +192,7 @@ private:
     QColor previousFramesColor = Qt::red;
     QColor nextFramesColor = Qt::green;
     BrushMode brushMode = BrushMode::Normal;
+    SelectType selectType = SelectType::Lasso;
     float brushAmount = 0.1f;
     BrushApplication brushApplication = BrushApplication::OnePassPerStroke;
     QSet<QPair<int, int>> affectedPixels;

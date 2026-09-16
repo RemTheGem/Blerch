@@ -16,6 +16,7 @@
 #include <QJsonArray>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QPainterPath>
 
 // widgets
 PixelCanvas::PixelCanvas(QWidget *parent)
@@ -225,12 +226,20 @@ void PixelCanvas::drawSelectionPreview(QPainter &painter){
         pen.setWidth(3);
         pen.setStyle(Qt::DashLine);
         painter.setPen(pen);
-        QPoint topLeft(std::min(selection.dragStart.x(), selection.previewEnd.x()),
-                       std::min(selection.dragStart.y(), selection.previewEnd.y()));
-        QPoint bottomRight(std::max(selection.dragStart.x(), selection.previewEnd.x()),
-                           std::max(selection.dragStart.y(), selection.previewEnd.y()));
-        QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
-        painter.drawRect(selectionRect);
+        if(selectType == SelectType::Rectangle){
+            QPoint topLeft(std::min(selection.dragStart.x(), selection.previewEnd.x()),
+                           std::min(selection.dragStart.y(), selection.previewEnd.y()));
+            QPoint bottomRight(std::max(selection.dragStart.x(), selection.previewEnd.x()),
+                               std::max(selection.dragStart.y(), selection.previewEnd.y()));
+            QRect selectionRect(topLeft * pixelSize, (bottomRight + QPoint(1,1)) * pixelSize);
+            painter.drawRect(selectionRect);
+        }
+        if(selectType == SelectType::Lasso){
+            QPolygon screenPoly;
+            for(const QPoint &point : std::as_const(selection.lassoPoints))
+                screenPoly << point * pixelSize;
+            painter.drawPolygon(screenPoly);
+        }
     }
     if(currentTool == Tool::Move && selection.moveFloating){
         double halfWidth = (selection.width+1)/2.0 *selection.scaleX;
@@ -607,12 +616,20 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
             break;
         case Tool::Select:
         {
-            int eventX = event->position().x() / pixelSize;
-            int eventY = event->position().y() / pixelSize;
-            eventX = std::clamp(eventX, 0, document->activeLayer_().width - 1);
-            eventY = std::clamp(eventY, 0, document->activeLayer_().height - 1);
-            selection.previewEnd = QPoint(eventX, eventY);
-            update();
+            if(selectType == SelectType::Rectangle){
+                int eventX = event->position().x() / pixelSize;
+                int eventY = event->position().y() / pixelSize;
+                eventX = std::clamp(eventX, 0, document->activeLayer_().width - 1);
+                eventY = std::clamp(eventY, 0, document->activeLayer_().height - 1);
+                selection.previewEnd = QPoint(eventX, eventY);
+                update();
+            }
+            if(selectType == SelectType::Lasso){
+                QPoint point(std::clamp(x, 0, document->activeLayer_().width -1), std::clamp(y, 0, document->activeLayer_().height-1));
+                if(selection.lassoPoints.isEmpty() || selection.lassoPoints.last() != point)
+                    selection.lassoPoints << point;
+                update();
+            }
             break;
         }
         case Tool::Move:
@@ -715,6 +732,11 @@ void PixelCanvas::mouseReleaseEvent(QMouseEvent *event)
     switch(currentTool){
     case Tool::Select:
     {
+        if(selectType == SelectType::Lasso){
+            buildLassoMask();
+            update();
+            break;
+        }
         // end of selection. calculate the selections corners and save the colors in the selection
         int eventX = event->position().x()/ pixelSize;
         int eventY = event->position().y()/pixelSize;
@@ -810,6 +832,35 @@ void PixelCanvas::keyPressEvent(QKeyEvent *event){
     QWidget::keyPressEvent(event);
 }
 // helper methods
+void PixelCanvas::buildLassoMask(){
+    if(selection.lassoPoints.size() < 3) return;
+    QRect bounds = selection.lassoPoints.boundingRect();
+    selection.topLeft = bounds.topLeft();
+    selection.bottomRight = bounds.bottomRight();
+    selection.width = bounds.width()-1;
+    selection.height = bounds.height()-1;
+    QImage maskImage(bounds.size(), QImage::Format_Grayscale8);
+    maskImage.fill(0);
+    QPainterPath path;
+    path.addPolygon(QPolygonF(selection.lassoPoints.translated(-bounds.topLeft())).translated(0.5, 0.5));
+    path.closeSubpath();
+    QPainter maskPainter(&maskImage);
+    maskPainter.setRenderHint(QPainter::Antialiasing, false);
+    maskPainter.fillPath(path, Qt::white);
+    maskPainter.end();
+
+    selection.mask.resize((selection.width+1)*(selection.height+1));
+    selection.colors.clear();
+    for(int sy = 0; sy <= selection.height; sy++){
+        for(int sx = 0; sx <= selection.width; sx++){
+            bool inside = qGray(maskImage.pixel(sx, sy)) > 127;
+            selection.mask[sy*(selection.width+1)+sx] = inside;
+            QColor color = inside ? document->activeLayer_().at(bounds.x()+sx, bounds.y()+sy) : QColor(Qt::transparent);
+            selection.colors.push_back(color);
+        }
+    }
+    selection.isLasso = true;
+}
 PixelCanvas::Selection::Handle PixelCanvas::hitTransformHandle(QPointF pos){
     QPointF corners[4] = {
         {selection.pivot.x() - (selection.width+1)/2.0 * selection.scaleX, selection.pivot.y() - (selection.height+1)/2.0 * selection.scaleY},
@@ -1038,6 +1089,8 @@ void PixelCanvas::commitMove(){
     // this will be checked later to ensure we dont erase what we just put down
     for(int my = 0; my <= selection.height; my ++){
         for(int mx = 0; mx <= selection.width; mx ++){
+            int index = my * (selection.width+1)+mx;
+            if(selection.isLasso && index < selection.mask.size() && !selection.mask[index]) continue;
             setPixel(selection.topLeft.x() + mx, selection.topLeft.y()+my, Qt::transparent);
         }
     }
