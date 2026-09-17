@@ -116,6 +116,7 @@ public:
     void setVerticalSymmetry(bool enabled); // set vertical symmetry drawing
     void setTool(Tool tool); // set the current tool
     void setShape(ShapeType shape); // set shape
+    void setSelectType(SelectType type){selectType = type;}
     void drawRectangle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw a rectangle
     void drawCircle(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw a circle
     void drawEllipse(QPoint topLeft, QPoint bottomRight, bool recordUndo = true); // function to draw an ellipse
@@ -192,7 +193,7 @@ private:
     QColor previousFramesColor = Qt::red;
     QColor nextFramesColor = Qt::green;
     BrushMode brushMode = BrushMode::Normal;
-    SelectType selectType = SelectType::Lasso;
+    SelectType selectType = SelectType::Rectangle;
     float brushAmount = 0.1f;
     BrushApplication brushApplication = BrushApplication::OnePassPerStroke;
     QSet<QPair<int, int>> affectedPixels;

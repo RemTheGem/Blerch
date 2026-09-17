@@ -64,6 +64,11 @@ MainWindow::MainWindow(QWidget *parent)
     setFocusPolicy(Qt::StrongFocus);
     shapeButton->setText("Shape");
     QMenu *shapeMenu = new QMenu(shapeButton);
+
+    QToolButton *selectButton = new QToolButton(this);
+    setFocusPolicy(Qt::StrongFocus);
+    selectButton->setText("Select");
+    QMenu *selectMenu = new QMenu(selectButton);
     QApplication::setApplicationName("Blerch");
     setWindowTitle("Blerch");
     setWindowIcon(QIcon(":/blerch.png"));
@@ -128,6 +133,17 @@ MainWindow::MainWindow(QWidget *parent)
         canvas->setTool(PixelCanvas::Tool::Shape);
         canvas->setShape(PixelCanvas::ShapeType::Line);
         shapeButton->setChecked(true);
+    });
+    // select menu setup
+    selectMenu->addAction("Rectangle", [=]{
+        canvas->setTool(PixelCanvas::Tool::Select);
+        canvas->setSelectType(PixelCanvas::SelectType::Rectangle);
+        selectButton->setChecked(true);
+    });
+    selectMenu->addAction("Lasso", [=]{
+        canvas->setTool(PixelCanvas::Tool::Select);
+        canvas->setSelectType(PixelCanvas::SelectType::Lasso);
+        selectButton->setChecked(true);
     });
     // Layer setup
     QWidget *layerPanel = new QWidget(this);
@@ -290,6 +306,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *eyeDropperAction = toolbar->addAction("Eye Dropper");
     QAction *fillAction = toolbar->addAction("Fill");
     QAction *shapeAction = new QAction("Shape", this);
+    QAction *selectAction = new QAction("Select", this);
     QAction *pastePixels = new QAction("Paste", this);
     QAction *copyPixels = new QAction("Copy", this);
     QAction *copyFrameAction = new QAction("Copy Frame", this);
@@ -327,7 +344,10 @@ MainWindow::MainWindow(QWidget *parent)
     shapeButton->setMenu(shapeMenu);
     shapeButton->setPopupMode(QToolButton::MenuButtonPopup);
     toolbar->addWidget(shapeButton);
-    QAction *selectAction = toolbar->addAction("Select");
+    selectButton->setDefaultAction(selectAction);
+    selectButton->setMenu(selectMenu);
+    selectButton->setPopupMode(QToolButton::MenuButtonPopup);
+    toolbar->addWidget(selectButton);
     QAction *moveAction = toolbar->addAction("Move and Transform");
     QAction *pickColor = toolbar->addAction("Pick Color");
     colorPreview->setFixedSize(20,20);
@@ -511,9 +531,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(moveAction, &QAction::triggered, [=](){
         canvas->setTool(PixelCanvas::Tool::Move);
     });
-    connect(selectAction, &QAction::triggered, [=](){
-        canvas->setTool(PixelCanvas::Tool::Select);
-    });
     connect(undo, &QAction::triggered, [=](){
         document->undo();
         statusBar()->showMessage("Undo", 2000);
@@ -656,6 +673,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(canvas, &PixelCanvas::switchBackToSelect, [=](){
         selectAction->trigger();
+    });
+    connect(selectAction, &QAction::triggered, [=](){
+        canvas->setTool(PixelCanvas::Tool::Select);
     });
     connect(loadPicture, &QAction::triggered, [=](){
         QString file = QFileDialog::getOpenFileName(this, "Import Reference", "", "Images (*.png *.jpg *.jpeg *.bmp)");
