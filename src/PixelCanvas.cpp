@@ -839,23 +839,19 @@ void PixelCanvas::buildLassoMask(){
     selection.bottomRight = bounds.bottomRight();
     selection.width = bounds.width()-1;
     selection.height = bounds.height()-1;
-    QImage maskImage(bounds.size(), QImage::Format_Grayscale8);
-    maskImage.fill(0);
     QPainterPath path;
-    path.addPolygon(QPolygonF(selection.lassoPoints.translated(-bounds.topLeft())).translated(0.5, 0.5));
+    path.addPolygon(QPolygonF(selection.lassoPoints));
     path.closeSubpath();
-    QPainter maskPainter(&maskImage);
-    maskPainter.setRenderHint(QPainter::Antialiasing, false);
-    maskPainter.fillPath(path, Qt::white);
-    maskPainter.end();
 
     selection.mask.resize((selection.width+1)*(selection.height+1));
     selection.colors.clear();
     for(int sy = 0; sy <= selection.height; sy++){
         for(int sx = 0; sx <= selection.width; sx++){
-            bool inside = qGray(maskImage.pixel(sx, sy)) > 127;
+            int canvasX = bounds.x() + sx;
+            int canvasY = bounds.y() + sy;
+            bool inside = path.contains(QPointF(canvasX + 0.5, canvasY + 0.5));
             selection.mask[sy*(selection.width+1)+sx] = inside;
-            QColor color = inside ? document->activeLayer_().at(bounds.x()+sx, bounds.y()+sy) : QColor(Qt::transparent);
+            QColor color = inside ? document->activeLayer_().at(canvasX, canvasY) : QColor(Qt::transparent);
             selection.colors.push_back(color);
         }
     }
