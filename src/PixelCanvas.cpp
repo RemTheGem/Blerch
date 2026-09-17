@@ -916,13 +916,19 @@ void PixelCanvas::beginFloatingSelection(){
 }
 void PixelCanvas::undoStrokePixel(const QPoint &point){
     int layerId = document->activeLayer_().id;
+    QImage &cache = layerCache[layerId];
     for(const auto &point : mirroredPointsPixelPerfect(point)){
-        for(const auto &change : std::as_const(currentAction)){
+        for(int i = 0; i < currentAction.size(); i++){
+            const auto &change = currentAction[i];
             if(change.layer == layerId && change.x == point.x() && change.y == point.y()){
                 document->activeLayer_().at(point.x(), point.y()) = change.oldColor;
+                cache.setPixelColor(point.x(), point.y(), change.oldColor);
+                dirtyRect  |= QRect(point.x(), point.y(), 1, 1);
+                currentAction.erase(currentAction.begin()+i);
                 break;
             }
         }
+        affectedPixels.remove(QPair<int, int>(point.x(), point.y()));
     }
 }
 QVector<QPoint> PixelCanvas::mirroredPointsPixelPerfect(const QPoint &point){
