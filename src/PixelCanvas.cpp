@@ -581,6 +581,7 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
         if(selection.isEmpty(selection)) return;
         clearLayerPreview();
         selection.movePosition = QPoint(event->position().x()/pixelSize, event->position().y()/pixelSize);
+        QImage &cache = layerCache[document->activeLayer_().id];
         for (int py = 0; py < selection.height+1; py++){
             for (int px = 0; px < selection.width+1; px++){
                 int canvasX = selection.movePosition.x() - (selection.width/2) + px;
@@ -589,7 +590,9 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent *event)
                 if (index >= selection.colors.size()) continue;
                 if (canvasX < 0 || canvasX >= document->activeLayer_().width) continue;
                 if (canvasY < 0 || canvasY >= document->activeLayer_().height) continue;
-                document->activeLayer_().at(canvasX, canvasY) = selection.colors.at(index);
+                QColor color = selection.colors.at(index);
+                document->activeLayer_().at(canvasX, canvasY) = color;
+                cache.setPixelColor(canvasX, canvasY, color);
             }
         }
         update();
