@@ -167,6 +167,7 @@ void CanvasDocument::mergeLayerDown(){
             bottomLayer.at(x, y) = merged.pixelColor(x, y);
         }
     }
+    bottomLayer.opacity = topLayer.opacity >= bottomLayer.opacity ? topLayer.opacity : bottomLayer.opacity;
     frames[currentFrameIndex].layers.removeAt(activeLayerIndex);
     activeLayerIndex--;
     buildPalette();
