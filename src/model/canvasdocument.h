@@ -37,6 +37,7 @@ public:
     void makeTempLayer();
     void removeTempLayer();
     int giveLayerId(){return nextLayerId++;}
+    void mergeLayerDown();
 
     Layer *layerById(Frame &frame, int id);
     Layer &activeLayer_();

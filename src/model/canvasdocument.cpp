@@ -135,7 +135,44 @@ void CanvasDocument::moveLayerUp(int index){
     emit layerChanged();
 
 }
+void CanvasDocument::mergeLayerDown(){
+    if(activeLayerIndex == 0) return;
+    Layer &bottomLayer = frames[currentFrameIndex].layers[activeLayerIndex-1];
+    Layer &topLayer = frames[currentFrameIndex].layers[activeLayerIndex];
 
+    QImage merged(canvasWidth, canvasHeight, QImage::Format_ARGB32);
+    merged.fill(Qt::transparent);
+    QPainter painter(&merged);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+
+    painter.setOpacity(bottomLayer.opacity);
+    for(int y = 0;y <bottomLayer.height; y++){
+        for(int x = 0; x < bottomLayer.width; x++){
+            QColor color = bottomLayer.at(x, y);
+            if(color.alpha()>9) painter.fillRect(x, y, 1, 1, color);
+        }
+    }
+    painter.setOpacity(topLayer.opacity);
+    for(int y = 0;y <topLayer.height; y++){
+        for(int x = 0; x < topLayer.width; x++){
+            QColor color = topLayer.at(x, y);
+            if(color.alpha()>9) painter.fillRect(x, y, 1, 1, color);
+        }
+    }
+    painter.end();
+    bottomLayer.pixels.clear();
+    bottomLayer.pixels.resize(canvasWidth * canvasHeight);
+    for(int y = 0; y < canvasHeight; y++){
+        for(int x = 0; x< canvasWidth; x++){
+            bottomLayer.at(x, y) = merged.pixelColor(x, y);
+        }
+    }
+    frames[currentFrameIndex].layers.removeAt(activeLayerIndex);
+    activeLayerIndex--;
+    buildPalette();
+    emit layerChanged();
+    emit documentMutated();
+}
 void CanvasDocument::renameLayer(int index, const QString &name){
     if(index < 0 || index >= frames[currentFrameIndex].layers.size()) return;
     frames[currentFrameIndex].layers[index].name = name;

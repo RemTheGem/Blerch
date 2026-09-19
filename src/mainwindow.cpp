@@ -158,6 +158,7 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *moveUpButton = new QPushButton("↑", this);
     QPushButton *moveDownButton = new QPushButton("↓", this);
     QPushButton *renameLayerButton = new QPushButton("Rename", this);
+    QPushButton *mergeLayerDownButton = new QPushButton("Merge Layer Down", this);
     QSlider *opacitySlider = new QSlider(Qt::Horizontal);
     QLabel * opacityLabel = new QLabel("Opacity");
     opacitySlider->setRange(0, 100);
@@ -165,6 +166,7 @@ MainWindow::MainWindow(QWidget *parent)
     layerLayout->addWidget(opacityLabel);
     layerLayout->addWidget(opacitySlider);
     layerLayout->addWidget(renameLayerButton);
+    layerLayout->addWidget(mergeLayerDownButton);
     layerLayout->addWidget(layerList);
     layerButtons->addWidget(moveUpButton);
     layerButtons->addWidget(moveDownButton);
@@ -784,6 +786,9 @@ MainWindow::MainWindow(QWidget *parent)
             document->renameLayer(documentIndex, name);
             layerList->item(index)->setText(name);
         }
+    });
+    connect(mergeLayerDownButton, &QPushButton::clicked, [=](){
+        document->mergeLayerDown();
     });
     connect(layerList, &QListWidget::currentRowChanged, [=](int row){
         if(row < 0) return;
