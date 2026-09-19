@@ -112,6 +112,7 @@ void FileHandling::loadFromJson(QJsonObject root)
             layer.opacity = layerObject["opacity"].toDouble();
             layer.width = width;
             layer.height = height;
+            layer.id = document->giveLayerId();
             layer.pixels.resize(width*height);
             QString encoded = layerObject["pixels"].toString();
             QByteArray compressed = QByteArray::fromBase64(encoded.toLatin1());
